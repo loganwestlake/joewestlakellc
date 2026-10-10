@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#08080a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Joe Westlake LLC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +26,8 @@
   }
 </script>
 <style>
-  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
   html, body { font-family: 'Inter', system-ui, sans-serif; background: #08080a; }
   body { color: #e2e8f0; min-height: 100vh; position: relative; overflow-x: hidden; }
 
@@ -159,19 +163,17 @@
     color: #cbd5e1; font-size: 12px; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.1em;
   }
-  .fc .fc-list-event td { border-color: rgba(255,255,255,0.06); }
+  .fc .fc-list-event td { border-color: rgba(255,255,255,0.06); padding: 10px 12px; }
   .fc .fc-list-event:hover td { background: rgba(255,255,255,0.03); }
   .fc .fc-list-event-title a { color: #e2e8f0; font-weight: 500; }
   .fc .fc-list-event-time { color: #94a3b8; font-size: 12px; }
   .fc .fc-list-event-dot { border-width: 5px; }
   .fc .fc-list-empty { background: transparent; color: #64748b; padding: 40px 0; }
   .fc .fc-list-empty-cushion { color: #64748b; }
-  .fc .fc-timegrid-slot-label-cushion { color: #64748b; font-size: 11px; }
-  .fc .fc-timegrid-axis { color: #64748b; }
 
   .cal-btn {
     display: inline-flex; align-items: center; justify-content: center;
-    height: 36px; min-width: 36px; padding: 0 12px;
+    height: 40px; min-width: 40px; padding: 0 14px;
     border-radius: 10px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
@@ -182,11 +184,12 @@
   .cal-btn.active { background: rgba(251,146,60,0.15); border-color: rgba(251,146,60,0.3); color: #fbbf24; }
   .cal-filter {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px; border-radius: 9999px;
+    padding: 8px 14px; border-radius: 9999px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
     color: #94a3b8; font-size: 12px; font-weight: 500;
     transition: all .15s ease;
+    min-height: 40px;
   }
   .cal-filter:hover { color: #cbd5e1; }
   .cal-filter.active { color: #e2e8f0; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
@@ -194,14 +197,207 @@
   .cal-dot.jobs     { background: #3b82f6; }
   .cal-dot.invoices { background: #ef4444; }
   .cal-dot.service  { background: #8b5cf6; }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 40;
+    background: rgba(8, 8, 10, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .bottom-nav-inner {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    padding: 6px 4px;
+  }
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 4px;
+    min-height: 52px;
+    border-radius: 12px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color .15s ease, background .15s ease;
+    border: none;
+    background: transparent;
+  }
+  .bottom-nav-item svg { width: 22px; height: 22px; transition: transform .15s ease; }
+  .bottom-nav-item:active { background: rgba(255,255,255,0.05); }
+  .bottom-nav-item:active svg { transform: scale(0.92); }
+  .bottom-nav-item.active { color: #fbbf24; }
+  .bottom-nav-item.active svg { color: #fbbf24; }
+
+  .safe-top { padding-top: env(safe-area-inset-top, 0); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+
+  .mobile-topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 40;
+    background: rgba(8, 8, 10, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .fab {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
+    right: 16px;
+    z-index: 30;
+    width: 56px; height: 56px;
+    border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    box-shadow: 0 12px 32px -8px rgba(251, 146, 60, 0.6), 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform .15s ease;
+    border: none;
+  }
+  .fab:active { transform: scale(0.94); }
+
+  .chat-shell {
+    height: calc(100vh - 260px);
+    min-height: 480px;
+  }
+
+  @media (max-width: 1023px) {
+    input, select, textarea { font-size: 16px !important; }
+    .app-main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+    .app-main-inner { padding-top: 12px; }
+    .chat-shell {
+      height: calc(100dvh - 200px - env(safe-area-inset-bottom, 0px));
+      min-height: 380px;
+    }
+    .mobile-cards .glass {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    .mobile-cards table { display: block; width: 100%; }
+    .mobile-cards thead { display: none; }
+    .mobile-cards tbody { display: block; width: 100%; }
+    .mobile-cards tr {
+      display: block;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      transition: border-color .15s, background .15s;
+    }
+    .mobile-cards tr:active { background: rgba(255,255,255,0.04); }
+    .mobile-cards tr:last-child { margin-bottom: 0; }
+    .mobile-cards td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 5px 0 !important;
+      border: none !important;
+      font-size: 14px;
+      text-align: right;
+    }
+    .mobile-cards td::before {
+      content: attr(data-label);
+      color: #64748b;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      flex-shrink: 0;
+      text-align: left;
+    }
+    .mobile-cards td[data-label=""]::before { content: none; }
+    .mobile-cards td[data-actions] {
+      justify-content: flex-end;
+      padding-top: 10px !important;
+      margin-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.05) !important;
+      gap: 4px;
+    }
+    .mobile-cards td[data-actions]::before { content: none; }
+    .mobile-cards td[data-actions] button { padding: 8px !important; }
+
+    .modal-shell {
+      align-items: flex-end !important;
+      padding: 0 !important;
+    }
+    .modal-shell > div:last-child {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .modal-shell .ai-glow {
+      border-radius: 24px 24px 0 0 !important;
+    }
+    .modal-shell .ai-glow > div {
+      border-radius: 24px 24px 0 0 !important;
+      max-height: 92dvh !important;
+      padding: 24px 20px calc(env(safe-area-inset-bottom, 0px) + 28px) !important;
+      animation: sheetUp .3s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-shell .ai-glow::after {
+      content: '';
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      width: 40px; height: 4px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.15);
+      pointer-events: none;
+      z-index: 20;
+    }
+    .modal-shell .ai-glow > div > button:first-child {
+      top: 16px; right: 16px;
+    }
+    .section-title { font-size: 32px !important; line-height: 1 !important; }
+    .section-eyebrow { margin-bottom: 4px; }
+    .form-grid { gap: 14px !important; }
+    .form-grid input, .form-grid select, .form-grid textarea { padding: 12px 14px !important; }
+    .btn-touch { min-height: 44px; }
+    .page-actions { width: 100%; }
+    .calendar-shell { padding: 8px !important; }
+    .tab-scroll { -webkit-overflow-scrolling: touch; }
+  }
+
+  @media (max-width: 400px) {
+    .bottom-nav-item { font-size: 9px; padding: 4px 2px; }
+    .bottom-nav-item svg { width: 20px; height: 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body class="font-sans">
 
 <div class="flex min-h-screen">
 
-  <!-- SIDEBAR -->
-  <aside class="hidden lg:flex flex-col w-64 fixed inset-y-0 border-r border-white/[0.06] bg-black/40 backdrop-blur-xl">
+  <!-- DESKTOP SIDEBAR -->
+  <aside class="hidden lg:flex flex-col w-64 fixed inset-y-0 border-r border-white/[0.06] bg-black/40 backdrop-blur-xl z-30">
     <div class="px-5 py-5 border-b border-white/[0.06]">
       <div class="flex items-center gap-3">
         <div class="relative">
@@ -266,8 +462,8 @@
     </div>
   </aside>
 
-  <!-- MOBILE NAV -->
-  <div class="lg:hidden fixed top-0 inset-x-0 z-40 bg-black/70 backdrop-blur-xl border-b border-white/[0.06]">
+  <!-- MOBILE TOP BAR -->
+  <div class="lg:hidden mobile-topbar">
     <div class="px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-2.5">
         <div class="relative">
@@ -278,42 +474,90 @@
       </div>
       <div id="auth-area-mobile"></div>
     </div>
-    <nav class="flex overflow-x-auto px-3 pb-3 gap-1 scrollbar-none">
-      <button data-tab="today"    class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Today</button>
-      <button data-tab="calendar" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Calendar</button>
-      <button data-tab="ai"       class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">AI</button>
-      <button data-tab="jobs"     class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Jobs</button>
-      <button data-tab="expenses" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Expenses</button>
-      <button data-tab="invoices" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Invoices</button>
-      <button data-tab="vehicles" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Vehicles</button>
-      <button data-tab="settings" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Settings</button>
-    </nav>
   </div>
 
-  <main class="flex-1 lg:ml-64 pt-32 lg:pt-0">
-    <div class="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="lg:hidden bottom-nav">
+    <div class="bottom-nav-inner">
+      <button data-tab="today" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg>
+        <span>Today</span>
+      </button>
+      <button data-tab="calendar" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>Calendar</span>
+      </button>
+      <button data-tab="ai" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        <span>AI</span>
+      </button>
+      <button data-tab="jobs" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span>Jobs</span>
+      </button>
+      <button id="more-btn" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span>More</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MOBILE MORE SHEET -->
+  <div id="more-sheet" class="fixed inset-0 z-50 hidden lg:hidden">
+    <div id="more-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="absolute bottom-0 inset-x-0 bg-[#0d0d10] border-t border-white/[0.08] rounded-t-3xl p-5" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); animation: sheetUp .3s cubic-bezier(.4,0,.2,1);">
+      <div class="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <button data-tab="expenses" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
+          <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <span class="text-sm text-white font-medium">Expenses</span>
+        </button>
+        <button data-tab="invoices" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
+          <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span class="text-sm text-white font-medium">Invoices</span>
+        </button>
+        <button data-tab="vehicles" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
+          <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-9 5h10M5 17h14a1 1 0 001-1v-3.28a1 1 0 00-.684-.948l-1.923-.641a1 1 0 01-.578-.502l-1.539-3.076A1 1 0 0014.382 7H9.618a1 1 0 00-.894.553L7.185 10.63a1 1 0 01-.578.502l-1.923.641A1 1 0 004 12.72V16a1 1 0 001 1z"/></svg>
+          <span class="text-sm text-white font-medium">Vehicles</span>
+        </button>
+        <button data-tab="settings" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
+          <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="text-sm text-white font-medium">Settings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="flex-1 lg:ml-64 app-main" style="padding-top: calc(env(safe-area-inset-top, 0px) + 64px);">
+    <style>
+      @media (min-width: 1024px) {
+        .app-main { padding-top: 0 !important; }
+      }
+    </style>
+    <div class="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-12 app-main-inner">
 
       <!-- TODAY -->
       <section id="tab-today" class="tab-panel fade-in">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Overview</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Today</h1>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Overview</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Today</h1>
             <p id="today-date" class="text-sm text-slate-500 mt-3"></p>
           </div>
-          <button onclick="document.querySelector('.nav-item[data-tab=&quot;ai&quot;]').click()"
-            class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+          <button data-goto-tab="ai"
+            class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-3 rounded-xl text-sm font-medium transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
             Open Company AI
           </button>
         </div>
 
         <div class="relative rounded-2xl mb-6 profit-glow">
-          <div class="rounded-2xl bg-gradient-to-br from-emerald-500/[0.04] via-white/[0.02] to-white/[0.01] backdrop-blur-xl p-6 sm:p-7">
-            <div class="flex items-center justify-between mb-6">
+          <div class="rounded-2xl bg-gradient-to-br from-emerald-500/[0.04] via-white/[0.02] to-white/[0.01] backdrop-blur-xl p-5 sm:p-7">
+            <div class="flex items-center justify-between mb-5">
               <div>
                 <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-1">Monthly P&amp;L</div>
-                <div id="pnl-month" class="font-serif text-xl text-white">—</div>
+                <div id="pnl-month" class="font-serif text-lg sm:text-xl text-white">—</div>
               </div>
               <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
@@ -322,67 +566,67 @@
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Invoiced</div>
-                <div id="pnl-invoiced" class="font-serif text-3xl text-white">—</div>
+                <div id="pnl-invoiced" class="font-serif text-2xl sm:text-3xl text-white">—</div>
                 <div id="pnl-invoiced-sub" class="text-[11px] text-slate-500 mt-1">—</div>
               </div>
               <div>
                 <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Collected</div>
-                <div id="pnl-collected" class="font-serif text-3xl text-blue-300">—</div>
+                <div id="pnl-collected" class="font-serif text-2xl sm:text-3xl text-blue-300">—</div>
                 <div id="pnl-collected-sub" class="text-[11px] text-slate-500 mt-1">—</div>
               </div>
               <div>
                 <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Expenses</div>
-                <div id="pnl-expenses" class="font-serif text-3xl text-amber-400">—</div>
+                <div id="pnl-expenses" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
                 <div id="pnl-expenses-sub" class="text-[11px] text-slate-500 mt-1">—</div>
               </div>
               <div>
                 <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Net Profit</div>
-                <div id="pnl-net" class="font-serif text-3xl text-emerald-400">—</div>
+                <div id="pnl-net" class="font-serif text-2xl sm:text-3xl text-emerald-400">—</div>
                 <div id="pnl-net-sub" class="text-[11px] text-slate-500 mt-1">—</div>
               </div>
             </div>
-            <div id="pnl-bar" class="mt-6 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+            <div id="pnl-bar" class="mt-5 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
               <div id="pnl-bar-fill" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style="width: 0%"></div>
             </div>
           </div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          <div class="glass glass-hover rounded-2xl p-5">
+          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Jobs today</div>
               <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
               </div>
             </div>
-            <div id="stat-jobs" class="font-serif text-3xl text-white">—</div>
+            <div id="stat-jobs" class="font-serif text-2xl sm:text-3xl text-white">—</div>
           </div>
-          <div class="glass glass-hover rounded-2xl p-5">
+          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Spent today</div>
               <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                 <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
               </div>
             </div>
-            <div id="stat-spent" class="font-serif text-3xl text-white">—</div>
+            <div id="stat-spent" class="font-serif text-2xl sm:text-3xl text-white">—</div>
           </div>
-          <div class="glass glass-hover rounded-2xl p-5">
+          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Outstanding</div>
               <div class="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
                 <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               </div>
             </div>
-            <div id="stat-owed" class="font-serif text-3xl text-amber-400">—</div>
+            <div id="stat-owed" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
           </div>
-          <div class="glass glass-hover rounded-2xl p-5">
+          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Service due</div>
               <div class="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
                 <svg class="w-3.5 h-3.5 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-9 5h10M5 17h14a1 1 0 001-1v-3.28a1 1 0 00-.684-.948l-1.923-.641a1 1 0 01-.578-.502l-1.539-3.076A1 1 0 0014.382 7H9.618a1 1 0 00-.894.553L7.185 10.63a1 1 0 01-.578.502l-1.923.641A1 1 0 004 12.72V16a1 1 0 001 1z"/></svg>
               </div>
             </div>
-            <div id="stat-service" class="font-serif text-3xl text-white">—</div>
+            <div id="stat-service" class="font-serif text-2xl sm:text-3xl text-white">—</div>
           </div>
         </div>
       </section>
@@ -391,9 +635,9 @@
       <section id="tab-calendar" class="tab-panel hidden fade-in">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Schedule</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Calendar</h1>
-            <p class="text-sm text-slate-500 mt-3">Jobs, invoices due, and vehicle service — all in one view</p>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Schedule</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Calendar</h1>
+            <p class="text-sm text-slate-500 mt-3">Jobs, invoices due, and vehicle service</p>
           </div>
         </div>
 
@@ -408,7 +652,7 @@
             </button>
           </div>
 
-          <div id="cal-title" class="font-serif text-xl text-white tracking-tight flex-1 text-center order-last sm:order-none w-full sm:w-auto"></div>
+          <div id="cal-title" class="font-serif text-lg text-white tracking-tight flex-1 text-center order-last sm:order-none w-full sm:w-auto"></div>
 
           <div class="flex items-center gap-1">
             <button data-cal-view="dayGridMonth" class="cal-btn">Month</button>
@@ -421,49 +665,48 @@
             <span class="cal-dot jobs"></span> Jobs
           </button>
           <button data-cal-filter="invoices" class="cal-filter active">
-            <span class="cal-dot invoices"></span> Invoices due
+            <span class="cal-dot invoices"></span> Invoices
           </button>
           <button data-cal-filter="service" class="cal-filter active">
-            <span class="cal-dot service"></span> Service due
+            <span class="cal-dot service"></span> Service
           </button>
         </div>
 
-        <div class="glass rounded-2xl p-3 sm:p-5">
+        <div class="glass rounded-2xl p-2 sm:p-5 calendar-shell">
           <div id="calendar"></div>
         </div>
       </section>
 
       <!-- COMPANY AI -->
       <section id="tab-ai" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Assistant</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Company AI</h1>
-            <p class="text-sm text-slate-500 mt-3">Ask anything, generate a daily brief, then send it to your team</p>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Assistant</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Company AI</h1>
+            <p class="text-sm text-slate-500 mt-3">Ask anything, generate a brief, then send it to your team</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2 page-actions">
             <button id="daily-brief-btn"
-              class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-amber-500/20 transition disabled:opacity-60">
+              class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-amber-500/20 transition disabled:opacity-60 btn-touch flex-1 sm:flex-none justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
               <span>Daily Brief</span>
             </button>
             <button id="send-to-btn"
-              class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed">
+              class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-3 rounded-xl text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed btn-touch flex-1 sm:flex-none justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-              Send to
+              Send
             </button>
             <button id="clear-chat-btn"
-              class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+              class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-3 rounded-xl text-sm font-medium transition btn-touch">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
-              Clear chat
             </button>
           </div>
         </div>
 
         <div class="relative rounded-2xl ai-glow">
-          <div class="rounded-2xl bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col" style="height: calc(100vh - 260px); min-height: 480px;">
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
-              <div id="chat-empty" class="h-full flex flex-col items-center justify-center text-center px-4">
+          <div class="rounded-2xl bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col chat-shell">
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              <div id="chat-empty" class="h-full flex flex-col items-center justify-center text-center px-2 sm:px-4">
                 <div class="relative mb-6">
                   <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-400 to-violet-500 blur-xl opacity-40"></div>
                   <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center">
@@ -471,7 +714,7 @@
                   </div>
                 </div>
                 <div class="font-serif text-2xl text-white mb-2">Ask me anything</div>
-                <div class="text-sm text-slate-500 max-w-sm mb-6">I can see all your jobs, expenses, invoices, and vehicles. Click <strong class="text-slate-400">Daily Brief</strong> above for a snapshot, or ask me a question.</div>
+                <div class="text-sm text-slate-500 max-w-sm mb-6">Click <strong class="text-slate-400">Daily Brief</strong> for a snapshot, or ask me a question.</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
                   <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">What did we do today?</button>
                   <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Which jobs made the most profit this month?</button>
@@ -481,11 +724,11 @@
               </div>
             </div>
 
-            <div class="border-t border-white/[0.06] p-4">
-              <form id="chat-form" class="flex items-end gap-3">
+            <div class="border-t border-white/[0.06] p-3 sm:p-4">
+              <form id="chat-form" class="flex items-end gap-2 sm:gap-3">
                 <div class="flex-1 relative">
                   <textarea id="chat-input" rows="1" placeholder="Ask about your business…"
-                    class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition resize-none max-h-40"
+                    class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition resize-none max-h-40"
                     style="min-height: 46px;"></textarea>
                 </div>
                 <button type="submit" id="chat-send"
@@ -500,36 +743,36 @@
 
       <!-- JOBS -->
       <section id="tab-jobs" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Work</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Jobs</h1>
-            <p class="text-sm text-slate-500 mt-3">Click any job to see its invoices, expenses, and profit</p>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Work</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Jobs</h1>
+            <p class="text-sm text-slate-500 mt-3">Tap any job to see its invoices, expenses, and profit</p>
           </div>
-          <button onclick="document.getElementById('job-form-wrap').classList.toggle('hidden')"
-            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+          <button data-toggle="job-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             New job
           </button>
         </div>
 
         <div id="job-form-wrap" class="hidden mb-6">
-          <form id="job-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <form id="job-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
-              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Address</label>
-              <input name="address" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="address" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
-              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
-              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
                 <option value="estimate">Estimate</option>
                 <option value="scheduled">Scheduled</option>
                 <option value="in-progress">In progress</option>
@@ -538,47 +781,47 @@
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Contract amount</label>
-              <input name="amount" type="number" step="0.01" placeholder="0.00" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
-              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add job</button>
-              <button type="button" onclick="document.getElementById('job-form-wrap').classList.add('hidden')"
-                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add job</button>
+              <button type="button" data-toggle="job-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
             </div>
           </form>
         </div>
 
-        <div id="jobs-list"></div>
+        <div id="jobs-list" class="mobile-cards"></div>
       </section>
 
       <!-- EXPENSES -->
       <section id="tab-expenses" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Spending</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Expenses</h1>
-            <p class="text-sm text-slate-500 mt-3">Paint, gas, supplies, tools — attach to jobs or mark as overhead</p>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Spending</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Expenses</h1>
+            <p class="text-sm text-slate-500 mt-3">Paint, gas, supplies, tools</p>
           </div>
-          <button onclick="document.getElementById('expense-form-wrap').classList.toggle('hidden')"
-            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+          <button data-toggle="expense-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             New expense
           </button>
         </div>
 
         <div id="expense-form-wrap" class="hidden mb-6">
-          <form id="expense-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <form id="expense-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Vendor *</label>
-              <input name="vendor" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="vendor" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Category</label>
-              <select name="category" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+              <select name="category" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
                 <option value="paint">Paint</option>
                 <option value="gas">Gas</option>
                 <option value="supplies">Supplies</option>
@@ -589,71 +832,71 @@
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
-              <input name="amount" type="number" step="0.01" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
-              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job (leave blank for overhead)</label>
-              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
+              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
             </div>
             <div class="md:col-span-2">
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Note</label>
-              <input name="note" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="note" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add expense</button>
-              <button type="button" onclick="document.getElementById('expense-form-wrap').classList.add('hidden')"
-                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add expense</button>
+              <button type="button" data-toggle="expense-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
             </div>
           </form>
         </div>
 
-        <div id="expenses-list"></div>
+        <div id="expenses-list" class="mobile-cards"></div>
       </section>
 
       <!-- INVOICES -->
       <section id="tab-invoices" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Money in</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Invoices</h1>
-            <p class="text-sm text-slate-500 mt-3">Attach each invoice to a job so profit rolls up automatically</p>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Money in</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Invoices</h1>
+            <p class="text-sm text-slate-500 mt-3">Attach to a job so profit rolls up</p>
           </div>
-          <button onclick="document.getElementById('invoice-form-wrap').classList.toggle('hidden')"
-            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+          <button data-toggle="invoice-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             New invoice
           </button>
         </div>
 
         <div id="invoice-form-wrap" class="hidden mb-6">
-          <form id="invoice-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <form id="invoice-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
-              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
-              <input name="amount" type="number" step="0.01" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Sent date *</label>
-              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Due date</label>
-              <input name="dueDate" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="dueDate" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job *</label>
-              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
+              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
-              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
                 <option value="sent">Sent</option>
                 <option value="paid">Paid</option>
                 <option value="overdue">Overdue</option>
@@ -661,121 +904,121 @@
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
-              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add invoice</button>
-              <button type="button" onclick="document.getElementById('invoice-form-wrap').classList.add('hidden')"
-                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add invoice</button>
+              <button type="button" data-toggle="invoice-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
             </div>
           </form>
         </div>
 
-        <div id="invoices-list"></div>
+        <div id="invoices-list" class="mobile-cards"></div>
       </section>
 
       <!-- VEHICLES -->
       <section id="tab-vehicles" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Fleet</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Vehicles</h1>
-            <p class="text-sm text-slate-500 mt-3">Trucks and vans — service and mileage</p>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Fleet</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Vehicles</h1>
+            <p class="text-sm text-slate-500 mt-3">Trucks and vans</p>
           </div>
-          <button onclick="document.getElementById('vehicle-form-wrap').classList.toggle('hidden')"
-            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+          <button data-toggle="vehicle-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             New vehicle
           </button>
         </div>
 
         <div id="vehicle-form-wrap" class="hidden mb-6">
-          <form id="vehicle-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <form id="vehicle-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
-              <input name="name" placeholder="e.g. White Van" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="name" placeholder="e.g. White Van" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Plate</label>
-              <input name="plate" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="plate" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Odometer</label>
-              <input name="odometer" type="number" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="odometer" type="number" inputmode="numeric" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Last service</label>
-              <input name="lastService" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="lastService" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Next service due</label>
-              <input name="nextServiceDue" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="nextServiceDue" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div>
               <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
-              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
             </div>
             <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add vehicle</button>
-              <button type="button" onclick="document.getElementById('vehicle-form-wrap').classList.add('hidden')"
-                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add vehicle</button>
+              <button type="button" data-toggle="vehicle-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
             </div>
           </form>
         </div>
 
-        <div id="vehicles-list"></div>
+        <div id="vehicles-list" class="mobile-cards"></div>
       </section>
 
       <!-- SETTINGS -->
       <section id="tab-settings" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Configure</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Settings</h1>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Configure</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Settings</h1>
             <p class="text-sm text-slate-500 mt-3">Team directory and preferences</p>
           </div>
         </div>
 
         <div class="mb-8">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-4 gap-3">
             <div>
               <h2 class="text-lg font-semibold text-white tracking-tight">Team Directory</h2>
               <p class="text-sm text-slate-500 mt-0.5">People you can send reports and briefs to</p>
             </div>
-            <button onclick="document.getElementById('team-form-wrap').classList.toggle('hidden')"
-              class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+            <button data-toggle="team-form-wrap"
+              class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
               Add member
             </button>
           </div>
 
           <div id="team-form-wrap" class="hidden mb-6">
-            <form id="team-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <form id="team-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
-                <input name="name" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="name" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Email</label>
-                <input name="email" type="email" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="email" type="email" inputmode="email" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Phone</label>
-                <input name="phone" type="tel" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="phone" type="tel" inputmode="tel" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Role</label>
-                <input name="role" placeholder="e.g. Accountant" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="role" placeholder="e.g. Accountant" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div class="md:col-span-2 flex gap-3 pt-1">
-                <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add member</button>
-                <button type="button" onclick="document.getElementById('team-form-wrap').classList.add('hidden')"
-                  class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+                <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add member</button>
+                <button type="button" data-toggle="team-form-wrap"
+                  class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
               </div>
             </form>
           </div>
 
-          <div id="team-list"></div>
+          <div id="team-list" class="mobile-cards"></div>
         </div>
       </section>
 
@@ -783,13 +1026,18 @@
   </main>
 </div>
 
+<!-- FAB -->
+<button id="mobile-fab" class="fab lg:hidden" aria-label="Quick add">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+</button>
+
 <!-- SIGN-IN MODAL -->
-<div id="signin-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+<div id="signin-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-shell">
   <div id="signin-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
   <div class="relative w-full max-w-md modal-in">
     <div class="relative rounded-2xl ai-glow">
       <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-8 shadow-2xl shadow-black/60">
-        <button id="signin-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+        <button id="signin-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-2 rounded-lg hover:bg-white/5 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="flex items-center gap-3 mb-6">
@@ -807,17 +1055,17 @@
         <form id="signin-form" class="space-y-4">
           <div>
             <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Email</label>
-            <input id="signin-email" type="email" required placeholder="you@example.com"
+            <input id="signin-email" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.com"
               class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
           </div>
           <div>
             <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Password</label>
-            <input id="signin-password" type="password" required placeholder="••••••••" minlength="6"
+            <input id="signin-password" type="password" autocomplete="current-password" required placeholder="••••••••" minlength="6"
               class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
           </div>
           <div id="signin-error" class="text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2"></div>
           <button type="submit" id="signin-submit"
-            class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl py-3 text-sm font-medium shadow-lg shadow-amber-500/20 mt-2">
+            class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl py-3 text-sm font-medium shadow-lg shadow-amber-500/20 mt-2 btn-touch">
             Sign in
           </button>
         </form>
@@ -833,12 +1081,12 @@
 </div>
 
 <!-- EDIT MODAL -->
-<div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+<div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-shell">
   <div id="edit-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
   <div class="relative w-full max-w-lg modal-in">
     <div class="relative rounded-2xl ai-glow">
       <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-8 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
-        <button id="edit-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+        <button id="edit-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-2 rounded-lg hover:bg-white/5 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="mb-6">
@@ -846,10 +1094,10 @@
           <h2 id="edit-title" class="font-serif text-3xl text-white tracking-tight">Edit</h2>
         </div>
         <form id="edit-form">
-          <div id="edit-fields" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6"></div>
+          <div id="edit-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 form-grid"></div>
           <div class="flex gap-3 pt-6 border-t border-white/[0.06]">
-            <button type="submit" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Save changes</button>
-            <button type="button" id="edit-cancel" class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+            <button type="submit" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Save changes</button>
+            <button type="button" id="edit-cancel" class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
           </div>
         </form>
       </div>
@@ -858,12 +1106,12 @@
 </div>
 
 <!-- JOB DETAIL MODAL -->
-<div id="job-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+<div id="job-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-shell">
   <div id="job-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
   <div class="relative w-full max-w-3xl modal-in">
     <div class="relative rounded-2xl ai-glow">
       <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-6 sm:p-8 shadow-2xl shadow-black/60 max-h-[92vh] overflow-y-auto">
-        <button id="job-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition z-10">
+        <button id="job-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-2 rounded-lg hover:bg-white/5 transition z-10">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div id="job-detail"></div>
@@ -873,12 +1121,12 @@
 </div>
 
 <!-- SEND TO MODAL -->
-<div id="send-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+<div id="send-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-shell">
   <div id="send-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
   <div class="relative w-full max-w-lg modal-in">
     <div class="relative rounded-2xl ai-glow">
       <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-8 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
-        <button id="send-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+        <button id="send-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-2 rounded-lg hover:bg-white/5 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="mb-5">
@@ -894,12 +1142,12 @@
 
         <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
           <button id="send-copy-btn" type="button"
-            class="flex-1 inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-xl px-5 py-2.5 text-sm font-medium transition">
+            class="flex-1 inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-xl px-5 py-3 text-sm font-medium transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
             Copy text
           </button>
           <button id="send-email-btn" type="button"
-            class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20 transition">
+            class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             Open in email
           </button>
@@ -909,12 +1157,10 @@
   </div>
 </div>
 
-<div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+<div id="toast-container" class="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 space-y-2 pointer-events-none"></div>
 
 <script type="module">
-// ─────────────────────────────────────────────────────────────
 // FIREBASE
-// ─────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, getDocs, query, where,
@@ -938,19 +1184,15 @@ const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// ─────────────────────────────────────────────────────────────
-// AI PROXY — Worker holds the key. Client never sees it.
-// ─────────────────────────────────────────────────────────────
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 
-// ─────────────────────────────────────────────────────────────
 // UTILITIES
-// ─────────────────────────────────────────────────────────────
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const fmtDate  = (s) => s ? new Date(s + "T00:00:00").toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : "—";
 const money    = (n) => n == null || n === "" ? "$0.00" : `$${Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const monthLabel = () => new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+const isMobile = () => window.matchMedia("(max-width: 1023px)").matches;
 
 function isInThisMonth(dateStr) {
   if (!dateStr) return false;
@@ -967,16 +1209,18 @@ function toast(msg, type = "success") {
     error:   "border-red-500/30 bg-red-500/10 text-red-200",
     info:    "border-white/10 bg-white/5 text-slate-200"
   };
-  el.className = `toast backdrop-blur-xl border ${styles[type]} text-sm px-4 py-3 rounded-xl shadow-2xl shadow-black/50`;
+  el.className = `toast backdrop-blur-xl border ${styles[type]} text-sm px-4 py-3 rounded-xl shadow-2xl shadow-black/50 pointer-events-auto`;
   el.textContent = msg;
   c.appendChild(el);
   setTimeout(() => { el.style.opacity = 0; el.style.transition = "opacity .3s"; }, 2200);
   setTimeout(() => el.remove(), 2600);
 }
 
-// ─────────────────────────────────────────────────────────────
+function lockScroll(lock) {
+  document.body.style.overflow = lock ? "hidden" : "";
+}
+
 // CACHE
-// ─────────────────────────────────────────────────────────────
 let cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [] };
 function jobById(id) { return cache.jobs.find(j => j.id === id) || null; }
 function jobLabel(id) {
@@ -984,9 +1228,7 @@ function jobLabel(id) {
   return j ? `${j.customer}${j.address ? " — " + j.address : ""}` : (id ? "(deleted job)" : "Overhead");
 }
 
-// ─────────────────────────────────────────────────────────────
 // AUTH
-// ─────────────────────────────────────────────────────────────
 const modal       = document.getElementById("signin-modal");
 const modalBack   = document.getElementById("signin-backdrop");
 const modalClose  = document.getElementById("signin-close");
@@ -1001,8 +1243,17 @@ const titleEl     = document.getElementById("signin-title");
 const subtitleEl  = document.getElementById("signin-subtitle");
 
 let authMode = "signin";
-function openModal() { modal.classList.remove("hidden"); modal.classList.add("flex"); setTimeout(() => authEmail.focus(), 50); }
-function closeModal() { modal.classList.add("hidden"); modal.classList.remove("flex"); authError.classList.add("hidden"); authForm.reset(); }
+function openModal() {
+  modal.classList.remove("hidden"); modal.classList.add("flex");
+  lockScroll(true);
+  setTimeout(() => authEmail.focus(), 100);
+}
+function closeModal() {
+  modal.classList.add("hidden"); modal.classList.remove("flex");
+  lockScroll(false);
+  authError.classList.add("hidden");
+  authForm.reset();
+}
 function setMode(mode) {
   authMode = mode;
   if (mode === "signup") {
@@ -1030,6 +1281,7 @@ document.addEventListener("keydown", (e) => {
     if (!document.getElementById("edit-modal").classList.contains("hidden")) closeEditModal();
     if (!document.getElementById("job-modal").classList.contains("hidden")) closeJobModal();
     if (!document.getElementById("send-modal").classList.contains("hidden")) closeSendModal();
+    closeMoreSheet();
   }
 });
 
@@ -1068,7 +1320,7 @@ authForm.onsubmit = async (e) => {
 
 function signInButtonHTML(prefix) {
   return `<button id="${prefix}-signin"
-    class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-medium rounded-xl py-2.5 shadow-lg shadow-amber-500/15 transition">
+    class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-medium rounded-lg px-3 py-2 shadow-lg shadow-amber-500/15 transition">
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
     Sign in
   </button>`;
@@ -1080,7 +1332,7 @@ function signOutButtonHTML(prefix, email) {
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center shrink-0">
           <span class="text-[10px] font-semibold text-amber-300">${(email || "?").charAt(0).toUpperCase()}</span>
         </div>
-        <div class="text-[11px] text-slate-400 truncate" title="${email}">${email}</div>
+        <div class="text-[11px] text-slate-400 truncate max-w-[100px] lg:max-w-[140px]" title="${email}">${email}</div>
       </div>
       <button id="${prefix}-out" class="text-slate-500 hover:text-white text-[11px] font-medium transition shrink-0">Sign out</button>
     </div>`;
@@ -1106,30 +1358,115 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────
 // TABS
-// ─────────────────────────────────────────────────────────────
 const tabs = document.querySelectorAll(".nav-item");
+const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
 const panels = document.querySelectorAll(".tab-panel");
-tabs.forEach(t => t.onclick = () => {
+
+function switchTab(tabName) {
   tabs.forEach(x => x.classList.remove("active"));
   panels.forEach(p => p.classList.add("hidden"));
-  document.querySelectorAll(`.nav-item[data-tab="${t.dataset.tab}"]`).forEach(x => x.classList.add("active"));
-  document.getElementById(`tab-${t.dataset.tab}`).classList.remove("hidden");
-  if (t.dataset.tab === "ai") setTimeout(() => document.getElementById("chat-input")?.focus(), 100);
-  if (t.dataset.tab === "calendar") setTimeout(() => initCalendar(), 60);
+  document.querySelectorAll(`.nav-item[data-tab="${tabName}"]`).forEach(x => x.classList.add("active"));
+
+  bottomNavItems.forEach(b => {
+    if (b.dataset.tab) {
+      b.classList.toggle("active", b.dataset.tab === tabName);
+    } else {
+      b.classList.toggle("active", ["expenses","invoices","vehicles","settings"].includes(tabName));
+    }
+  });
+
+  const panel = document.getElementById(`tab-${tabName}`);
+  if (panel) panel.classList.remove("hidden");
+
+  window.scrollTo({ top: 0, behavior: "instant" });
+
+  if (tabName === "ai") setTimeout(() => document.getElementById("chat-input")?.focus(), 100);
+  if (tabName === "calendar") setTimeout(() => initCalendar(), 60);
+}
+
+tabs.forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+bottomNavItems.forEach(b => {
+  if (b.dataset.tab) b.onclick = () => switchTab(b.dataset.tab);
 });
-document.querySelectorAll('.nav-item[data-tab="today"]').forEach(x => x.classList.add("active"));
+
+// MORE SHEET
+const moreSheet = document.getElementById("more-sheet");
+document.getElementById("more-btn").onclick = () => {
+  moreSheet.classList.remove("hidden");
+  lockScroll(true);
+};
+document.getElementById("more-backdrop").onclick = () => closeMoreSheet();
+document.querySelectorAll(".more-tab").forEach(b => {
+  b.onclick = () => {
+    closeMoreSheet();
+    setTimeout(() => switchTab(b.dataset.tab), 80);
+  };
+});
+function closeMoreSheet() {
+  moreSheet.classList.add("hidden");
+  lockScroll(false);
+}
+
+// FAB
+document.getElementById("mobile-fab").onclick = () => {
+  const active = document.querySelector(".tab-panel:not(.hidden)");
+  if (!active) return;
+  const id = active.id;
+  if (id === "tab-jobs") toggleForm("job-form-wrap");
+  else if (id === "tab-expenses") toggleForm("expense-form-wrap");
+  else if (id === "tab-invoices") toggleForm("invoice-form-wrap");
+  else if (id === "tab-vehicles") toggleForm("vehicle-form-wrap");
+  else if (id === "tab-settings") toggleForm("team-form-wrap");
+  else {
+    switchTab("jobs");
+    setTimeout(() => toggleForm("job-form-wrap"), 150);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// DELEGATED CLICK HANDLERS
+// Handles all [data-toggle] and [data-goto-tab] buttons.
+// Module-scoped functions can't be reached from inline onclick,
+// so we wire everything up here.
+// ─────────────────────────────────────────────────────────────
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("hidden");
+  if (!el.classList.contains("hidden")) {
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.querySelector("input, select")?.focus();
+    }, 50);
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const toggleBtn = e.target.closest("[data-toggle]");
+  if (toggleBtn) {
+    e.preventDefault();
+    toggleForm(toggleBtn.dataset.toggle);
+    return;
+  }
+
+  const gotoBtn = e.target.closest("[data-goto-tab]");
+  if (gotoBtn) {
+    e.preventDefault();
+    switchTab(gotoBtn.dataset.gotoTab);
+    return;
+  }
+});
+
+switchTab("today");
 
 document.getElementById("today-date").textContent =
   new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 
-// ─────────────────────────────────────────────────────────────
 // TABLE HELPERS
-// ─────────────────────────────────────────────────────────────
 function emptyState(title, hint) {
   const div = document.createElement("div");
-  div.className = "glass rounded-2xl p-12 text-center";
+  div.className = "glass rounded-2xl p-8 sm:p-12 text-center";
   div.innerHTML = `
     <div class="mx-auto w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
       <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
@@ -1182,9 +1519,10 @@ function renderTable(headers, rows) {
   rows.forEach(r => {
     const tr = document.createElement("tr");
     tr.className = "border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition";
-    r.forEach(c => {
+    r.forEach((c, idx) => {
       const td = document.createElement("td");
       td.className = "px-5 py-3.5 text-slate-300";
+      td.dataset.label = headers[idx] || "";
       if (c instanceof Node) td.appendChild(c); else td.textContent = c;
       tr.appendChild(td);
     });
@@ -1199,9 +1537,7 @@ function renderTable(headers, rows) {
   return wrap;
 }
 
-// ─────────────────────────────────────────────────────────────
 // LOADERS
-// ─────────────────────────────────────────────────────────────
 async function loadAll() {
   await Promise.all([fetchJobs(), fetchExpenses(), fetchInvoices(), fetchVehicles(), fetchTeam()]);
   populateJobSelectors();
@@ -1256,9 +1592,7 @@ function populateJobSelectors() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER — JOBS
-// ─────────────────────────────────────────────────────────────
 function computeJobMetrics(jobId) {
   const invs = cache.invoices.filter(i => i.jobId === jobId);
   const exps = cache.expenses.filter(e => e.jobId === jobId);
@@ -1271,7 +1605,7 @@ function computeJobMetrics(jobId) {
 function renderJobs() {
   const c = document.getElementById("jobs-list");
   c.innerHTML = "";
-  if (!cache.jobs.length) { c.appendChild(emptyState("No jobs yet", "Click \"New job\" to add your first one.")); return; }
+  if (!cache.jobs.length) { c.appendChild(emptyState("No jobs yet", "Tap the + button to add your first one.")); return; }
   const rows = cache.jobs.map(j => {
     const m = computeJobMetrics(j.id);
     const profitCell = document.createElement("span");
@@ -1291,20 +1625,18 @@ function renderJobs() {
     actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", (e) => { e.stopPropagation(); openEditModal("jobs", j.id, j); }));
     actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async (e) => {
       e.stopPropagation();
-      if (!confirm("Delete this job? Linked invoices and expenses will stay but become unlinked.")) return;
+      if (!confirm("Delete this job?")) return;
       await deleteDoc(doc(db, "jobs", j.id));
       toast("Deleted"); loadAll();
     }));
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER — EXPENSES
-// ─────────────────────────────────────────────────────────────
 function renderExpenses() {
   const c = document.getElementById("expenses-list");
   c.innerHTML = "";
-  if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Click \"New expense\" to log your first one.")); return; }
+  if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Tap the + button to log your first one.")); return; }
   const rows = cache.expenses.map(e => [fmtDate(e.date), e.vendor, e.category || "—", money(e.amount), jobLabel(e.jobId)]);
   const table = renderTable(["Date","Vendor","Category","Amount","Job"], rows);
   c.appendChild(table);
@@ -1320,13 +1652,11 @@ function renderExpenses() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER — INVOICES
-// ─────────────────────────────────────────────────────────────
 function renderInvoices() {
   const c = document.getElementById("invoices-list");
   c.innerHTML = "";
-  if (!cache.invoices.length) { c.appendChild(emptyState("No invoices yet", "Click \"New invoice\" to add your first one.")); return; }
+  if (!cache.invoices.length) { c.appendChild(emptyState("No invoices yet", "Tap the + button to add your first one.")); return; }
   const rows = cache.invoices.map(inv => [fmtDate(inv.date), inv.customer, money(inv.amount), fmtDate(inv.dueDate), jobLabel(inv.jobId), statusPill(inv.status)]);
   const table = renderTable(["Sent","Customer","Amount","Due","Job","Status"], rows);
   c.appendChild(table);
@@ -1348,13 +1678,11 @@ function renderInvoices() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER — VEHICLES
-// ─────────────────────────────────────────────────────────────
 function renderVehicles() {
   const c = document.getElementById("vehicles-list");
   c.innerHTML = "";
-  if (!cache.vehicles.length) { c.appendChild(emptyState("No vehicles yet", "Click \"New vehicle\" to add your truck or van.")); return; }
+  if (!cache.vehicles.length) { c.appendChild(emptyState("No vehicles yet", "Tap the + button to add your truck or van.")); return; }
   const rows = cache.vehicles.map(v => [v.name, v.plate || "—", v.odometer || "—", fmtDate(v.lastService), fmtDate(v.nextServiceDue)]);
   const table = renderTable(["Name","Plate","Odometer","Last service","Next due"], rows);
   c.appendChild(table);
@@ -1370,13 +1698,11 @@ function renderVehicles() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER — TEAM
-// ─────────────────────────────────────────────────────────────
 function renderTeam() {
   const c = document.getElementById("team-list");
   c.innerHTML = "";
-  if (!cache.team.length) { c.appendChild(emptyState("No team members yet", "Add people so you can send reports and briefs to them.")); return; }
+  if (!cache.team.length) { c.appendChild(emptyState("No team members yet", "Add people so you can send briefs to them.")); return; }
   const rows = cache.team.map(t => [t.name, t.email || "—", t.phone || "—", t.role || "—"]);
   const table = renderTable(["Name", "Email", "Phone", "Role"], rows);
   c.appendChild(table);
@@ -1392,9 +1718,7 @@ function renderTeam() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // CALENDAR
-// ─────────────────────────────────────────────────────────────
 let calInstance = null;
 const calendarFilters = { jobs: true, invoices: true, service: true };
 const STATUS_COLORS = {
@@ -1450,13 +1774,14 @@ function getCalendarEvents() {
 function initCalendar() {
   if (calInstance) { calInstance.updateSize(); return; }
   const el = document.getElementById("calendar");
+  const defaultView = isMobile() ? "listWeek" : "dayGridMonth";
   calInstance = new FullCalendar.Calendar(el, {
-    initialView: "dayGridMonth",
+    initialView: defaultView,
     headerToolbar: false,
     height: "auto",
     firstDay: 0,
     fixedWeekCount: false,
-    dayMaxEvents: 3,
+    dayMaxEvents: isMobile() ? 2 : 3,
     events: getCalendarEvents(),
     eventClick: (info) => {
       const { kind, data } = info.event.extendedProps;
@@ -1482,8 +1807,8 @@ function initCalendar() {
       calInstance.changeView(btn.dataset.calView);
     };
   });
-  const monthBtn = document.querySelector('[data-cal-view="dayGridMonth"]');
-  if (monthBtn) monthBtn.classList.add("active");
+  const activeBtn = document.querySelector(`[data-cal-view="${defaultView}"]`);
+  if (activeBtn) activeBtn.classList.add("active");
 
   document.querySelectorAll("[data-cal-filter]").forEach(btn => {
     btn.onclick = () => {
@@ -1501,9 +1826,7 @@ function refreshCalendar() {
   getCalendarEvents().forEach(ev => calInstance.addEvent(ev));
 }
 
-// ─────────────────────────────────────────────────────────────
 // MONTHLY P&L
-// ─────────────────────────────────────────────────────────────
 function updatePnL() {
   const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
   const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
@@ -1523,7 +1846,7 @@ function updatePnL() {
   document.getElementById("pnl-expenses").textContent = money(expenses);
   document.getElementById("pnl-expenses-sub").textContent = `${expsThisMonth.length} entr${expsThisMonth.length === 1 ? "y" : "ies"}`;
   document.getElementById("pnl-net").textContent = money(net);
-  document.getElementById("pnl-net").className = "font-serif text-3xl " + (net >= 0 ? "text-emerald-400" : "text-red-400");
+  document.getElementById("pnl-net").className = "font-serif text-2xl sm:text-3xl " + (net >= 0 ? "text-emerald-400" : "text-red-400");
   document.getElementById("pnl-net-sub").textContent = invoiced > 0 ? `${margin.toFixed(1)}% margin` : "—";
 
   const bar = document.getElementById("pnl-bar-fill");
@@ -1532,9 +1855,7 @@ function updatePnL() {
   bar.className = "h-full " + (net >= 0 ? "bg-gradient-to-r from-emerald-500 to-teal-400" : "bg-gradient-to-r from-red-500 to-rose-400");
 }
 
-// ─────────────────────────────────────────────────────────────
 // STATS
-// ─────────────────────────────────────────────────────────────
 function updateStats() {
   const today = todayISO();
   const jobsToday = cache.jobs.filter(j => j.date === today).length;
@@ -1549,19 +1870,19 @@ function updateStats() {
   document.getElementById("stat-service").textContent = serviceDue;
 }
 
-// ─────────────────────────────────────────────────────────────
 // JOB DETAIL MODAL
-// ─────────────────────────────────────────────────────────────
 let jobModalJobId = null;
 function openJobModal(jobId) {
   jobModalJobId = jobId;
   renderJobModal();
   const m = document.getElementById("job-modal");
   m.classList.remove("hidden"); m.classList.add("flex");
+  lockScroll(true);
 }
 function closeJobModal() {
   const m = document.getElementById("job-modal");
   m.classList.add("hidden"); m.classList.remove("flex");
+  lockScroll(false);
   jobModalJobId = null;
 }
 document.getElementById("job-backdrop").onclick = closeJobModal;
@@ -1577,40 +1898,40 @@ function renderJobModal() {
 
   const el = document.getElementById("job-detail");
   el.innerHTML = `
-    <div class="mb-6">
+    <div class="mb-5">
       <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Job Detail</div>
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 class="font-serif text-3xl text-white tracking-tight leading-tight">${escapeHtml(j.customer)}</h2>
+          <h2 class="font-serif text-2xl sm:text-3xl text-white tracking-tight leading-tight">${escapeHtml(j.customer)}</h2>
           <div class="text-sm text-slate-500 mt-1">${escapeHtml(j.address || "—")} · ${fmtDate(j.date)}</div>
         </div>
         <div>${statusPill(j.status).outerHTML}</div>
       </div>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 gap-3 mb-5">
       <div class="glass rounded-xl p-4">
         <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Contract</div>
-        <div class="font-serif text-2xl text-white">${money(j.amount)}</div>
+        <div class="font-serif text-xl sm:text-2xl text-white">${money(j.amount)}</div>
       </div>
       <div class="glass rounded-xl p-4">
         <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Invoiced</div>
-        <div class="font-serif text-2xl text-white">${money(m.invoiced)}</div>
+        <div class="font-serif text-xl sm:text-2xl text-white">${money(m.invoiced)}</div>
         <div class="text-[10px] text-slate-500 mt-1">${m.invoiceCount} invoice${m.invoiceCount === 1 ? "" : "s"}</div>
       </div>
       <div class="glass rounded-xl p-4">
         <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Expenses</div>
-        <div class="font-serif text-2xl text-amber-400">${money(m.expenses)}</div>
+        <div class="font-serif text-xl sm:text-2xl text-amber-400">${money(m.expenses)}</div>
         <div class="text-[10px] text-slate-500 mt-1">${m.expenseCount} entr${m.expenseCount === 1 ? "y" : "ies"}</div>
       </div>
       <div class="glass rounded-xl p-4">
         <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Profit</div>
-        <div class="font-serif text-2xl ${m.profit >= 0 ? "text-emerald-400" : "text-red-400"}">${money(m.profit)}</div>
+        <div class="font-serif text-xl sm:text-2xl ${m.profit >= 0 ? "text-emerald-400" : "text-red-400"}">${money(m.profit)}</div>
         <div class="text-[10px] text-slate-500 mt-1">${m.invoiced > 0 ? margin.toFixed(1) + "% margin" : "—"}</div>
       </div>
     </div>
-    <div class="flex gap-2 mb-6 flex-wrap">
-      <button class="add-to-job-btn inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-3.5 py-2 rounded-lg text-xs font-medium transition" data-add="invoice">+ Add invoice</button>
-      <button class="add-to-job-btn inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-3.5 py-2 rounded-lg text-xs font-medium transition" data-add="expense">+ Add expense</button>
+    <div class="grid grid-cols-2 gap-2 mb-6">
+      <button class="add-to-job-btn inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-3.5 py-3 rounded-lg text-xs font-medium transition btn-touch" data-add="invoice">+ Add invoice</button>
+      <button class="add-to-job-btn inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-3.5 py-3 rounded-lg text-xs font-medium transition btn-touch" data-add="expense">+ Add expense</button>
     </div>
     <div class="space-y-6">
       <div>
@@ -1621,18 +1942,18 @@ function renderJobModal() {
               <thead><tr class="border-b border-white/[0.06]">
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Sent</th>
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Amount</th>
-                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Due</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em] hidden sm:table-cell">Due</th>
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Status</th>
                 <th></th>
               </tr></thead>
               <tbody>
                 ${jobInvoices.map(inv => `
                   <tr class="border-b border-white/[0.04] last:border-0">
-                    <td class="px-4 py-2.5 text-slate-300">${fmtDate(inv.date)}</td>
-                    <td class="px-4 py-2.5 text-slate-300">${money(inv.amount)}</td>
-                    <td class="px-4 py-2.5 text-slate-400">${fmtDate(inv.dueDate)}</td>
-                    <td class="px-4 py-2.5">${statusPill(inv.status).outerHTML}</td>
-                    <td class="px-3 py-2.5 text-right" data-inv-actions="${inv.id}"></td>
+                    <td class="px-4 py-3 text-slate-300">${fmtDate(inv.date)}</td>
+                    <td class="px-4 py-3 text-slate-300">${money(inv.amount)}</td>
+                    <td class="px-4 py-3 text-slate-400 hidden sm:table-cell">${fmtDate(inv.dueDate)}</td>
+                    <td class="px-4 py-3">${statusPill(inv.status).outerHTML}</td>
+                    <td class="px-3 py-3 text-right" data-inv-actions="${inv.id}"></td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -1648,18 +1969,18 @@ function renderJobModal() {
               <thead><tr class="border-b border-white/[0.06]">
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Date</th>
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Vendor</th>
-                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Category</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em] hidden sm:table-cell">Category</th>
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Amount</th>
                 <th></th>
               </tr></thead>
               <tbody>
                 ${jobExpenses.map(ex => `
                   <tr class="border-b border-white/[0.04] last:border-0">
-                    <td class="px-4 py-2.5 text-slate-300">${fmtDate(ex.date)}</td>
-                    <td class="px-4 py-2.5 text-slate-300">${escapeHtml(ex.vendor)}</td>
-                    <td class="px-4 py-2.5 text-slate-400">${ex.category || "—"}</td>
-                    <td class="px-4 py-2.5 text-amber-400">${money(ex.amount)}</td>
-                    <td class="px-3 py-2.5 text-right" data-exp-actions="${ex.id}"></td>
+                    <td class="px-4 py-3 text-slate-300">${fmtDate(ex.date)}</td>
+                    <td class="px-4 py-3 text-slate-300">${escapeHtml(ex.vendor)}</td>
+                    <td class="px-4 py-3 text-slate-400 hidden sm:table-cell">${ex.category || "—"}</td>
+                    <td class="px-4 py-3 text-amber-400">${money(ex.amount)}</td>
+                    <td class="px-3 py-3 text-right" data-exp-actions="${ex.id}"></td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -1673,13 +1994,13 @@ function renderJobModal() {
   jobInvoices.forEach(inv => {
     const cell = el.querySelector(`[data-inv-actions="${inv.id}"]`);
     if (inv.status !== "paid") {
-      cell.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10 transition", "Mark paid", async () => {
+      cell.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-2 rounded-lg hover:bg-emerald-500/10 transition", "Mark paid", async () => {
         await updateDoc(doc(db, "invoices", inv.id), { status: "paid", paidDate: todayISO() });
         toast("Marked paid"); await loadAll(); renderJobModal();
       }));
     }
-    cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("invoices", inv.id, inv)));
-    cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+    cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-2 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("invoices", inv.id, inv)));
+    cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this invoice?")) return;
       await deleteDoc(doc(db, "invoices", inv.id));
       toast("Deleted"); await loadAll(); renderJobModal();
@@ -1688,8 +2009,8 @@ function renderJobModal() {
 
   jobExpenses.forEach(ex => {
     const cell = el.querySelector(`[data-exp-actions="${ex.id}"]`);
-    cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "Edit", () => openEditModal("expenses", ex.id, ex)));
-    cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+    cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-2 rounded-lg hover:bg-amber-500/10 transition", "Edit", () => openEditModal("expenses", ex.id, ex)));
+    cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this expense?")) return;
       await deleteDoc(doc(db, "expenses", ex.id));
       toast("Deleted"); await loadAll(); renderJobModal();
@@ -1700,8 +2021,7 @@ function renderJobModal() {
     btn.onclick = () => {
       const kind = btn.dataset.add;
       closeJobModal();
-      const tabBtn = document.querySelector(`.nav-item[data-tab="${kind === "invoice" ? "invoices" : "expenses"}"]`);
-      tabBtn?.click();
+      switchTab(kind === "invoice" ? "invoices" : "expenses");
       setTimeout(() => {
         const wrapId = kind === "invoice" ? "invoice-form-wrap" : "expense-form-wrap";
         const wrap = document.getElementById(wrapId);
@@ -1709,14 +2029,12 @@ function renderJobModal() {
         const sel = wrap.querySelector("[data-job-select]");
         if (sel) sel.value = j.id;
         wrap.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+      }, 200);
     };
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // SEND TO MODAL
-// ─────────────────────────────────────────────────────────────
 const sendModal = document.getElementById("send-modal");
 const sendBackdrop = document.getElementById("send-backdrop");
 const sendClose = document.getElementById("send-close");
@@ -1736,7 +2054,7 @@ function updateSendButton() {
 
 function openSendModal() {
   const text = getLastAIMessage();
-  if (!text) { toast("Nothing to send yet — generate a brief or ask a question first", "error"); return; }
+  if (!text) { toast("Nothing to send yet", "error"); return; }
   document.getElementById("send-preview").textContent = text;
 
   const list = document.getElementById("send-team-list");
@@ -1744,13 +2062,13 @@ function openSendModal() {
   if (!cache.team.length) {
     list.innerHTML = `<div class="text-sm text-slate-500 py-6 text-center px-4">No team members yet.<br><button id="send-goto-settings" class="text-amber-400 hover:text-amber-300 font-medium mt-2">Add people in Settings →</button></div>`;
     const goto = document.getElementById("send-goto-settings");
-    if (goto) goto.onclick = () => { closeSendModal(); document.querySelector('.nav-item[data-tab="settings"]')?.click(); };
+    if (goto) goto.onclick = () => { closeSendModal(); switchTab("settings"); };
   } else {
     cache.team.forEach(t => {
       const label = document.createElement("label");
       label.className = "flex items-center gap-3 p-3 hover:bg-white/[0.03] cursor-pointer transition border-b border-white/[0.04] last:border-0";
       label.innerHTML = `
-        <input type="checkbox" value="${t.id}" class="send-team-checkbox w-4 h-4 rounded border-white/20 bg-white/[0.03] text-amber-500 focus:ring-amber-500/50" />
+        <input type="checkbox" value="${t.id}" class="send-team-checkbox w-5 h-5 rounded border-white/20 bg-white/[0.03] text-amber-500 focus:ring-amber-500/50" />
         <div class="flex-1 min-w-0">
           <div class="text-sm text-white truncate">${escapeHtml(t.name)}${t.role ? ` <span class="text-slate-500 text-xs">· ${escapeHtml(t.role)}</span>` : ""}</div>
           <div class="text-xs text-slate-500 truncate">${escapeHtml(t.email || t.phone || "—")}</div>
@@ -1761,9 +2079,11 @@ function openSendModal() {
   }
 
   sendModal.classList.remove("hidden"); sendModal.classList.add("flex");
+  lockScroll(true);
 }
 function closeSendModal() {
   sendModal.classList.add("hidden"); sendModal.classList.remove("flex");
+  lockScroll(false);
 }
 
 sendBackdrop.onclick = closeSendModal;
@@ -1800,9 +2120,7 @@ document.getElementById("send-email-btn").onclick = () => {
   closeSendModal();
 };
 
-// ─────────────────────────────────────────────────────────────
 // EDIT MODAL
-// ─────────────────────────────────────────────────────────────
 const EDIT_CONFIG = {
   jobs: { label: "Job", fields: [
     { name: "customer", label: "Customer", type: "text", required: true },
@@ -1881,9 +2199,12 @@ function openEditModal(collectionName, docId, data) {
       input.type = f.type;
       if (f.step) input.step = f.step;
       if (f.required) input.required = true;
+      if (f.type === "number") input.inputMode = "decimal";
+      if (f.type === "email") input.inputMode = "email";
+      if (f.type === "tel") input.inputMode = "tel";
     }
     input.name = f.name;
-    input.className = "w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition";
+    input.className = "w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition";
     const v = data[f.name];
     if (v !== undefined && v !== null) input.value = v;
     wrap.appendChild(input);
@@ -1891,11 +2212,13 @@ function openEditModal(collectionName, docId, data) {
   });
   const m = document.getElementById("edit-modal");
   m.classList.remove("hidden"); m.classList.add("flex");
-  setTimeout(() => fields.querySelector("input, select")?.focus(), 100);
+  lockScroll(true);
+  setTimeout(() => fields.querySelector("input, select")?.focus(), 150);
 }
 function closeEditModal() {
   const m = document.getElementById("edit-modal");
   m.classList.add("hidden"); m.classList.remove("flex");
+  lockScroll(false);
   editContext = null;
 }
 document.getElementById("edit-backdrop").onclick = closeEditModal;
@@ -1927,9 +2250,7 @@ document.getElementById("edit-form").onsubmit = async (e) => {
   } catch (err) { toast(err.message, "error"); }
 };
 
-// ─────────────────────────────────────────────────────────────
 // ADD FORMS
-// ─────────────────────────────────────────────────────────────
 function formToObject(form) {
   const obj = {};
   new FormData(form).forEach((v, k) => {
@@ -1959,9 +2280,7 @@ wireForm("invoice-form", "invoices", loadAll, "Invoice");
 wireForm("vehicle-form", "vehicles", loadAll, "Vehicle");
 wireForm("team-form",    "team",     loadAll, "Team member");
 
-// ─────────────────────────────────────────────────────────────
-// AI — DAILY BRIEF (calls Worker proxy, no key in browser)
-// ─────────────────────────────────────────────────────────────
+// AI — DAILY BRIEF
 async function generateDailyBrief() {
   const btn = document.getElementById("daily-brief-btn");
   const original = btn.innerHTML;
@@ -2000,7 +2319,6 @@ Write a short daily brief (4-6 lines max) covering:
 
 Be specific with numbers. If a section has no data, say so briefly. No markdown, no bullet symbols, just clean sentences.`;
 
-    // ── Worker proxy (key lives on Cloudflare, not here) ──
     const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2011,8 +2329,8 @@ Be specific with numbers. If a section has no data, say so briefly. No markdown,
     if (text) {
       addMessage("model", text);
     } else {
-      toast("Gemini: " + (data?.error?.message || "unknown error"), "error");
-     console.error("Gemini response:", JSON.stringify(data, null, 2));
+      toast("No response from Gemini", "error");
+      console.error("Gemini response:", data);
     }
   } catch (err) {
     console.error(err);
@@ -2024,9 +2342,7 @@ Be specific with numbers. If a section has no data, say so briefly. No markdown,
 }
 document.getElementById("daily-brief-btn").onclick = generateDailyBrief;
 
-// ─────────────────────────────────────────────────────────────
 // COMPANY AI CHAT
-// ─────────────────────────────────────────────────────────────
 const chatMessages = document.getElementById("chat-messages");
 const chatInput    = document.getElementById("chat-input");
 const chatForm     = document.getElementById("chat-form");
@@ -2052,9 +2368,9 @@ function renderChat() {
     const el = document.createElement("div");
     el.className = "msg-in flex " + (m.role === "user" ? "justify-end" : "justify-start");
     if (m.role === "user") {
-      el.innerHTML = `<div class="max-w-[80%] sm:max-w-[70%] bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-[13.5px] leading-relaxed shadow-lg shadow-amber-500/10">${escapeHtml(m.text)}</div>`;
+      el.innerHTML = `<div class="max-w-[85%] sm:max-w-[70%] bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-[13.5px] leading-relaxed shadow-lg shadow-amber-500/10">${escapeHtml(m.text)}</div>`;
     } else {
-      el.innerHTML = `<div class="flex items-start gap-3 max-w-[85%] sm:max-w-[75%]"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center shrink-0 mt-0.5"><svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></div><div class="flex-1 bg-white/[0.03] border border-white/[0.06] text-slate-200 rounded-2xl rounded-tl-md px-4 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap">${escapeHtml(m.text)}</div></div>`;
+      el.innerHTML = `<div class="flex items-start gap-3 max-w-[90%] sm:max-w-[75%]"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center shrink-0 mt-0.5"><svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></div><div class="flex-1 bg-white/[0.03] border border-white/[0.06] text-slate-200 rounded-2xl rounded-tl-md px-4 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap">${escapeHtml(m.text)}</div></div>`;
     }
     chatMessages.appendChild(el);
   });
@@ -2071,8 +2387,13 @@ function showTypingIndicator() {
 }
 function removeTypingIndicator() { document.getElementById("chat-typing")?.remove(); }
 
-chatInput.addEventListener("input", () => { chatInput.style.height = "auto"; chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + "px"; });
-chatInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); } });
+chatInput.addEventListener("input", () => {
+  chatInput.style.height = "auto";
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + "px";
+});
+chatInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); }
+});
 document.querySelectorAll(".suggestion").forEach(btn => {
   btn.onclick = () => { chatInput.value = btn.textContent.trim(); chatInput.focus(); chatForm.requestSubmit(); };
 });
@@ -2131,7 +2452,6 @@ ${JSON.stringify(snapshot)}`;
       { role: "user", parts: [{ text: text }] }
     ];
 
-    // ── Worker proxy (key lives on Cloudflare, not here) ──
     const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2139,7 +2459,7 @@ ${JSON.stringify(snapshot)}`;
     });
     const data = await res.json();
     removeTypingIndicator();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text   || (data?.error?.message ? "Gemini error: " + data.error.message : "I couldn't generate a response. Check the console.");
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response. Check the console for details.";
     addMessage("model", reply);
   } catch (err) {
     console.error(err);
