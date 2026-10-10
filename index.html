@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -59,6 +60,15 @@
   .nav-item.active { color: #fff; background: rgba(255,255,255,0.04); }
   .nav-item.active .nav-icon { color: #fbbf24; }
 
+  .nav-section {
+    padding: 12px 12px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+
   .fade-in { animation: fadeIn .35s cubic-bezier(.4,0,.2,1); }
   @keyframes fadeIn { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
 
@@ -91,7 +101,6 @@
   input:focus, select:focus, textarea:focus { outline: none; }
   input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 
-  /* iOS date/number input normalization */
   input[type="date"], input[type="number"], select {
     -webkit-appearance: none;
     appearance: none;
@@ -147,12 +156,10 @@
   .row-clickable { cursor: pointer; }
   .row-clickable:hover { background: rgba(255,255,255,0.03); }
 
-  /* Fixed sidebar width, prevents flex overflow */
   .app-shell { display: flex; min-height: 100vh; width: 100%; max-width: 100vw; overflow-x: hidden; }
   .app-sidebar { width: 16rem; flex-shrink: 0; }
   .app-main { flex: 1 1 0%; min-width: 0; max-width: 100%; }
 
-  /* Calendar */
   .fc {
     --fc-border-color: rgba(255,255,255,0.06);
     --fc-page-bg-color: transparent;
@@ -232,6 +239,128 @@
   .cal-dot.invoices { background: #ef4444; }
   .cal-dot.service  { background: #8b5cf6; }
 
+  .chart-shell {
+    position: relative;
+    height: 380px;
+    padding: 20px;
+  }
+  @media (max-width: 640px) {
+    .chart-shell { height: 320px; padding: 12px; }
+  }
+  .view-toggle {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .view-toggle button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+    border: none;
+    background: transparent;
+  }
+  .view-toggle button.active {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+
+  .money-subtabs {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 24px;
+  }
+  .money-subtabs button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #94a3b8;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .money-subtabs button.active {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+
+  .import-drop {
+    border: 2px dashed rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    transition: border-color .2s, background .2s;
+    cursor: pointer;
+  }
+  .import-drop:hover, .import-drop.dragover {
+    border-color: rgba(251,146,60,0.5);
+    background: rgba(251,146,60,0.04);
+  }
+  .import-row {
+    display: grid;
+    grid-template-columns: 28px 130px 1fr 100px 120px;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 13px;
+  }
+  .import-row:last-child { border-bottom: none; }
+  .import-row input[type="text"],
+  .import-row input[type="date"],
+  .import-row input[type="number"],
+  .import-row select {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #e2e8f0;
+    min-height: 34px;
+  }
+  .import-row input[type="checkbox"] {
+    width: 18px; height: 18px;
+  }
+  .deposit-row {
+    display: grid;
+    grid-template-columns: 28px 130px 1fr 100px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 13px;
+  }
+  .deposit-row:last-child { border-bottom: none; }
+  .deposit-row input[type="text"],
+  .deposit-row input[type="date"],
+  .deposit-row input[type="number"],
+  .deposit-row select {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #e2e8f0;
+    min-height: 34px;
+  }
+  @media (max-width: 640px) {
+    .import-row, .deposit-row {
+      grid-template-columns: 28px 1fr;
+      gap: 6px;
+    }
+    .import-row > *:nth-child(n+3),
+    .deposit-row > *:nth-child(n+3) { grid-column: 2; }
+  }
+
   .bottom-nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -306,7 +435,6 @@
     min-height: 480px;
   }
 
-  /* Modal containers: always respect viewport */
   .modal-shell {
     display: flex;
     align-items: center;
@@ -387,7 +515,6 @@
     .mobile-cards td[data-actions]::before { content: none; }
     .mobile-cards td[data-actions] button { padding: 8px !important; }
 
-    /* Bottom sheets */
     .modal-shell {
       align-items: flex-end !important;
       padding: 0 !important;
@@ -462,12 +589,13 @@
         <div class="min-w-0">
           <div class="text-white font-medium leading-tight tracking-tight truncate">Joe Westlake</div>
           <div class="text-[11px] text-slate-500 tracking-wide uppercase truncate">Painting LLC</div>
-           <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.3</div>
+          <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.6</div>
         </div>
       </div>
     </div>
 
-    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
+    <nav class="flex-1 px-3 py-4 overflow-y-auto scrollbar-none">
+      <div class="nav-section">Overview</div>
       <button data-tab="today" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
         <span class="nav-indicator"></span>
         <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg>
@@ -478,20 +606,12 @@
         <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Calendar
       </button>
-      <button data-tab="ai" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
-        <span class="nav-indicator"></span>
-        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-        Company AI
-      </button>
+
+      <div class="nav-section">Work</div>
       <button data-tab="jobs" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
         <span class="nav-indicator"></span>
         <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         Jobs
-      </button>
-      <button data-tab="expenses" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
-        <span class="nav-indicator"></span>
-        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-        Expenses
       </button>
       <button data-tab="invoices" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
         <span class="nav-indicator"></span>
@@ -502,6 +622,20 @@
         <span class="nav-indicator"></span>
         <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-9 5h10M5 17h14a1 1 0 001-1v-3.28a1 1 0 00-.684-.948l-1.923-.641a1 1 0 01-.578-.502l-1.539-3.076A1 1 0 0014.382 7H9.618a1 1 0 00-.894.553L7.185 10.63a1 1 0 01-.578.502l-1.923.641A1 1 0 004 12.72V16a1 1 0 001 1z"/></svg>
         Vehicles
+      </button>
+
+      <div class="nav-section">Money</div>
+      <button data-tab="money" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m6-5c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8z"/></svg>
+        Money
+      </button>
+
+      <div class="nav-section">Tools</div>
+      <button data-tab="ai" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        Company AI
       </button>
     </nav>
 
@@ -526,7 +660,10 @@
           <div class="absolute inset-0 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 blur-md opacity-40"></div>
           <div class="relative w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black text-xs font-bold">JW</div>
         </div>
-        <div class="min-w-0">   <div class="text-white font-medium text-sm tracking-tight truncate">Joe Westlake LLC</div>   <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5">v1.3</div> </div>
+        <div class="min-w-0">
+          <div class="text-white font-medium text-sm tracking-tight truncate">Joe Westlake LLC</div>
+          <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5">v1.6</div>
+        </div>
       </div>
       <div id="auth-area-mobile" class="shrink-0"></div>
     </div>
@@ -539,17 +676,17 @@
         <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg>
         <span>Today</span>
       </button>
-      <button data-tab="calendar" class="bottom-nav-item">
-        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        <span>Calendar</span>
+      <button data-tab="jobs" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span>Jobs</span>
+      </button>
+      <button data-tab="money" class="bottom-nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m6-5c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8z"/></svg>
+        <span>Money</span>
       </button>
       <button data-tab="ai" class="bottom-nav-item">
         <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
         <span>AI</span>
-      </button>
-      <button data-tab="jobs" class="bottom-nav-item">
-        <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        <span>Jobs</span>
       </button>
       <button id="more-btn" class="bottom-nav-item">
         <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -564,9 +701,9 @@
     <div class="absolute bottom-0 inset-x-0 bg-[#0d0d10] border-t border-white/[0.08] rounded-t-3xl p-5" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); animation: sheetUp .3s cubic-bezier(.4,0,.2,1);">
       <div class="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5"></div>
       <div class="grid grid-cols-2 gap-3">
-        <button data-tab="expenses" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
-          <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-          <span class="text-sm text-white font-medium">Expenses</span>
+        <button data-tab="calendar" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
+          <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span class="text-sm text-white font-medium">Calendar</span>
         </button>
         <button data-tab="invoices" class="more-tab flex flex-col items-center justify-center gap-2 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] active:bg-white/[0.06] transition">
           <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -604,51 +741,104 @@
           <button data-goto-tab="ai"
             class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-3 rounded-xl text-sm font-medium transition btn-touch">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-            Open Company AI
+            Ask Company AI
           </button>
         </div>
 
+        <!-- Welcome banner for new users -->
+        <div id="welcome-banner" class="glass rounded-2xl p-5 sm:p-6 mb-6 hidden">
+          <div class="flex items-start gap-4">
+            <div class="relative shrink-0">
+              <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 blur-md opacity-40"></div>
+              <div class="relative w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-serif text-xl text-white mb-1">Welcome — here's how it works</div>
+              <div class="text-sm text-slate-400 mb-4">Three steps to get going. Nothing is permanent — you can edit or delete anything.</div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button data-goto-tab="jobs" class="text-left glass glass-hover rounded-xl p-3 transition">
+                  <div class="text-[10px] font-semibold text-amber-400/80 tracking-[0.15em] uppercase mb-1">Step 1</div>
+                  <div class="text-sm text-white font-medium">Add a job</div>
+                  <div class="text-xs text-slate-500 mt-0.5">Customer, address, date</div>
+                </button>
+                <button data-goto-tab="invoices" class="text-left glass glass-hover rounded-xl p-3 transition">
+                  <div class="text-[10px] font-semibold text-amber-400/80 tracking-[0.15em] uppercase mb-1">Step 2</div>
+                  <div class="text-sm text-white font-medium">Bill the customer</div>
+                  <div class="text-xs text-slate-500 mt-0.5">Create an invoice, mark it paid</div>
+                </button>
+                <button data-goto-tab="money" class="text-left glass glass-hover rounded-xl p-3 transition">
+                  <div class="text-[10px] font-semibold text-amber-400/80 tracking-[0.15em] uppercase mb-1">Step 3</div>
+                  <div class="text-sm text-white font-medium">Track your money</div>
+                  <div class="text-xs text-slate-500 mt-0.5">Import a bank statement — AI sorts it</div>
+                </button>
+              </div>
+            </div>
+            <button id="welcome-dismiss" class="text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Money overview (this month) -->
         <div class="relative rounded-2xl mb-6 profit-glow">
           <div class="rounded-2xl bg-gradient-to-br from-emerald-500/[0.04] via-white/[0.02] to-white/[0.01] backdrop-blur-xl p-5 sm:p-7">
             <div class="flex items-center justify-between mb-5">
               <div>
-                <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-1">Monthly P&amp;L</div>
+                <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-1">This month</div>
                 <div id="pnl-month" class="font-serif text-lg sm:text-xl text-white">—</div>
               </div>
               <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
               </div>
             </div>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
               <div>
-                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Invoiced</div>
-                <div id="pnl-invoiced" class="font-serif text-2xl sm:text-3xl text-white">—</div>
-                <div id="pnl-invoiced-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+                <div class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400/80 tracking-[0.15em] uppercase mb-2">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                  Money in
+                </div>
+                <div id="pnl-money-in" class="font-serif text-2xl sm:text-3xl text-emerald-400">—</div>
+                <div id="pnl-money-in-sub" class="text-[11px] text-slate-500 mt-1">—</div>
               </div>
               <div>
-                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Collected</div>
-                <div id="pnl-collected" class="font-serif text-2xl sm:text-3xl text-blue-300">—</div>
-                <div id="pnl-collected-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+                <div class="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400/80 tracking-[0.15em] uppercase mb-2">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+                  Money out
+                </div>
+                <div id="pnl-money-out" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
+                <div id="pnl-money-out-sub" class="text-[11px] text-slate-500 mt-1">—</div>
               </div>
               <div>
-                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Expenses</div>
-                <div id="pnl-expenses" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
-                <div id="pnl-expenses-sub" class="text-[11px] text-slate-500 mt-1">—</div>
-              </div>
-              <div>
-                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Net Profit</div>
+                <div class="flex items-center gap-1.5 text-[10px] font-semibold text-white/80 tracking-[0.15em] uppercase mb-2">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                  Net cash
+                </div>
                 <div id="pnl-net" class="font-serif text-2xl sm:text-3xl text-emerald-400">—</div>
-                <div id="pnl-net-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+                <div id="pnl-net-sub" class="text-[11px] text-slate-500 mt-1">Money in − money out</div>
               </div>
             </div>
-            <div id="pnl-bar" class="mt-5 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-              <div id="pnl-bar-fill" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style="width: 0%"></div>
+
+            <div class="pt-5 border-t border-white/[0.06] grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1.5">Billed this month</div>
+                <div id="pnl-invoiced" class="font-serif text-lg text-white">—</div>
+                <div id="pnl-invoiced-sub" class="text-[11px] text-slate-500 mt-0.5">—</div>
+              </div>
+              <div>
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1.5">Still owed</div>
+                <div id="pnl-outstanding" class="font-serif text-lg text-amber-400">—</div>
+                <div id="pnl-outstanding-sub" class="text-[11px] text-slate-500 mt-0.5">—</div>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- Quick stats -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+          <button data-goto-tab="jobs" class="glass glass-hover rounded-2xl p-4 sm:p-5 text-left transition">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Jobs today</div>
               <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
@@ -656,8 +846,8 @@
               </div>
             </div>
             <div id="stat-jobs" class="font-serif text-2xl sm:text-3xl text-white">—</div>
-          </div>
-          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+          </button>
+          <button data-goto-tab="money" class="glass glass-hover rounded-2xl p-4 sm:p-5 text-left transition">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Spent today</div>
               <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
@@ -665,8 +855,8 @@
               </div>
             </div>
             <div id="stat-spent" class="font-serif text-2xl sm:text-3xl text-white">—</div>
-          </div>
-          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+          </button>
+          <button data-goto-tab="invoices" class="glass glass-hover rounded-2xl p-4 sm:p-5 text-left transition">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Outstanding</div>
               <div class="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
@@ -674,8 +864,8 @@
               </div>
             </div>
             <div id="stat-owed" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
-          </div>
-          <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+          </button>
+          <button data-goto-tab="vehicles" class="glass glass-hover rounded-2xl p-4 sm:p-5 text-left transition">
             <div class="flex items-center justify-between mb-3">
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Service due</div>
               <div class="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
@@ -683,7 +873,7 @@
               </div>
             </div>
             <div id="stat-service" class="font-serif text-2xl sm:text-3xl text-white">—</div>
-          </div>
+          </button>
         </div>
       </section>
 
@@ -733,13 +923,371 @@
         </div>
       </section>
 
+      <!-- JOBS -->
+      <section id="tab-jobs" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Work</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Jobs</h1>
+            <p class="text-sm text-slate-500 mt-3">Every customer project in one place — click to see its invoices, expenses, and profit</p>
+          </div>
+          <button data-toggle="job-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New job
+          </button>
+        </div>
+
+        <div id="job-form-wrap" class="hidden mb-6">
+          <form id="job-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
+              <input name="customer" required placeholder="e.g. Smith Family" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Address</label>
+              <input name="address" placeholder="123 Main St" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
+              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                <option value="estimate">Estimate</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in-progress">In progress</option>
+                <option value="complete">Complete</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Contract amount</label>
+              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
+              <input name="notes" placeholder="Anything worth remembering" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add job</button>
+              <button type="button" data-toggle="job-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="jobs-list" class="mobile-cards"></div>
+      </section>
+
+      <!-- INVOICES -->
+      <section id="tab-invoices" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Billing</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Invoices</h1>
+            <p class="text-sm text-slate-500 mt-3">Bill customers and track what's paid. Attach each invoice to a job so profit rolls up.</p>
+          </div>
+          <button data-toggle="invoice-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New invoice
+          </button>
+        </div>
+
+        <div id="invoice-form-wrap" class="hidden mb-6">
+          <form id="invoice-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
+              <input name="customer" required placeholder="e.g. Smith Family" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
+              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Sent date *</label>
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Due date</label>
+              <input name="dueDate" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job</label>
+              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
+              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                <option value="sent">Sent — awaiting payment</option>
+                <option value="paid">Paid — money received</option>
+                <option value="overdue">Overdue — past due date</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
+              <input name="notes" placeholder="Optional" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add invoice</button>
+              <button type="button" data-toggle="invoice-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="invoices-list" class="mobile-cards"></div>
+      </section>
+
+      <!-- MONEY -->
+      <section id="tab-money" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Cash flow</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Money</h1>
+            <p class="text-sm text-slate-500 mt-3">Everything that came in and everything that went out</p>
+          </div>
+          <button id="import-bank-btn"
+            class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-amber-500/20 transition btn-touch">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Import bank statement
+          </button>
+        </div>
+
+        <div class="money-subtabs">
+          <button data-money-view="income" id="money-income-tab">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Income
+          </button>
+          <button data-money-view="expenses" id="money-expenses-tab" class="active">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+            Expenses
+          </button>
+        </div>
+
+        <!-- INCOME SUB-VIEW -->
+        <div id="money-income-view" class="hidden">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Collected</div>
+                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+              </div>
+              <div id="income-stat-collected" class="font-serif text-2xl sm:text-3xl text-emerald-400">—</div>
+              <div id="income-stat-collected-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+            </div>
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Other</div>
+                <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
+                </div>
+              </div>
+              <div id="income-stat-other" class="font-serif text-2xl sm:text-3xl text-blue-300">—</div>
+              <div id="income-stat-other-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+            </div>
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Outstanding</div>
+                <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+              </div>
+              <div id="income-stat-outstanding" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
+              <div id="income-stat-outstanding-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+            </div>
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Total in</div>
+                <div class="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                </div>
+              </div>
+              <div id="income-stat-total" class="font-serif text-2xl sm:text-3xl text-white">—</div>
+              <div id="income-stat-total-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div class="view-toggle">
+              <button id="income-view-table-btn" class="active">Table</button>
+              <button id="income-view-chart-btn">Chart</button>
+            </div>
+            <select id="income-chart-range" class="bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white">
+              <option value="this-month" selected>This month</option>
+              <option value="last-month">Last month</option>
+              <option value="last-3">Last 3 months</option>
+              <option value="this-year">This year</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+
+          <div id="income-table-view">
+            <div id="income-list" class="mobile-cards"></div>
+          </div>
+
+          <div id="income-chart-view" class="hidden">
+            <div class="glass rounded-2xl mb-4 p-4 flex flex-wrap items-center gap-3">
+              <div class="text-xs text-slate-500">
+                Total: <span id="income-chart-total" class="text-white font-medium">$0.00</span>
+              </div>
+            </div>
+            <div class="glass rounded-2xl chart-shell">
+              <canvas id="income-chart"></canvas>
+            </div>
+            <div id="income-chart-legend" class="glass rounded-2xl mt-4 p-4 space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- EXPENSES SUB-VIEW -->
+        <div id="money-expenses-view">
+          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
+            <div>
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1">Spending</div>
+              <p class="text-sm text-slate-500">Paint, gas, supplies, tools, and anything else that leaves the account</p>
+            </div>
+            <button data-toggle="expense-form-wrap"
+              class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              New expense
+            </button>
+          </div>
+
+          <div id="expense-form-wrap" class="hidden mb-6">
+            <form id="expense-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Vendor *</label>
+                <input name="vendor" required placeholder="e.g. Sherwin-Williams" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Category</label>
+                <select name="category" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                  <option value="paint">Paint</option>
+                  <option value="gas">Gas</option>
+                  <option value="supplies">Supplies</option>
+                  <option value="tools">Tools</option>
+                  <option value="vehicle">Vehicle</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
+                <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
+                <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job (optional)</label>
+                <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Note</label>
+                <input name="note" placeholder="Optional" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div class="md:col-span-2 flex gap-3 pt-1">
+                <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add expense</button>
+                <button type="button" data-toggle="expense-form-wrap"
+                  class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div class="view-toggle">
+              <button id="view-table-btn" class="active">Table</button>
+              <button id="view-chart-btn">Chart</button>
+            </div>
+            <select id="chart-range" class="bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white">
+              <option value="this-month" selected>This month</option>
+              <option value="last-month">Last month</option>
+              <option value="last-3">Last 3 months</option>
+              <option value="this-year">This year</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+
+          <div id="expenses-table-view">
+            <div id="expenses-list" class="mobile-cards"></div>
+          </div>
+
+          <div id="expenses-chart-view" class="hidden">
+            <div class="glass rounded-2xl mb-4 p-4 flex flex-wrap items-center gap-3">
+              <div class="text-xs text-slate-500">
+                Total: <span id="chart-total" class="text-white font-medium">$0.00</span>
+              </div>
+            </div>
+            <div class="glass rounded-2xl chart-shell">
+              <canvas id="expense-chart"></canvas>
+            </div>
+            <div id="chart-legend" class="glass rounded-2xl mt-4 p-4 space-y-2"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VEHICLES -->
+      <section id="tab-vehicles" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Fleet</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Vehicles</h1>
+            <p class="text-sm text-slate-500 mt-3">Trucks and vans — track service dates and mileage</p>
+          </div>
+          <button data-toggle="vehicle-form-wrap"
+            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New vehicle
+          </button>
+        </div>
+
+        <div id="vehicle-form-wrap" class="hidden mb-6">
+          <form id="vehicle-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
+              <input name="name" placeholder="e.g. White Van" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Plate</label>
+              <input name="plate" placeholder="ABC-1234" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Odometer</label>
+              <input name="odometer" type="number" inputmode="numeric" placeholder="0" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Last service</label>
+              <input name="lastService" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Next service due</label>
+              <input name="nextServiceDue" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
+              <input name="notes" placeholder="Optional" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add vehicle</button>
+              <button type="button" data-toggle="vehicle-form-wrap"
+                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="vehicles-list" class="mobile-cards"></div>
+      </section>
+
       <!-- COMPANY AI -->
       <section id="tab-ai" class="tab-panel hidden fade-in">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
             <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Assistant</div>
             <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Company AI</h1>
-            <p class="text-sm text-slate-500 mt-3">Ask anything, generate a brief, then send it to your team</p>
+            <p class="text-sm text-slate-500 mt-3">Ask anything about your business, get a daily brief, or send it to your team</p>
           </div>
           <div class="flex flex-wrap items-center gap-2 page-actions">
             <button id="daily-brief-btn"
@@ -770,7 +1318,7 @@
                   </div>
                 </div>
                 <div class="font-serif text-2xl text-white mb-2">Ask me anything</div>
-                <div class="text-sm text-slate-500 max-w-sm mb-6">Click <strong class="text-slate-400">Daily Brief</strong> for a snapshot, or ask me a question.</div>
+                <div class="text-sm text-slate-500 max-w-sm mb-6">I can see all your jobs, expenses, invoices, and vehicles. Click <strong class="text-slate-400">Daily Brief</strong> for a snapshot, or ask me a question.</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
                   <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">What did we do today?</button>
                   <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Which jobs made the most profit this month?</button>
@@ -795,233 +1343,6 @@
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- JOBS -->
-      <section id="tab-jobs" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Work</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Jobs</h1>
-            <p class="text-sm text-slate-500 mt-3">Tap any job to see its invoices, expenses, and profit</p>
-          </div>
-          <button data-toggle="job-form-wrap"
-            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            New job          </button>
-        </div>
-
-        <div id="job-form-wrap" class="hidden mb-6">
-          <form id="job-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
-              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Address</label>
-              <input name="address" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
-              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
-              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
-                <option value="estimate">Estimate</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="in-progress">In progress</option>
-                <option value="complete">Complete</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Contract amount</label>
-              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
-              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add job</button>
-              <button type="button" data-toggle="job-form-wrap"
-                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
-            </div>
-          </form>
-        </div>
-
-        <div id="jobs-list" class="mobile-cards"></div>
-      </section>
-
-      <!-- EXPENSES -->
-      <section id="tab-expenses" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Spending</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Expenses</h1>
-            <p class="text-sm text-slate-500 mt-3">Paint, gas, supplies, tools</p>
-          </div>
-          <button data-toggle="expense-form-wrap"
-            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            New expense
-          </button>
-        </div>
-
-        <div id="expense-form-wrap" class="hidden mb-6">
-          <form id="expense-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Vendor *</label>
-              <input name="vendor" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Category</label>
-              <select name="category" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
-                <option value="paint">Paint</option>
-                <option value="gas">Gas</option>
-                <option value="supplies">Supplies</option>
-                <option value="tools">Tools</option>
-                <option value="vehicle">Vehicle</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
-              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
-              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job (leave blank for overhead)</label>
-              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Note</label>
-              <input name="note" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add expense</button>
-              <button type="button" data-toggle="expense-form-wrap"
-                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
-            </div>
-          </form>
-        </div>
-
-        <div id="expenses-list" class="mobile-cards"></div>
-      </section>
-
-      <!-- INVOICES -->
-      <section id="tab-invoices" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Money in</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Invoices</h1>
-            <p class="text-sm text-slate-500 mt-3">Attach to a job so profit rolls up</p>
-          </div>
-          <button data-toggle="invoice-form-wrap"
-            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            New invoice
-          </button>
-        </div>
-
-        <div id="invoice-form-wrap" class="hidden mb-6">
-          <form id="invoice-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
-              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
-              <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Sent date *</label>
-              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Due date</label>
-              <input name="dueDate" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job *</label>
-              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
-              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
-                <option value="sent">Sent</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
-              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add invoice</button>
-              <button type="button" data-toggle="invoice-form-wrap"
-                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
-            </div>
-          </form>
-        </div>
-
-        <div id="invoices-list" class="mobile-cards"></div>
-      </section>
-
-      <!-- VEHICLES -->
-      <section id="tab-vehicles" class="tab-panel hidden fade-in">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div>
-            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Fleet</div>
-            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Vehicles</h1>
-            <p class="text-sm text-slate-500 mt-3">Trucks and vans</p>
-          </div>
-          <button data-toggle="vehicle-form-wrap"
-            class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            New vehicle
-          </button>
-        </div>
-
-        <div id="vehicle-form-wrap" class="hidden mb-6">
-          <form id="vehicle-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
-              <input name="name" placeholder="e.g. White Van" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Plate</label>
-              <input name="plate" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Odometer</label>
-              <input name="odometer" type="number" inputmode="numeric" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Last service</label>
-              <input name="lastService" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Next service due</label>
-              <input name="nextServiceDue" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
-              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-            </div>
-            <div class="md:col-span-2 flex gap-3 pt-1">
-              <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add vehicle</button>
-              <button type="button" data-toggle="vehicle-form-wrap"
-                class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
-            </div>
-          </form>
-        </div>
-
-        <div id="vehicles-list" class="mobile-cards"></div>
       </section>
 
       <!-- SETTINGS -->
@@ -1051,15 +1372,15 @@
             <form id="team-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
-                <input name="name" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="name" required placeholder="e.g. Jane Smith" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Email</label>
-                <input name="email" type="email" inputmode="email" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="email" type="email" inputmode="email" placeholder="jane@example.com" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Phone</label>
-                <input name="phone" type="tel" inputmode="tel" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <input name="phone" type="tel" inputmode="tel" placeholder="555-123-4567" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Role</label>
@@ -1103,7 +1424,7 @@
           <div class="min-w-0">
             <div class="text-white font-medium leading-tight truncate">Joe Westlake LLC</div>
             <div class="text-[11px] text-slate-500 tracking-wide uppercase">Business Portal</div>
-            <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.3</div>
+            <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.6</div>
           </div>
         </div>
         <h2 class="font-serif text-3xl text-white tracking-tight mb-1" id="signin-title">Welcome back</h2>
@@ -1213,6 +1534,77 @@
   </div>
 </div>
 
+<!-- BANK IMPORT MODAL -->
+<div id="bank-modal" class="fixed inset-0 z-50 hidden modal-shell">
+  <div id="bank-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
+  <div class="relative modal-inner wide">
+    <div class="relative rounded-2xl ai-glow">
+      <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-6 sm:p-8 shadow-2xl shadow-black/60 max-h-[92vh] overflow-y-auto">
+        <button id="bank-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-2 rounded-lg hover:bg-white/5 transition z-10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <div class="mb-5">
+          <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Import</div>
+          <h2 class="font-serif text-3xl text-white tracking-tight">Bank statement</h2>
+          <p class="text-sm text-slate-500 mt-1">Upload a PDF or photo. AI pulls out every transaction, categorizes expenses, and matches deposits to unpaid invoices.</p>
+        </div>
+
+        <div id="bank-step-upload">
+          <label class="import-drop block" for="bank-file">
+            <input id="bank-file" type="file" accept="application/pdf,image/*" class="hidden" />
+            <svg class="w-10 h-10 text-slate-500 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.9A5 5 0 1115.9 6h.1a5 5 0 010 10H7z"/></svg>
+            <div class="text-sm text-white font-medium mb-1">Click to choose a file</div>
+            <div class="text-xs text-slate-500">PDF, PNG, or JPG · max 10MB</div>
+          </label>
+          <div id="bank-error" class="text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mt-4"></div>
+        </div>
+
+        <div id="bank-step-loading" class="hidden text-center py-12">
+          <div class="inline-block">
+            <svg class="w-8 h-8 spin text-amber-400 mb-4" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2"/><path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+          </div>
+          <div class="text-sm text-white font-medium">Reading your statement…</div>
+          <div class="text-xs text-slate-500 mt-1">This usually takes 10–30 seconds</div>
+        </div>
+
+        <div id="bank-step-review" class="hidden">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div class="text-sm text-white font-medium">Review before importing</div>
+            <div class="flex gap-2">
+              <button id="bank-select-all" class="text-xs text-slate-400 hover:text-white transition">Select all</button>
+              <span class="text-slate-600">·</span>
+              <button id="bank-select-none" class="text-xs text-slate-400 hover:text-white transition">Select none</button>
+            </div>
+          </div>
+
+          <div id="bank-debits-wrap" class="mb-5">
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">
+              Expenses · <span id="bank-debit-count">0</span>
+            </div>
+            <div id="bank-debit-rows" class="glass rounded-xl max-h-[35vh] overflow-y-auto"></div>
+          </div>
+
+          <div id="bank-deposits-wrap" class="mb-5">
+            <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-2">
+              Income · <span id="bank-deposit-count">0</span>
+            </div>
+            <div id="bank-deposit-rows" class="glass rounded-xl max-h-[35vh] overflow-y-auto"></div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
+            <button id="bank-import-btn"
+              class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 transition btn-touch">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              Import selected
+            </button>
+            <button id="bank-back-btn" class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Choose different file</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container" class="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 space-y-2 pointer-events-none"></div>
 
 <script type="module">
@@ -1277,7 +1669,7 @@ function lockScroll(lock) {
 }
 
 // CACHE
-let cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [] };
+let cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [], income: [] };
 function jobById(id) { return cache.jobs.find(j => j.id === id) || null; }
 function jobLabel(id) {
   const j = jobById(id);
@@ -1337,6 +1729,7 @@ document.addEventListener("keydown", (e) => {
     if (!document.getElementById("edit-modal").classList.contains("hidden")) closeEditModal();
     if (!document.getElementById("job-modal").classList.contains("hidden")) closeJobModal();
     if (!document.getElementById("send-modal").classList.contains("hidden")) closeSendModal();
+    if (!document.getElementById("bank-modal").classList.contains("hidden")) closeBankModal();
     closeMoreSheet();
   }
 });
@@ -1428,7 +1821,7 @@ function switchTab(tabName) {
     if (b.dataset.tab) {
       b.classList.toggle("active", b.dataset.tab === tabName);
     } else {
-      b.classList.toggle("active", ["expenses","invoices","vehicles","settings"].includes(tabName));
+      b.classList.toggle("active", ["money","invoices","vehicles","settings","calendar"].includes(tabName));
     }
   });
 
@@ -1439,6 +1832,10 @@ function switchTab(tabName) {
 
   if (tabName === "ai") setTimeout(() => document.getElementById("chat-input")?.focus(), 100);
   if (tabName === "calendar") setTimeout(() => initCalendar(), 60);
+  if (tabName === "money") {
+    if (moneySubTab === "income" && incomeView === "chart") setTimeout(renderIncomeChart, 60);
+    if (moneySubTab === "expenses" && expenseView === "chart") setTimeout(renderExpenseChart, 60);
+  }
 }
 
 tabs.forEach(t => t.onclick = () => switchTab(t.dataset.tab));
@@ -1464,16 +1861,27 @@ function closeMoreSheet() {
   lockScroll(false);
 }
 
-// FAB
+// FAB — does the right thing on each tab
 document.getElementById("mobile-fab").onclick = () => {
   const active = document.querySelector(".tab-panel:not(.hidden)");
   if (!active) return;
   const id = active.id;
   if (id === "tab-jobs") toggleForm("job-form-wrap");
-  else if (id === "tab-expenses") toggleForm("expense-form-wrap");
+  else if (id === "tab-money") {
+    if (moneySubTab === "income") {
+      // No direct "add income" form — open bank import instead
+      openBankModal();
+    } else {
+      toggleForm("expense-form-wrap");
+    }
+  }
   else if (id === "tab-invoices") toggleForm("invoice-form-wrap");
   else if (id === "tab-vehicles") toggleForm("vehicle-form-wrap");
   else if (id === "tab-settings") toggleForm("team-form-wrap");
+  else if (id === "tab-today") {
+    switchTab("jobs");
+    setTimeout(() => toggleForm("job-form-wrap"), 150);
+  }
   else {
     switchTab("jobs");
     setTimeout(() => toggleForm("job-form-wrap"), 150);
@@ -1507,12 +1915,32 @@ document.addEventListener("click", (e) => {
     switchTab(gotoBtn.dataset.gotoTab);
     return;
   }
+
+  const moneyBtn = e.target.closest("[data-money-view]");
+  if (moneyBtn) {
+    e.preventDefault();
+    setMoneySubTab(moneyBtn.dataset.moneyView);
+    return;
+  }
 });
 
 switchTab("today");
 
 document.getElementById("today-date").textContent =
   new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+// WELCOME BANNER
+document.getElementById("welcome-dismiss")?.addEventListener("click", () => {
+  localStorage.setItem("jw_welcome_dismissed", "1");
+  document.getElementById("welcome-banner")?.classList.add("hidden");
+});
+function maybeShowWelcome() {
+  const banner = document.getElementById("welcome-banner");
+  if (!banner) return;
+  const dismissed = localStorage.getItem("jw_welcome_dismissed") === "1";
+  const isEmpty = !cache.jobs.length && !cache.invoices.length && !cache.expenses.length;
+  banner.classList.toggle("hidden", dismissed || !isEmpty);
+}
 
 // TABLE HELPERS
 function emptyState(title, hint) {
@@ -1590,17 +2018,21 @@ function renderTable(headers, rows) {
 
 // LOADERS
 async function loadAll() {
-  await Promise.all([fetchJobs(), fetchExpenses(), fetchInvoices(), fetchVehicles(), fetchTeam()]);
+  await Promise.all([fetchJobs(), fetchExpenses(), fetchInvoices(), fetchVehicles(), fetchTeam(), fetchIncome()]);
   populateJobSelectors();
   renderJobs();
   renderExpenses();
   renderInvoices();
+  renderIncome();
   renderVehicles();
   renderTeam();
   updateStats();
   updatePnL();
   refreshCalendar();
   updateSendButton();
+  maybeShowWelcome();
+  if (moneySubTab === "income" && incomeView === "chart") renderIncomeChart();
+  if (moneySubTab === "expenses" && expenseView === "chart") renderExpenseChart();
 }
 
 async function fetchJobs() {
@@ -1622,6 +2054,14 @@ async function fetchVehicles() {
 async function fetchTeam() {
   const snap = await getDocs(query(collection(db, "team"), orderBy("name", "asc")));
   cache.team = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function fetchIncome() {
+  try {
+    const snap = await getDocs(query(collection(db, "income"), orderBy("date", "desc")));
+    cache.income = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    cache.income = [];
+  }
 }
 
 function populateJobSelectors() {
@@ -1687,7 +2127,7 @@ function renderJobs() {
 function renderExpenses() {
   const c = document.getElementById("expenses-list");
   c.innerHTML = "";
-  if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Tap the + button to log your first one.")); return; }
+  if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Tap the + button or import a bank statement.")); return; }
   const rows = cache.expenses.map(e => [fmtDate(e.date), e.vendor, e.category || "—", money(e.amount), jobLabel(e.jobId)]);
   const table = renderTable(["Date","Vendor","Category","Amount","Job"], rows);
   c.appendChild(table);
@@ -1700,6 +2140,84 @@ function renderExpenses() {
       await deleteDoc(doc(db, "expenses", e.id));
       toast("Deleted"); loadAll();
     }));
+  });
+}
+
+// RENDER — INCOME
+function getIncomeRows() {
+  const paidInvoices = cache.invoices.filter(i => i.status === "paid");
+  const invoiceRows = paidInvoices.map(i => ({
+    kind: "invoice",
+    id: i.id,
+    date: i.paidDate || i.date,
+    source: i.customer || "—",
+    type: "Invoice",
+    amount: Number(i.amount || 0),
+    linkedTo: jobLabel(i.jobId)
+  }));
+
+  const otherRows = (cache.income || []).map(r => ({
+    kind: "income",
+    id: r.id,
+    date: r.date,
+    source: r.source || "Deposit",
+    type: "Other income",
+    amount: Number(r.amount || 0),
+    linkedTo: r.note || "—"
+  }));
+
+  return [...invoiceRows, ...otherRows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+}
+
+function renderIncome() {
+  const paidThisMonth = cache.invoices.filter(i => i.status === "paid" && isInThisMonth(i.paidDate || i.date));
+  const otherThisMonth = (cache.income || []).filter(r => isInThisMonth(r.date));
+  const outstanding = cache.invoices.filter(i => i.status !== "paid");
+
+  const collected = paidThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const otherIncome = otherThisMonth.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalOutstanding = outstanding.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const totalIn = collected + otherIncome;
+
+  document.getElementById("income-stat-collected").textContent = money(collected);
+  document.getElementById("income-stat-collected-sub").textContent = `${paidThisMonth.length} invoice${paidThisMonth.length === 1 ? "" : "s"} paid this month`;
+  document.getElementById("income-stat-other").textContent = money(otherIncome);
+  document.getElementById("income-stat-other-sub").textContent = `${otherThisMonth.length} entr${otherThisMonth.length === 1 ? "y" : "ies"} this month`;
+  document.getElementById("income-stat-outstanding").textContent = money(totalOutstanding);
+  document.getElementById("income-stat-outstanding-sub").textContent = `${outstanding.length} invoice${outstanding.length === 1 ? "" : "s"} unpaid`;
+  document.getElementById("income-stat-total").textContent = money(totalIn);
+  document.getElementById("income-stat-total-sub").textContent = `Collected + other, this month`;
+
+  const c = document.getElementById("income-list");
+  c.innerHTML = "";
+  const rows = getIncomeRows();
+  if (!rows.length) {
+    c.appendChild(emptyState("No income yet", "Mark invoices paid or import a bank statement to see income here."));
+    return;
+  }
+
+  const table = renderTable(
+    ["Date", "Source", "Type", "Amount", "Linked to"],
+    rows.map(r => [fmtDate(r.date), r.source, r.type, money(r.amount), r.linkedTo])
+  );
+  c.appendChild(table);
+
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const r = rows[i];
+    const actions = tr.querySelector("[data-actions]");
+    if (r.kind === "invoice") {
+      actions.appendChild(iconButton(ICON_EYE, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "View invoice", () => {
+        const inv = cache.invoices.find(x => x.id === r.id);
+        if (inv) openEditModal("invoices", inv.id, inv);
+      }));
+    } else if (r.kind === "income") {
+      actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition", "Delete", async () => {
+        if (!confirm("Delete this income record?")) return;
+        await deleteDoc(doc(db, "income", r.id));
+        toast("Deleted");
+        await loadAll();
+      }));
+    }
   });
 }
 
@@ -1877,33 +2395,41 @@ function refreshCalendar() {
   getCalendarEvents().forEach(ev => calInstance.addEvent(ev));
 }
 
-// MONTHLY P&L
+// MONEY OVERVIEW (Today page)
 function updatePnL() {
   const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
   const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
-  const collectedThisMonth = cache.invoices.filter(i => i.status === "paid" && (isInThisMonth(i.paidDate) || (!i.paidDate && isInThisMonth(i.date))));
+  const paidThisMonth = cache.invoices.filter(i => i.status === "paid" && (isInThisMonth(i.paidDate) || (!i.paidDate && isInThisMonth(i.date))));
+  const otherIncomeThisMonth = (cache.income || []).filter(r => isInThisMonth(r.date));
 
-  const invoiced = invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
-  const collected = collectedThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
-  const expenses = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const net = invoiced - expenses;
-  const margin = invoiced > 0 ? (net / invoiced) * 100 : 0;
+  const collectedInvoices = paidThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const otherIncome = otherIncomeThisMonth.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const moneyIn = collectedInvoices + otherIncome;
+  const moneyOut = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const netCash = moneyIn - moneyOut;
+  const billed = invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const unpaidList = cache.invoices.filter(i => i.status !== "paid");
+  const outstanding = unpaidList.reduce((s, i) => s + Number(i.amount || 0), 0);
 
   document.getElementById("pnl-month").textContent = monthLabel();
-  document.getElementById("pnl-invoiced").textContent = money(invoiced);
-  document.getElementById("pnl-invoiced-sub").textContent = `${invsThisMonth.length} invoice${invsThisMonth.length === 1 ? "" : "s"}`;
-  document.getElementById("pnl-collected").textContent = money(collected);
-  document.getElementById("pnl-collected-sub").textContent = `${collectedThisMonth.length} paid`;
-  document.getElementById("pnl-expenses").textContent = money(expenses);
-  document.getElementById("pnl-expenses-sub").textContent = `${expsThisMonth.length} entr${expsThisMonth.length === 1 ? "y" : "ies"}`;
-  document.getElementById("pnl-net").textContent = money(net);
-  document.getElementById("pnl-net").className = "font-serif text-2xl sm:text-3xl " + (net >= 0 ? "text-emerald-400" : "text-red-400");
-  document.getElementById("pnl-net-sub").textContent = invoiced > 0 ? `${margin.toFixed(1)}% margin` : "—";
 
-  const bar = document.getElementById("pnl-bar-fill");
-  const pct = invoiced > 0 ? Math.max(0, Math.min(100, (net / invoiced) * 100)) : 0;
-  bar.style.width = pct + "%";
-  bar.className = "h-full " + (net >= 0 ? "bg-gradient-to-r from-emerald-500 to-teal-400" : "bg-gradient-to-r from-red-500 to-rose-400");
+  document.getElementById("pnl-money-in").textContent = money(moneyIn);
+  document.getElementById("pnl-money-in-sub").textContent =
+    `${paidThisMonth.length} payment${paidThisMonth.length === 1 ? "" : "s"}` +
+    (otherIncomeThisMonth.length ? ` · ${otherIncomeThisMonth.length} deposit${otherIncomeThisMonth.length === 1 ? "" : "s"}` : "");
+
+  document.getElementById("pnl-money-out").textContent = money(moneyOut);
+  document.getElementById("pnl-money-out-sub").textContent =
+    `${expsThisMonth.length} expense${expsThisMonth.length === 1 ? "" : "s"}`;
+
+  document.getElementById("pnl-net").textContent = money(netCash);
+  document.getElementById("pnl-net").className = "font-serif text-2xl sm:text-3xl " + (netCash >= 0 ? "text-emerald-400" : "text-red-400");
+
+  document.getElementById("pnl-invoiced").textContent = money(billed);
+  document.getElementById("pnl-invoiced-sub").textContent = `${invsThisMonth.length} invoice${invsThisMonth.length === 1 ? "" : "s"} sent`;
+
+  document.getElementById("pnl-outstanding").textContent = money(outstanding);
+  document.getElementById("pnl-outstanding-sub").textContent = `${unpaidList.length} unpaid invoice${unpaidList.length === 1 ? "" : "s"}`;
 }
 
 // STATS
@@ -2072,15 +2598,26 @@ function renderJobModal() {
     btn.onclick = () => {
       const kind = btn.dataset.add;
       closeJobModal();
-      switchTab(kind === "invoice" ? "invoices" : "expenses");
-      setTimeout(() => {
-        const wrapId = kind === "invoice" ? "invoice-form-wrap" : "expense-form-wrap";
-        const wrap = document.getElementById(wrapId);
-        wrap.classList.remove("hidden");
-        const sel = wrap.querySelector("[data-job-select]");
-        if (sel) sel.value = j.id;
-        wrap.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 200);
+      if (kind === "invoice") {
+        switchTab("invoices");
+        setTimeout(() => {
+          const wrap = document.getElementById("invoice-form-wrap");
+          wrap.classList.remove("hidden");
+          const sel = wrap.querySelector("[data-job-select]");
+          if (sel) sel.value = j.id;
+          wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 200);
+      } else {
+        switchTab("money");
+        setMoneySubTab("expenses");
+        setTimeout(() => {
+          const wrap = document.getElementById("expense-form-wrap");
+          wrap.classList.remove("hidden");
+          const sel = wrap.querySelector("[data-job-select]");
+          if (sel) sel.value = j.id;
+          wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 200);
+      }
     };
   });
 }
@@ -2331,6 +2868,611 @@ wireForm("invoice-form", "invoices", loadAll, "Invoice");
 wireForm("vehicle-form", "vehicles", loadAll, "Vehicle");
 wireForm("team-form",    "team",     loadAll, "Team member");
 
+// ═════════════════════════════════════════════════════════════
+// MONEY TAB — SUB-TAB + VIEW TOGGLES
+// ═════════════════════════════════════════════════════════════
+let moneySubTab = "expenses";
+let expenseView = "table";
+let incomeView = "table";
+let expenseChart = null;
+let incomeChart = null;
+
+const CATEGORY_COLORS = {
+  paint:    "#f59e0b",
+  gas:      "#3b82f6",
+  supplies: "#8b5cf6",
+  tools:    "#10b981",
+  vehicle:  "#ef4444",
+  other:    "#64748b"
+};
+const INCOME_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#64748b"];
+
+function setMoneySubTab(tab) {
+  moneySubTab = tab;
+  document.getElementById("money-income-tab").classList.toggle("active", tab === "income");
+  document.getElementById("money-expenses-tab").classList.toggle("active", tab === "expenses");
+  document.getElementById("money-income-view").classList.toggle("hidden", tab !== "income");
+  document.getElementById("money-expenses-view").classList.toggle("hidden", tab !== "expenses");
+  if (tab === "income" && incomeView === "chart") renderIncomeChart();
+  if (tab === "expenses" && expenseView === "chart") renderExpenseChart();
+}
+
+const viewTableBtn = document.getElementById("view-table-btn");
+const viewChartBtn = document.getElementById("view-chart-btn");
+const tableWrap = document.getElementById("expenses-table-view");
+const chartWrap = document.getElementById("expenses-chart-view");
+const chartRange = document.getElementById("chart-range");
+
+function setExpenseView(view) {
+  expenseView = view;
+  viewTableBtn.classList.toggle("active", view === "table");
+  viewChartBtn.classList.toggle("active", view === "chart");
+  tableWrap.classList.toggle("hidden", view !== "table");
+  chartWrap.classList.toggle("hidden", view !== "chart");
+  if (view === "chart") renderExpenseChart();
+}
+viewTableBtn.onclick = () => setExpenseView("table");
+viewChartBtn.onclick = () => setExpenseView("chart");
+chartRange.onchange = renderExpenseChart;
+
+const incomeViewTableBtn = document.getElementById("income-view-table-btn");
+const incomeViewChartBtn = document.getElementById("income-view-chart-btn");
+const incomeTableWrap = document.getElementById("income-table-view");
+const incomeChartWrap = document.getElementById("income-chart-view");
+const incomeChartRange = document.getElementById("income-chart-range");
+
+function setIncomeView(view) {
+  incomeView = view;
+  incomeViewTableBtn.classList.toggle("active", view === "table");
+  incomeViewChartBtn.classList.toggle("active", view === "chart");
+  incomeTableWrap.classList.toggle("hidden", view !== "table");
+  incomeChartWrap.classList.toggle("hidden", view !== "chart");
+  if (view === "chart") renderIncomeChart();
+}
+incomeViewTableBtn.onclick = () => setIncomeView("table");
+incomeViewChartBtn.onclick = () => setIncomeView("chart");
+incomeChartRange.onchange = renderIncomeChart;
+
+function filterByRange(list, range, dateKey) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  return list.filter(r => {
+    const dateStr = r[dateKey];
+    if (!dateStr) return false;
+    const d = new Date(dateStr + "T00:00:00");
+    const ey = d.getFullYear();
+    const em = d.getMonth();
+    switch (range) {
+      case "this-month": return ey === y && em === m;
+      case "last-month": {
+        const lm = m === 0 ? 11 : m - 1;
+        const ly = m === 0 ? y - 1 : y;
+        return ey === ly && em === lm;
+      }
+      case "last-3": return d >= new Date(y, m - 2, 1);
+      case "this-year": return ey === y;
+      case "all": return true;
+      default: return true;
+    }
+  });
+}
+
+function renderExpenseChart() {
+  const range = chartRange.value;
+  const filtered = filterByRange(cache.expenses, range, "date");
+  const totals = {};
+  filtered.forEach(e => {
+    const cat = e.category || "other";
+    totals[cat] = (totals[cat] || 0) + Number(e.amount || 0);
+  });
+
+  const labels = Object.keys(totals);
+  const data = labels.map(l => totals[l]);
+  const colors = labels.map(l => CATEGORY_COLORS[l] || CATEGORY_COLORS.other);
+  const grandTotal = data.reduce((a, b) => a + b, 0);
+
+  document.getElementById("chart-total").textContent = money(grandTotal);
+
+  const legend = document.getElementById("chart-legend");
+  if (!labels.length) {
+    legend.innerHTML = `<div class="text-sm text-slate-500 text-center py-2">No expenses in this range.</div>`;
+  } else {
+    legend.innerHTML = labels.slice().sort((a, b) => totals[b] - totals[a]).map(cat => {
+      const pct = grandTotal > 0 ? ((totals[cat] / grandTotal) * 100).toFixed(1) : 0;
+      return `
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background:${CATEGORY_COLORS[cat] || CATEGORY_COLORS.other}"></span>
+            <span class="text-sm text-white capitalize truncate">${cat}</span>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-xs text-slate-500">${pct}%</span>
+            <span class="text-sm text-slate-200 font-medium">${money(totals[cat])}</span>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  const ctx = document.getElementById("expense-chart").getContext("2d");
+  if (expenseChart) expenseChart.destroy();
+  if (!labels.length) return;
+
+  expenseChart = new Chart(ctx, {
+    type: "doughnut",
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: "#0d0d10", borderWidth: 3, hoverOffset: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "62%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(13,13,16,0.95)", borderColor: "rgba(255,255,255,0.1)", borderWidth: 1,
+          padding: 12, titleColor: "#fff", bodyColor: "#e2e8f0",
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed;
+              const pct = grandTotal > 0 ? ((v / grandTotal) * 100).toFixed(1) : 0;
+              return ` ${money(v)} (${pct}%)`;
+            }
+          }
+        }
+      },
+      animation: { duration: 350, easing: "easeOutQuart" }
+    }
+  });
+}
+
+function renderIncomeChart() {
+  const range = incomeChartRange.value;
+  const rows = getIncomeRows();
+  const filtered = filterByRange(rows, range, "date");
+
+  const totals = {};
+  filtered.forEach(r => {
+    const key = r.source || "Other";
+    totals[key] = (totals[key] || 0) + Number(r.amount || 0);
+  });
+
+  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, 6);
+  const rest = sorted.slice(6).reduce((s, [, v]) => s + v, 0);
+  if (rest > 0) top.push(["Other", rest]);
+
+  const labels = top.map(([k]) => k);
+  const data = top.map(([, v]) => v);
+  const colors = labels.map((_, i) => INCOME_COLORS[i % INCOME_COLORS.length]);
+  const grandTotal = data.reduce((a, b) => a + b, 0);
+
+  document.getElementById("income-chart-total").textContent = money(grandTotal);
+
+  const legend = document.getElementById("income-chart-legend");
+  if (!labels.length) {
+    legend.innerHTML = `<div class="text-sm text-slate-500 text-center py-2">No income in this range.</div>`;
+  } else {
+    legend.innerHTML = labels.map((cat, i) => {
+      const pct = grandTotal > 0 ? ((data[i] / grandTotal) * 100).toFixed(1) : 0;
+      return `
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background:${colors[i]}"></span>
+            <span class="text-sm text-white truncate">${escapeHtml(cat)}</span>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-xs text-slate-500">${pct}%</span>
+            <span class="text-sm text-slate-200 font-medium">${money(data[i])}</span>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  const ctx = document.getElementById("income-chart").getContext("2d");
+  if (incomeChart) incomeChart.destroy();
+  if (!labels.length) return;
+
+  incomeChart = new Chart(ctx, {
+    type: "doughnut",
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: "#0d0d10", borderWidth: 3, hoverOffset: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "62%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(13,13,16,0.95)", borderColor: "rgba(255,255,255,0.1)", borderWidth: 1,
+          padding: 12, titleColor: "#fff", bodyColor: "#e2e8f0",
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed;
+              const pct = grandTotal > 0 ? ((v / grandTotal) * 100).toFixed(1) : 0;
+              return ` ${money(v)} (${pct}%)`;
+            }
+          }
+        }
+      },
+      animation: { duration: 350, easing: "easeOutQuart" }
+    }
+  });
+}
+
+// ═════════════════════════════════════════════════════════════
+// BANK IMPORT (debits → expenses · deposits → invoices or income)
+// ═════════════════════════════════════════════════════════════
+const bankModal = document.getElementById("bank-modal");
+const bankBackdrop = document.getElementById("bank-backdrop");
+const bankClose = document.getElementById("bank-close");
+const bankFile = document.getElementById("bank-file");
+const bankStepUpload = document.getElementById("bank-step-upload");
+const bankStepLoading = document.getElementById("bank-step-loading");
+const bankStepReview = document.getElementById("bank-step-review");
+const bankDebitRows = document.getElementById("bank-debit-rows");
+const bankDepositRows = document.getElementById("bank-deposit-rows");
+const bankDebitCount = document.getElementById("bank-debit-count");
+const bankDepositCount = document.getElementById("bank-deposit-count");
+const bankError = document.getElementById("bank-error");
+
+let parsedDebits = [];
+let parsedDeposits = [];
+
+function openBankModal() {
+  bankModal.classList.remove("hidden");
+  bankModal.classList.add("flex");
+  lockScroll(true);
+  resetBankModal();
+}
+function closeBankModal() {
+  bankModal.classList.add("hidden");
+  bankModal.classList.remove("flex");
+  lockScroll(false);
+  resetBankModal();
+}
+function resetBankModal() {
+  bankStepUpload.classList.remove("hidden");
+  bankStepLoading.classList.add("hidden");
+  bankStepReview.classList.add("hidden");
+  bankError.classList.add("hidden");
+  bankFile.value = "";
+  parsedDebits = [];
+  parsedDeposits = [];
+  bankDebitRows.innerHTML = "";
+  bankDepositRows.innerHTML = "";
+}
+bankBackdrop.onclick = closeBankModal;
+bankClose.onclick = closeBankModal;
+document.getElementById("import-bank-btn").onclick = openBankModal;
+document.getElementById("bank-back-btn").onclick = resetBankModal;
+
+bankFile.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showBankError("File is larger than 10MB. Please upload a smaller version.");
+    return;
+  }
+  await processBankFile(file);
+};
+
+async function processBankFile(file) {
+  bankError.classList.add("hidden");
+  bankStepUpload.classList.add("hidden");
+  bankStepReview.classList.add("hidden");
+  bankStepLoading.classList.remove("hidden");
+
+  try {
+    const base64 = await fileToBase64(file);
+    const mime = file.type || "application/pdf";
+
+    const prompt = `You are parsing a bank statement for a painting business owner (Joe Westlake Painting LLC).
+
+Extract EVERY transaction and classify each as either a DEBIT (money going out) or a DEPOSIT (money coming in).
+
+Return ONLY valid JSON. No markdown fences, no explanation, no preamble. Exactly this shape:
+{
+  "debits": [
+    { "date": "YYYY-MM-DD", "vendor": "Vendor name", "amount": 123.45, "category": "paint", "note": "" }
+  ],
+  "deposits": [
+    { "date": "YYYY-MM-DD", "memo": "Payer name or memo", "amount": 3000.00, "note": "" }
+  ]
+}
+
+For DEBITS:
+- category MUST be exactly one of: paint, gas, supplies, tools, vehicle, other.
+- Rules:
+  - Sherwin-Williams, Benjamin Moore, PPG, Behr, paint stores → paint
+  - Shell, Chevron, Exxon, Mobil, BP, 76, Arco, Sunoco, gas stations, fuel → gas
+  - Home Depot, Lowe's, Ace Hardware, Menards, hardware stores → supplies
+  - Auto repair, oil change, tires, mechanic, dealership, Carquest, AutoZone → vehicle
+  - Tool vendors, equipment rental → tools
+  - Anything unclear → other
+- Amounts must be positive.
+- Vendor name should be the merchant, cleaned up (e.g. "SHERWIN WILLIAMS #1234" → "Sherwin-Williams").
+
+For DEPOSITS:
+- memo should be the raw memo or payer name from the statement, cleaned up but recognizable.
+- Keep anything that looks like a person or company name.
+- Skip internal transfers between the same account holder's accounts.
+- Amounts must be positive.
+
+Rules for both:
+- Dates must be YYYY-MM-DD format.
+- If more than 200 of either type, include the first 200.
+- If you cannot read the statement clearly, return { "debits": [], "deposits": [] }.`;
+
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: mime, data: base64 } }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      showBankError("AI error: " + (data.error.message || "unknown"));
+      bankStepLoading.classList.add("hidden");
+      bankStepUpload.classList.remove("hidden");
+      return;
+    }
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const cleaned = raw.replace(/```json\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (err) {
+      console.error("Bad JSON from AI:", raw);
+      showBankError("Couldn't parse the AI response. Try a clearer statement or a different page.");
+      bankStepLoading.classList.add("hidden");
+      bankStepUpload.classList.remove("hidden");
+      return;
+    }
+
+    parsedDebits = (parsed.debits || []).map((t, i) => ({
+      id: "debit-" + i,
+      include: true,
+      date: t.date || todayISO(),
+      vendor: t.vendor || "Unknown",
+      amount: Number(t.amount) || 0,
+      category: ["paint","gas","supplies","tools","vehicle","other"].includes(t.category) ? t.category : "other",
+      note: t.note || ""
+    }));
+
+    parsedDeposits = (parsed.deposits || []).map((t, i) => {
+      const amt = Number(t.amount) || 0;
+      const memo = t.memo || "";
+      const suggestedInvoiceId = suggestInvoiceForDeposit(amt, memo);
+      return {
+        id: "deposit-" + i,
+        include: true,
+        date: t.date || todayISO(),
+        source: memo || "Deposit",
+        amount: amt,
+        note: t.note || "",
+        suggestedInvoiceId: suggestedInvoiceId || ""
+      };
+    });
+
+    bankStepLoading.classList.add("hidden");
+
+    if (!parsedDebits.length && !parsedDeposits.length) {
+      showBankError("No transactions found. Try a clearer statement or a different page.");
+      bankStepUpload.classList.remove("hidden");
+      return;
+    }
+
+    renderBankReview();
+    bankStepReview.classList.remove("hidden");
+  } catch (err) {
+    console.error(err);
+    showBankError("Error: " + err.message);
+    bankStepLoading.classList.add("hidden");
+    bankStepUpload.classList.remove("hidden");
+  }
+}
+
+function suggestInvoiceForDeposit(amount, memo) {
+  const unpaid = cache.invoices.filter(i => i.status !== "paid");
+  if (!unpaid.length) return null;
+
+  const memoUpper = String(memo || "").toUpperCase();
+  if (memoUpper) {
+    for (const inv of unpaid) {
+      const sameAmt = Math.abs(Number(inv.amount || 0) - amount) < 0.01;
+      const cust = String(inv.customer || "").toUpperCase();
+      const firstWord = cust.split(/\s+/)[0];
+      if (sameAmt && firstWord && memoUpper.includes(firstWord)) return inv.id;
+    }
+  }
+  for (const inv of unpaid) {
+    if (Math.abs(Number(inv.amount || 0) - amount) < 0.01) return inv.id;
+  }
+  return null;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showBankError(msg) {
+  bankError.textContent = msg;
+  bankError.classList.remove("hidden");
+}
+
+function renderBankReview() {
+  bankDebitCount.textContent = parsedDebits.length;
+  bankDepositCount.textContent = parsedDeposits.length;
+
+  bankDebitRows.innerHTML = "";
+  if (!parsedDebits.length) {
+    bankDebitRows.innerHTML = `<div class="p-4 text-sm text-slate-500 text-center">No expenses found.</div>`;
+  } else {
+    parsedDebits.forEach((t, i) => {
+      const row = document.createElement("div");
+      row.className = "import-row";
+      row.innerHTML = `
+        <input type="checkbox" ${t.include ? "checked" : ""} data-list="debits" data-idx="${i}" data-field="include" />
+        <input type="date" value="${t.date}" data-list="debits" data-idx="${i}" data-field="date" />
+        <input type="text" value="${escapeHtml(t.vendor)}" data-list="debits" data-idx="${i}" data-field="vendor" />
+        <input type="number" step="0.01" value="${t.amount}" data-list="debits" data-idx="${i}" data-field="amount" />
+        <select data-list="debits" data-idx="${i}" data-field="category">
+          ${["paint","gas","supplies","tools","vehicle","other"].map(c =>
+            `<option value="${c}" ${t.category === c ? "selected" : ""}>${c}</option>`
+          ).join("")}
+        </select>
+      `;
+      bankDebitRows.appendChild(row);
+    });
+  }
+
+  bankDepositRows.innerHTML = "";
+  if (!parsedDeposits.length) {
+    bankDepositRows.innerHTML = `<div class="p-4 text-sm text-slate-500 text-center">No deposits found.</div>`;
+  } else {
+    const unpaid = cache.invoices.filter(i => i.status !== "paid");
+    parsedDeposits.forEach((t, i) => {
+      const row = document.createElement("div");
+      row.className = "deposit-row";
+      const matchOptions = unpaid.map(inv =>
+        `<option value="${inv.id}" ${t.suggestedInvoiceId === inv.id ? "selected" : ""}>${escapeHtml(inv.customer)} — ${money(inv.amount)} (${fmtDate(inv.date)})</option>`
+      ).join("");
+
+      const matchedInv = t.suggestedInvoiceId ? cache.invoices.find(x => x.id === t.suggestedInvoiceId) : null;
+      const badge = matchedInv
+        ? `<span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-0.5 whitespace-nowrap">→ ${escapeHtml(matchedInv.customer)}</span>`
+        : "";
+
+      row.innerHTML = `
+        <input type="checkbox" ${t.include ? "checked" : ""} data-list="deposits" data-idx="${i}" data-field="include" />
+        <input type="date" value="${t.date}" data-list="deposits" data-idx="${i}" data-field="date" />
+        <input type="text" value="${escapeHtml(t.source)}" data-list="deposits" data-idx="${i}" data-field="source" />
+        <input type="number" step="0.01" value="${t.amount}" data-list="deposits" data-idx="${i}" data-field="amount" />
+        <div class="flex items-center gap-2 min-w-0">
+          <select data-list="deposits" data-idx="${i}" data-field="suggestedInvoiceId" class="flex-1 min-w-0">
+            <option value="" ${!t.suggestedInvoiceId ? "selected" : ""}>Other income (no match)</option>
+            ${matchOptions}
+          </select>
+          ${badge}
+        </div>
+      `;
+      bankDepositRows.appendChild(row);
+    });
+  }
+
+  bankDebitRows.querySelectorAll("input, select").forEach(input => {
+    input.addEventListener("change", (e) => {
+      const idx = Number(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      if (field === "include") parsedDebits[idx].include = e.target.checked;
+      else if (field === "amount") parsedDebits[idx].amount = Number(e.target.value);
+      else parsedDebits[idx][field] = e.target.value;
+    });
+  });
+  bankDepositRows.querySelectorAll("input, select").forEach(input => {
+    input.addEventListener("change", (e) => {
+      const idx = Number(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      if (field === "include") parsedDeposits[idx].include = e.target.checked;
+      else if (field === "amount") parsedDeposits[idx].amount = Number(e.target.value);
+      else if (field === "suggestedInvoiceId") {
+        parsedDeposits[idx].suggestedInvoiceId = e.target.value;
+        renderBankReview();
+      }
+      else parsedDeposits[idx][field] = e.target.value;
+    });
+  });
+}
+
+document.getElementById("bank-select-all").onclick = () => {
+  parsedDebits.forEach(t => t.include = true);
+  parsedDeposits.forEach(t => t.include = true);
+  renderBankReview();
+};
+document.getElementById("bank-select-none").onclick = () => {
+  parsedDebits.forEach(t => t.include = false);
+  parsedDeposits.forEach(t => t.include = false);
+  renderBankReview();
+};
+
+document.getElementById("bank-import-btn").onclick = async () => {
+  const debitsToImport = parsedDebits.filter(t => t.include && t.vendor && t.amount > 0);
+  const depositsToImport = parsedDeposits.filter(t => t.include && t.amount > 0);
+
+  if (!debitsToImport.length && !depositsToImport.length) {
+    showBankError("Nothing selected to import.");
+    return;
+  }
+
+  const btn = document.getElementById("bank-import-btn");
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="w-4 h-4 spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2"/><path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg><span>Importing…</span>`;
+
+  try {
+    let expenseCount = 0;
+    let paidCount = 0;
+    let incomeCount = 0;
+    const usedInvoices = new Set();
+
+    for (const t of debitsToImport) {
+      await addDoc(collection(db, "expenses"), {
+        vendor: t.vendor,
+        category: t.category,
+        amount: t.amount,
+        date: t.date,
+        note: t.note || "",
+        createdAt: serverTimestamp()
+      });
+      expenseCount++;
+    }
+
+    for (const d of depositsToImport) {
+      if (d.suggestedInvoiceId && !usedInvoices.has(d.suggestedInvoiceId)) {
+        await updateDoc(doc(db, "invoices", d.suggestedInvoiceId), {
+          status: "paid",
+          paidDate: d.date
+        });
+        usedInvoices.add(d.suggestedInvoiceId);
+        paidCount++;
+      } else {
+        await addDoc(collection(db, "income"), {
+          date: d.date,
+          source: d.source,
+          amount: d.amount,
+          note: d.note || "",
+          createdAt: serverTimestamp()
+        });
+        incomeCount++;
+      }
+    }
+
+    const parts = [];
+    if (expenseCount) parts.push(`${expenseCount} expense${expenseCount === 1 ? "" : "s"}`);
+    if (paidCount) parts.push(`${paidCount} invoice${paidCount === 1 ? "" : "s"} paid`);
+    if (incomeCount) parts.push(`${incomeCount} income entr${incomeCount === 1 ? "y" : "ies"}`);
+
+    toast(`Imported ${parts.join(" · ")}`);
+    closeBankModal();
+    await loadAll();
+  } catch (err) {
+    console.error(err);
+    showBankError("Import failed: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+};
+
 // AI — DAILY BRIEF
 async function generateDailyBrief() {
   const btn = document.getElementById("daily-brief-btn");
@@ -2461,12 +3603,13 @@ async function fetchCompanySnapshot() {
   const expenses = cache.expenses.slice(0, 200).map(e => ({ date: e.date, vendor: e.vendor, category: e.category, amount: e.amount, job: jobLabel(e.jobId), note: e.note }));
   const invoices = cache.invoices.slice(0, 200).map(i => ({ date: i.date, customer: i.customer, amount: i.amount, dueDate: i.dueDate, status: i.status, paidDate: i.paidDate, job: jobLabel(i.jobId) }));
   const vehicles = cache.vehicles.slice(0, 50).map(v => ({ name: v.name, plate: v.plate, odometer: v.odometer, lastService: v.lastService, nextServiceDue: v.nextServiceDue }));
+  const income = (cache.income || []).slice(0, 100).map(r => ({ date: r.date, source: r.source, amount: r.amount }));
   const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
   const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
   return {
     today: todayISO(), month: monthLabel(),
     monthly: { invoiced: invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0), expenses: expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0) },
-    jobs, expenses, invoices, vehicles
+    jobs, expenses, invoices, vehicles, income
   };
 }
 
@@ -2491,6 +3634,7 @@ Rules:
 - Be concise. Use short paragraphs or simple lists when helpful.
 - Currency is USD. Today's date is ${snapshot.today}.
 - Jobs include invoiced, expenses, and profit totals — use these for profitability questions.
+- The "income" list is non-invoice income (bank deposits that didn't match an invoice).
 - When referring to money or jobs, cite the specific figures from the data.
 
 Company data snapshot (JSON):
