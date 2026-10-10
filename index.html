@@ -939,10 +939,9 @@ const db  = getFirestore(app);
 const auth = getAuth(app);
 
 // ─────────────────────────────────────────────────────────────
-// GEMINI
+// AI PROXY — Worker holds the key. Client never sees it.
 // ─────────────────────────────────────────────────────────────
-const GEMINI_KEY = "AQ.Ab8RN6JGLbk8ManD4LRD_Q3caYppQO6wMqQvwD_NJPl6p4dhkQ";
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
@@ -1961,7 +1960,7 @@ wireForm("vehicle-form", "vehicles", loadAll, "Vehicle");
 wireForm("team-form",    "team",     loadAll, "Team member");
 
 // ─────────────────────────────────────────────────────────────
-// AI — DAILY BRIEF (now on the AI tab)
+// AI — DAILY BRIEF (calls Worker proxy, no key in browser)
 // ─────────────────────────────────────────────────────────────
 async function generateDailyBrief() {
   const btn = document.getElementById("daily-brief-btn");
@@ -2001,9 +2000,10 @@ Write a short daily brief (4-6 lines max) covering:
 
 Be specific with numbers. If a section has no data, say so briefly. No markdown, no bullet symbols, just clean sentences.`;
 
-    const res = await fetch(GEMINI_URL, {
+    // ── Worker proxy (key lives on Cloudflare, not here) ──
+    const res = await fetch(WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const data = await res.json();
@@ -2011,7 +2011,8 @@ Be specific with numbers. If a section has no data, say so briefly. No markdown,
     if (text) {
       addMessage("model", text);
     } else {
-      toast("No response from Gemini. Check the console.", "error");
+      toast("Gemini: " + (data?.error?.message || "unknown error"), "error");
+     console.error("Gemini response:", JSON.stringify(data, null, 2));
     }
   } catch (err) {
     console.error(err);
@@ -2130,14 +2131,15 @@ ${JSON.stringify(snapshot)}`;
       { role: "user", parts: [{ text: text }] }
     ];
 
-    const res = await fetch(GEMINI_URL, {
+    // ── Worker proxy (key lives on Cloudflare, not here) ──
+    const res = await fetch(WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents })
     });
     const data = await res.json();
     removeTypingIndicator();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response. Check the console for details.";
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text   || (data?.error?.message ? "Gemini error: " + data.error.message : "I couldn't generate a response. Check the console.");
     addMessage("model", reply);
   } catch (err) {
     console.error(err);
