@@ -1,249 +1,2153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Joe Westlake LLC | Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Mono&display=swap');
-        :root { --border: rgba(255, 255, 255, 0.1); }
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; margin: 0; display: flex; min-height: 100vh; overflow-x: hidden; }
-
-        /* Sidebar */
-        .sidebar { width: 280px; background: #050505; border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; left: 0; top: 0; bottom: 0; z-index: 1000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .nav-link { display: flex; align-items: center; padding: 14px 28px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.65rem; cursor: pointer; transition: 0.2s; }
-        .nav-link.active { color: #fff; background: rgba(255,255,255,0.05); border-left: 4px solid #fff; }
-        
-        #menu-btn { display: none; position: fixed; top: 20px; right: 20px; z-index: 2000; background: #fff; color: #000; width: 50px; height: 50px; align-items: center; justify-content: center; font-size: 1.4rem; cursor: pointer; border-radius: 4px; }
-        #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; backdrop-filter: blur(4px); }
-
-        @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); width: 85%; max-width: 320px; }
-            .sidebar.open { transform: translateX(0); }
-            #menu-btn { display: flex; }
-            #overlay.show { display: block; }
-            .main-content { margin-left: 0 !important; padding: 1rem !important; padding-top: 90px !important; }
-            .header-title { font-size: 3.5rem !important; }
-
-            table, thead, tbody, th, td, tr { display: block; width: 100%; }
-            thead tr { position: absolute; top: -9999px; left: -9999px; } 
-            tr { border: 1px solid var(--border); margin-bottom: 1rem; background: #080808; padding: 10px; }
-            td { border: none; position: relative; padding-left: 50% !important; text-align: right !important; padding-top: 12px !important; padding-bottom: 12px !important; border-bottom: 1px solid rgba(255,255,255,0.03); }
-            td:last-child { border-bottom: 0; text-align: center !important; padding-left: 0 !important; }
-            td::before { content: attr(data-label); position: absolute; left: 15px; width: 45%; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 10px; color: #555; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Joe Westlake LLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          serif: ['Instrument Serif', 'Georgia', 'serif']
         }
+      }
+    }
+  }
+</script>
+<style>
+  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html, body { font-family: 'Inter', system-ui, sans-serif; background: #08080a; }
+  body { color: #e2e8f0; min-height: 100vh; position: relative; overflow-x: hidden; }
 
-        .main-content { margin-left: 280px; flex-grow: 1; padding: 3rem; width: 100%; max-width: 1400px; }
-        .stat-card { padding: 1.5rem; border: 1px solid var(--border); background: #080808; }
-        .btn-primary { background: #fff; color: #000; font-weight: 900; text-transform: uppercase; font-size: 0.75rem; padding: 16px 32px; border: none; cursor: pointer; }
-        
-        input, select, textarea { background: #0f0f0f !important; border: 1px solid var(--border) !important; color: white !important; padding: 14px !important; font-size: 0.85rem !important; width: 100%; outline: none; }
-        label { display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #555; margin-bottom: 8px; }
-        .mono { font-family: 'Space Mono', monospace; }
-        .hidden { display: none !important; }
-    </style>
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 20% -10%, rgba(251, 146, 60, 0.10), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 110%, rgba(139, 92, 246, 0.08), transparent 60%),
+      radial-gradient(ellipse 50% 30% at 50% 50%, rgba(59, 130, 246, 0.03), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.025; pointer-events: none; z-index: 1;
+  }
+  body > * { position: relative; z-index: 2; }
+
+  .nav-item { position: relative; }
+  .nav-item .nav-indicator {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 2px; height: 0; border-radius: 9999px;
+    background: linear-gradient(180deg, #fbbf24, #f97316);
+    transition: height .25s ease;
+  }
+  .nav-item.active .nav-indicator { height: 60%; }
+  .nav-item.active { color: #fff; background: rgba(255,255,255,0.04); }
+  .nav-item.active .nav-icon { color: #fbbf24; }
+
+  .fade-in { animation: fadeIn .35s cubic-bezier(.4,0,.2,1); }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+  .toast { animation: toastIn .3s cubic-bezier(.4,0,.2,1); }
+  @keyframes toastIn { from { opacity:0; transform: translateY(12px) scale(.96);} to {opacity:1; transform:none;} }
+
+  .modal-in { animation: modalIn .25s cubic-bezier(.4,0,.2,1); }
+  @keyframes modalIn { from { opacity:0; transform: translateY(8px) scale(.98);} to {opacity:1; transform:none;} }
+  .modal-backdrop-in { animation: backdropIn .2s ease-out; }
+  @keyframes backdropIn { from { opacity:0;} to {opacity:1;} }
+
+  .glass {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-hover { transition: border-color .2s, background .2s, transform .2s; }
+  .glass-hover:hover {
+    border-color: rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.035);
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 8px; border: 2px solid #08080a; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  input, select, textarea { color-scheme: dark; }
+  input:focus, select:focus, textarea:focus { outline: none; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+  button:active:not(:disabled) { transform: scale(0.98); }
+  button { transition: all .15s ease; }
+
+  ::selection { background: rgba(251, 146, 60, 0.3); color: white; }
+
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-glow::before {
+    content: '';
+    position: absolute; inset: -1px; border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,146,60,0.4), rgba(139,92,246,0.3), rgba(59,130,246,0.15));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .brand-glow { box-shadow: 0 0 24px -4px rgba(251, 146, 60, 0.5); }
+  .profit-glow { box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.15), 0 0 40px -12px rgba(16, 185, 129, 0.35); }
+
+  .msg-in { animation: msgIn .3s cubic-bezier(.4,0,.2,1); }
+  @keyframes msgIn { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .row-clickable { cursor: pointer; }
+  .row-clickable:hover { background: rgba(255,255,255,0.03); }
+
+  .fc {
+    --fc-border-color: rgba(255,255,255,0.06);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: rgba(255,255,255,0.02);
+    --fc-today-bg-color: rgba(251,146,60,0.06);
+    --fc-list-event-hover-bg-color: rgba(255,255,255,0.03);
+    --fc-highlight-color: rgba(251,146,60,0.08);
+    --fc-non-business-color: rgba(255,255,255,0.02);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #e2e8f0;
+  }
+  .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(255,255,255,0.06); }
+  .fc-theme-standard .fc-scrollgrid { border-color: rgba(255,255,255,0.06); }
+  .fc .fc-col-header-cell-cushion {
+    color: #94a3b8; padding: 10px 8px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em;
+  }
+  .fc .fc-daygrid-day-number { color: #94a3b8; padding: 6px 8px; font-size: 12px; font-weight: 500; }
+  .fc .fc-day-today .fc-daygrid-day-number { color: #fbbf24; font-weight: 700; }
+  .fc .fc-daygrid-day.fc-day-other { opacity: 0.3; }
+  .fc .fc-daygrid-day-events { padding: 2px 4px; }
+  .fc .fc-daygrid-event {
+    border-radius: 5px; padding: 2px 6px; font-size: 11px; font-weight: 500;
+    border: 1px solid transparent; margin-top: 2px; cursor: pointer;
+  }
+  .fc .fc-daygrid-event:hover { filter: brightness(1.15); }
+  .fc .fc-daygrid-more-link { color: #94a3b8; font-size: 11px; padding: 2px 6px; }
+  .fc .fc-daygrid-more-link:hover { color: #fbbf24; }
+  .fc .fc-popover {
+    background: #0d0d10; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  }
+  .fc .fc-popover-header {
+    background: rgba(255,255,255,0.03); color: #e2e8f0;
+    padding: 8px 12px; font-size: 12px; font-weight: 600;
+  }
+  .fc .fc-popover-close { color: #94a3b8; }
+  .fc .fc-popover-body { padding: 6px; }
+  .fc .fc-list { border-color: rgba(255,255,255,0.06); }
+  .fc .fc-list-day-cushion { background: rgba(255,255,255,0.03); color: #cbd5e1; padding: 10px 16px; }
+  .fc .fc-list-day-text, .fc .fc-list-day-side-text {
+    color: #cbd5e1; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .fc .fc-list-event td { border-color: rgba(255,255,255,0.06); }
+  .fc .fc-list-event:hover td { background: rgba(255,255,255,0.03); }
+  .fc .fc-list-event-title a { color: #e2e8f0; font-weight: 500; }
+  .fc .fc-list-event-time { color: #94a3b8; font-size: 12px; }
+  .fc .fc-list-event-dot { border-width: 5px; }
+  .fc .fc-list-empty { background: transparent; color: #64748b; padding: 40px 0; }
+  .fc .fc-list-empty-cushion { color: #64748b; }
+  .fc .fc-timegrid-slot-label-cushion { color: #64748b; font-size: 11px; }
+  .fc .fc-timegrid-axis { color: #64748b; }
+
+  .cal-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 36px; min-width: 36px; padding: 0 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #cbd5e1; font-size: 13px; font-weight: 500;
+    transition: all .15s ease;
+  }
+  .cal-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); color: #fff; }
+  .cal-btn.active { background: rgba(251,146,60,0.15); border-color: rgba(251,146,60,0.3); color: #fbbf24; }
+  .cal-filter {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 9999px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #94a3b8; font-size: 12px; font-weight: 500;
+    transition: all .15s ease;
+  }
+  .cal-filter:hover { color: #cbd5e1; }
+  .cal-filter.active { color: #e2e8f0; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+  .cal-dot { width: 8px; height: 8px; border-radius: 9999px; display: inline-block; }
+  .cal-dot.jobs     { background: #3b82f6; }
+  .cal-dot.invoices { background: #ef4444; }
+  .cal-dot.service  { background: #8b5cf6; }
+</style>
 </head>
-<body>
+<body class="font-sans">
 
-    <div id="menu-btn" onclick="toggleMenu()"><i class="fas fa-bars" id="m-icon"></i></div>
-    <div id="overlay" onclick="toggleMenu()"></div>
+<div class="flex min-h-screen">
 
-    <nav class="sidebar" id="sidebar">
-        <div class="brand-area p-10">
-            <h1 class="text-2xl font-black tracking-tighter uppercase leading-none">Joe Westlake LLC</h1>
-            <p class="text-[10px] text-gray-500 mt-2 font-bold tracking-[0.3em]">Business Management System</p>
+  <!-- SIDEBAR -->
+  <aside class="hidden lg:flex flex-col w-64 fixed inset-y-0 border-r border-white/[0.06] bg-black/40 backdrop-blur-xl">
+    <div class="px-5 py-5 border-b border-white/[0.06]">
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 blur-md opacity-40"></div>
+          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black text-sm font-bold brand-glow">JW</div>
         </div>
-        <div class="flex flex-col flex-grow overflow-y-auto">
-            <div onclick="setPage('DASHBOARD')" id="nav-DASHBOARD" class="nav-link active"><i class="fas fa-grid-2 mr-4"></i><span>Overview</span></div>
-            <div onclick="setPage('CUSTOMERS')" id="nav-CUSTOMERS" class="nav-link"><i class="fas fa-user-tie mr-4"></i><span>Clients</span></div>
-            <div onclick="setPage('JOBS')" id="nav-JOBS" class="nav-link"><i class="fas fa-paint-roller mr-4"></i><span>Active Jobs</span></div>
-            <div onclick="setPage('INVOICES')" id="nav-INVOICES" class="nav-link"><i class="fas fa-file-invoice-dollar mr-4"></i><span>Invoices</span></div>
-            <div onclick="setPage('INCOME')" id="nav-INCOME" class="nav-link"><i class="fas fa-arrow-up mr-4"></i><span>Income</span></div>
-            <div onclick="setPage('EXPENSES')" id="nav-EXPENSES" class="nav-link"><i class="fas fa-arrow-down mr-4"></i><span>Expenses</span></div>
-            <div onclick="setPage('ARCHIVE')" id="nav-ARCHIVE" class="nav-link"><i class="fas fa-archive mr-4"></i><span>Archive</span></div>
+        <div>
+          <div class="text-white font-medium leading-tight tracking-tight">Joe Westlake</div>
+          <div class="text-[11px] text-slate-500 tracking-wide uppercase">Painting LLC</div>
         </div>
-    </nav>
-
-    <main class="main-content">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
-            <div>
-                <h2 id="page-title" class="header-title text-7xl md:text-8xl font-black tracking-tighter uppercase leading-[0.85]">Overview</h2>
-                <div class="mt-6 flex items-center bg-[#080808] border border-white/10 px-5 py-3 w-full max-w-md">
-                    <input type="text" id="search" placeholder="FILTER..." class="!bg-transparent !border-none !p-0 !text-xs !font-bold !tracking-widest uppercase">
-                </div>
-            </div>
-            <button class="btn-primary w-full md:w-auto" onclick="openModal()">+ Add Entry</button>
-        </header>
-
-        <div id="stats-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-            <div class="stat-card"><label>Revenue</label><h3 id="stat-rev" class="text-3xl font-black mono text-green-500">$0.00</h3></div>
-            <div class="stat-card"><label>Outflow</label><h3 id="stat-exp" class="text-3xl font-black mono text-red-500">$0.00</h3></div>
-            <div class="stat-card"><label>Net</label><h3 id="stat-net" class="text-3xl font-black mono">$0.00</h3></div>
-        </div>
-
-        <div id="table-container" class="md:border border-white/10 bg-transparent md:bg-[#050505]">
-            <table class="w-full text-left">
-                <thead id="table-head" class="bg-white/5 border-b border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500"></thead>
-                <tbody id="table-body" class="text-xs"></tbody>
-            </table>
-        </div>
-    </main>
-
-    <div id="modal" class="fixed inset-0 bg-black/95 z-[5000] hidden flex items-center justify-center p-4">
-        <div class="border border-white/20 w-full max-w-xl p-6 md:p-10 bg-[#0a0a0a] max-h-[90vh] overflow-y-auto">
-            <h3 id="m-title" class="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-8">New Entry</h3>
-            <form id="entry-form" class="space-y-4 md:space-y-6">
-                <input type="hidden" id="entry-id">
-                <div><label id="label-desc">Description</label><input type="text" id="f-desc" required></div>
-                <div id="fields-contact" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label>Phone</label><input type="text" id="f-phone"></div>
-                    <div><label>Email</label><input type="email" id="f-email"></div>
-                </div>
-                <div id="fields-address" class="hidden"><label>Address</label><input type="text" id="f-address"></div>
-                
-                <div id="fields-financial" class="grid grid-cols-2 gap-4">
-                    <div><label>Amount ($)</label><input type="number" step="0.01" id="f-amt"></div>
-                    <div>
-                        <label>Status</label>
-                        <select id="f-cat">
-                            <option value="PENDING">Pending</option>
-                            <option value="PAID">Paid</option>
-                            <option value="INVOICED">Invoiced</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 bg-white/5 p-4 border border-white/10">
-                    <input type="checkbox" id="f-archived" class="!w-5 !h-5">
-                    <label class="!mb-0" for="f-archived">Archive this entry</label>
-                </div>
-                <div class="flex flex-col gap-4 pt-4">
-                    <button type="submit" class="btn-primary">Save</button>
-                    <button type="button" onclick="closeModal()" class="border border-white/10 py-4 uppercase text-[10px] font-black">Cancel</button>
-                </div>
-            </form>
-        </div>
+      </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
+      <button data-tab="today" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg>
+        Today
+      </button>
+      <button data-tab="calendar" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Calendar
+      </button>
+      <button data-tab="ai" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        Company AI
+      </button>
+      <button data-tab="jobs" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Jobs
+      </button>
+      <button data-tab="expenses" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        Expenses
+      </button>
+      <button data-tab="invoices" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Invoices
+      </button>
+      <button data-tab="vehicles" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-9 5h10M5 17h14a1 1 0 001-1v-3.28a1 1 0 00-.684-.948l-1.923-.641a1 1 0 01-.578-.502l-1.539-3.076A1 1 0 0014.382 7H9.618a1 1 0 00-.894.553L7.185 10.63a1 1 0 01-.578.502l-1.923.641A1 1 0 004 12.72V16a1 1 0 001 1z"/></svg>
+        Vehicles
+      </button>
+    </nav>
 
-        const config = { apiKey: "AIzaSyDn3fqrdVcRnvkiX7t6TPJWrngXSrM_1p4", authDomain: "my-a-ab8f3.firebaseapp.com", projectId: "my-a-ab8f3", storageBucket: "my-a-ab8f3.firebasestorage.app", messagingSenderId: "65984042323", appId: "1:65984042323:web:465363d942efc7b72c3da6" };
-        const db = getFirestore(initializeApp(config));
-        const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-        
-        let page = 'DASHBOARD', data = [], filter = '';
+    <div class="px-3 py-3 border-t border-white/[0.06]">
+      <button data-tab="settings" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.03]">
+        <span class="nav-indicator"></span>
+        <svg class="nav-icon w-[18px] h-[18px] text-slate-500 transition-colors" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+      </button>
+    </div>
 
-        window.toggleMenu = () => {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('show');
-        };
+    <div class="px-4 py-4 border-t border-white/[0.06]">
+      <div id="auth-area-desktop"></div>
+    </div>
+  </aside>
 
-        window.setPage = (p) => {
-            page = p;
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            document.getElementById(`nav-${p}`).classList.add('active');
-            document.getElementById('page-title').innerText = p === 'DASHBOARD' ? 'Overview' : p;
-            document.getElementById('stats-grid').classList.toggle('hidden', p !== 'DASHBOARD');
-            if(window.innerWidth < 1024 && document.getElementById('sidebar').classList.contains('open')) toggleMenu();
-            render();
-        };
+  <!-- MOBILE NAV -->
+  <div class="lg:hidden fixed top-0 inset-x-0 z-40 bg-black/70 backdrop-blur-xl border-b border-white/[0.06]">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="relative">
+          <div class="absolute inset-0 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 blur-md opacity-40"></div>
+          <div class="relative w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black text-xs font-bold">JW</div>
+        </div>
+        <div class="text-white font-medium text-sm tracking-tight">Joe Westlake LLC</div>
+      </div>
+      <div id="auth-area-mobile"></div>
+    </div>
+    <nav class="flex overflow-x-auto px-3 pb-3 gap-1 scrollbar-none">
+      <button data-tab="today"    class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Today</button>
+      <button data-tab="calendar" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Calendar</button>
+      <button data-tab="ai"       class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">AI</button>
+      <button data-tab="jobs"     class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Jobs</button>
+      <button data-tab="expenses" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Expenses</button>
+      <button data-tab="invoices" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Invoices</button>
+      <button data-tab="vehicles" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Vehicles</button>
+      <button data-tab="settings" class="nav-item shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white">Settings</button>
+    </nav>
+  </div>
 
-        window.openModal = (id = null) => {
-            document.getElementById('entry-form').reset();
-            document.getElementById('entry-id').value = id || '';
-            
-            document.getElementById('fields-contact').classList.toggle('hidden', page !== 'CUSTOMERS');
-            document.getElementById('fields-address').classList.toggle('hidden', page !== 'JOBS' && page !== 'CUSTOMERS');
-            // HIDE Amount/Status fields specifically for Customers
-            document.getElementById('fields-financial').classList.toggle('hidden', page === 'CUSTOMERS');
+  <main class="flex-1 lg:ml-64 pt-32 lg:pt-0">
+    <div class="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
 
-            if(id) {
-                const item = data.find(i => i.id === id);
-                document.getElementById('f-desc').value = item.desc || '';
-                document.getElementById('f-amt').value = item.amt || '';
-                document.getElementById('f-phone').value = item.phone || '';
-                document.getElementById('f-address').value = item.address || '';
-                document.getElementById('f-cat').value = item.cat || 'PENDING';
-                document.getElementById('f-archived').checked = item.archived || false;
-            }
-            document.getElementById('modal').classList.remove('hidden');
-        };
+      <!-- TODAY -->
+      <section id="tab-today" class="tab-panel fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Overview</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Today</h1>
+            <p id="today-date" class="text-sm text-slate-500 mt-3"></p>
+          </div>
+          <button onclick="document.querySelector('.nav-item[data-tab=&quot;ai&quot;]').click()"
+            class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+            Open Company AI
+          </button>
+        </div>
 
-        window.closeModal = () => document.getElementById('modal').classList.add('hidden');
-        window.del = async (id) => { if(confirm('Delete?')) await deleteDoc(doc(db, 'records', id)); };
+        <div class="relative rounded-2xl mb-6 profit-glow">
+          <div class="rounded-2xl bg-gradient-to-br from-emerald-500/[0.04] via-white/[0.02] to-white/[0.01] backdrop-blur-xl p-6 sm:p-7">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-1">Monthly P&amp;L</div>
+                <div id="pnl-month" class="font-serif text-xl text-white">—</div>
+              </div>
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Invoiced</div>
+                <div id="pnl-invoiced" class="font-serif text-3xl text-white">—</div>
+                <div id="pnl-invoiced-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+              </div>
+              <div>
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Collected</div>
+                <div id="pnl-collected" class="font-serif text-3xl text-blue-300">—</div>
+                <div id="pnl-collected-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+              </div>
+              <div>
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Expenses</div>
+                <div id="pnl-expenses" class="font-serif text-3xl text-amber-400">—</div>
+                <div id="pnl-expenses-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+              </div>
+              <div>
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Net Profit</div>
+                <div id="pnl-net" class="font-serif text-3xl text-emerald-400">—</div>
+                <div id="pnl-net-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+              </div>
+            </div>
+            <div id="pnl-bar" class="mt-6 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+              <div id="pnl-bar-fill" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
 
-        document.getElementById('entry-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('entry-id').value;
-            const payload = {
-                desc: document.getElementById('f-desc').value,
-                amt: page === 'CUSTOMERS' ? 0 : (parseFloat(document.getElementById('f-amt').value) || 0),
-                phone: document.getElementById('f-phone').value,
-                address: document.getElementById('f-address').value,
-                cat: page === 'CUSTOMERS' ? 'CONTACT' : document.getElementById('f-cat').value,
-                archived: document.getElementById('f-archived').checked,
-                type: (['EXPENSES', 'PAYROLL'].includes(page)) ? 'OUT' : 'IN',
-                originPage: page === 'ARCHIVE' ? (id ? data.find(i=>i.id===id).originPage : 'INCOME') : page,
-                updated: serverTimestamp()
-            };
-            if(id) await updateDoc(doc(db, 'records', id), payload);
-            else await addDoc(collection(db, 'records'), payload);
-            closeModal();
-        };
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Jobs today</div>
+              <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+              </div>
+            </div>
+            <div id="stat-jobs" class="font-serif text-3xl text-white">—</div>
+          </div>
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Spent today</div>
+              <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
+              </div>
+            </div>
+            <div id="stat-spent" class="font-serif text-3xl text-white">—</div>
+          </div>
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Outstanding</div>
+              <div class="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <div id="stat-owed" class="font-serif text-3xl text-amber-400">—</div>
+          </div>
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Service due</div>
+              <div class="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-9 5h10M5 17h14a1 1 0 001-1v-3.28a1 1 0 00-.684-.948l-1.923-.641a1 1 0 01-.578-.502l-1.539-3.076A1 1 0 0014.382 7H9.618a1 1 0 00-.894.553L7.185 10.63a1 1 0 01-.578.502l-1.923.641A1 1 0 004 12.72V16a1 1 0 001 1z"/></svg>
+              </div>
+            </div>
+            <div id="stat-service" class="font-serif text-3xl text-white">—</div>
+          </div>
+        </div>
+      </section>
 
-        onSnapshot(query(collection(db, 'records'), orderBy("updated", "desc")), (s) => {
-            data = s.docs.map(d => ({id: d.id, ...d.data()}));
-            render();
-        });
+      <!-- CALENDAR -->
+      <section id="tab-calendar" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Schedule</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Calendar</h1>
+            <p class="text-sm text-slate-500 mt-3">Jobs, invoices due, and vehicle service — all in one view</p>
+          </div>
+        </div>
 
-        function render() {
-            const head = document.getElementById('table-head');
-            const body = document.getElementById('table-body');
-            let rev = 0, exp = 0;
+        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div class="flex items-center gap-2">
+            <button id="cal-prev" class="cal-btn" title="Previous">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button id="cal-today" class="cal-btn">Today</button>
+            <button id="cal-next" class="cal-btn" title="Next">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
 
-            const isCustomerPage = page === 'CUSTOMERS';
+          <div id="cal-title" class="font-serif text-xl text-white tracking-tight flex-1 text-center order-last sm:order-none w-full sm:w-auto"></div>
 
-            head.innerHTML = `<tr>
-                <th class="py-6 px-8">Description</th>
-                <th class="py-6 px-8">Details</th>
-                ${!isCustomerPage ? '<th class="py-6 px-8">Status</th><th class="py-6 px-8 text-right">Amount</th>' : ''}
-                <th class="py-6 px-8 text-center">Actions</th>
-            </tr>`;
+          <div class="flex items-center gap-1">
+            <button data-cal-view="dayGridMonth" class="cal-btn">Month</button>
+            <button data-cal-view="listWeek" class="cal-btn">List</button>
+          </div>
+        </div>
 
-            const filtered = data.filter(d => {
-                const searchMatch = d.desc.toLowerCase().includes(filter);
-                const isArchivePage = page === 'ARCHIVE';
-                const matchesPage = page === 'DASHBOARD' || d.originPage === page;
-                if (isArchivePage) return d.archived && searchMatch;
-                return !d.archived && matchesPage && searchMatch;
-            });
+        <div class="flex items-center gap-2 mb-5 flex-wrap">
+          <button data-cal-filter="jobs" class="cal-filter active">
+            <span class="cal-dot jobs"></span> Jobs
+          </button>
+          <button data-cal-filter="invoices" class="cal-filter active">
+            <span class="cal-dot invoices"></span> Invoices due
+          </button>
+          <button data-cal-filter="service" class="cal-filter active">
+            <span class="cal-dot service"></span> Service due
+          </button>
+        </div>
 
-            body.innerHTML = filtered.map(d => {
-                if(d.type === 'IN') rev += d.amt; else exp += d.amt;
-                return `
-                <tr class="group">
-                    <td data-label="Description" class="py-6 px-8 font-black uppercase">${d.desc}</td>
-                    <td data-label="Details" class="py-6 px-8 text-gray-500">${d.address || d.phone || '—'}</td>
-                    ${!isCustomerPage ? `
-                        <td data-label="Status" class="py-6 px-8"><span class="px-3 py-1 bg-white/5 text-[9px] font-black">${d.cat}</span></td>
-                        <td data-label="Amount" class="py-6 px-8 text-right mono font-black ${d.type === 'IN' ? 'text-green-500' : 'text-red-500'}">${fmt.format(d.amt)}</td>
-                    ` : ''}
-                    <td class="py-6 px-8 text-center">
-                        <button onclick="openModal('${d.id}')" class="p-2 text-gray-400"><i class="fas fa-edit"></i></button>
-                        <button onclick="del('${d.id}')" class="p-2 text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
+        <div class="glass rounded-2xl p-3 sm:p-5">
+          <div id="calendar"></div>
+        </div>
+      </section>
 
-            document.getElementById('stat-rev').innerText = fmt.format(rev);
-            document.getElementById('stat-exp').innerText = fmt.format(exp);
-            document.getElementById('stat-net').innerText = fmt.format(rev - exp);
-        }
-    </script>
+      <!-- COMPANY AI -->
+      <section id="tab-ai" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Assistant</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Company AI</h1>
+            <p class="text-sm text-slate-500 mt-3">Ask anything, generate a daily brief, then send it to your team</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="daily-brief-btn"
+              class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-amber-500/20 transition disabled:opacity-60">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              <span>Daily Brief</span>
+            </button>
+            <button id="send-to-btn"
+              class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+              Send to
+            </button>
+            <button id="clear-chat-btn"
+              class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+              Clear chat
+            </button>
+          </div>
+        </div>
+
+        <div class="relative rounded-2xl ai-glow">
+          <div class="rounded-2xl bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col" style="height: calc(100vh - 260px); min-height: 480px;">
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+              <div id="chat-empty" class="h-full flex flex-col items-center justify-center text-center px-4">
+                <div class="relative mb-6">
+                  <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-400 to-violet-500 blur-xl opacity-40"></div>
+                  <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                  </div>
+                </div>
+                <div class="font-serif text-2xl text-white mb-2">Ask me anything</div>
+                <div class="text-sm text-slate-500 max-w-sm mb-6">I can see all your jobs, expenses, invoices, and vehicles. Click <strong class="text-slate-400">Daily Brief</strong> above for a snapshot, or ask me a question.</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
+                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">What did we do today?</button>
+                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Which jobs made the most profit this month?</button>
+                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">How much did we spend on paint?</button>
+                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Who owes us money?</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-white/[0.06] p-4">
+              <form id="chat-form" class="flex items-end gap-3">
+                <div class="flex-1 relative">
+                  <textarea id="chat-input" rows="1" placeholder="Ask about your business…"
+                    class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition resize-none max-h-40"
+                    style="min-height: 46px;"></textarea>
+                </div>
+                <button type="submit" id="chat-send"
+                  class="shrink-0 w-[46px] h-[46px] rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- JOBS -->
+      <section id="tab-jobs" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Work</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Jobs</h1>
+            <p class="text-sm text-slate-500 mt-3">Click any job to see its invoices, expenses, and profit</p>
+          </div>
+          <button onclick="document.getElementById('job-form-wrap').classList.toggle('hidden')"
+            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New job
+          </button>
+        </div>
+
+        <div id="job-form-wrap" class="hidden mb-6">
+          <form id="job-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
+              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Address</label>
+              <input name="address" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
+              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                <option value="estimate">Estimate</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in-progress">In progress</option>
+                <option value="complete">Complete</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Contract amount</label>
+              <input name="amount" type="number" step="0.01" placeholder="0.00" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
+              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add job</button>
+              <button type="button" onclick="document.getElementById('job-form-wrap').classList.add('hidden')"
+                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="jobs-list"></div>
+      </section>
+
+      <!-- EXPENSES -->
+      <section id="tab-expenses" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Spending</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Expenses</h1>
+            <p class="text-sm text-slate-500 mt-3">Paint, gas, supplies, tools — attach to jobs or mark as overhead</p>
+          </div>
+          <button onclick="document.getElementById('expense-form-wrap').classList.toggle('hidden')"
+            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New expense
+          </button>
+        </div>
+
+        <div id="expense-form-wrap" class="hidden mb-6">
+          <form id="expense-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Vendor *</label>
+              <input name="vendor" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Category</label>
+              <select name="category" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                <option value="paint">Paint</option>
+                <option value="gas">Gas</option>
+                <option value="supplies">Supplies</option>
+                <option value="tools">Tools</option>
+                <option value="vehicle">Vehicle</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
+              <input name="amount" type="number" step="0.01" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job (leave blank for overhead)</label>
+              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Note</label>
+              <input name="note" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add expense</button>
+              <button type="button" onclick="document.getElementById('expense-form-wrap').classList.add('hidden')"
+                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="expenses-list"></div>
+      </section>
+
+      <!-- INVOICES -->
+      <section id="tab-invoices" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Money in</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Invoices</h1>
+            <p class="text-sm text-slate-500 mt-3">Attach each invoice to a job so profit rolls up automatically</p>
+          </div>
+          <button onclick="document.getElementById('invoice-form-wrap').classList.toggle('hidden')"
+            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New invoice
+          </button>
+        </div>
+
+        <div id="invoice-form-wrap" class="hidden mb-6">
+          <form id="invoice-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Customer *</label>
+              <input name="customer" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
+              <input name="amount" type="number" step="0.01" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Sent date *</label>
+              <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Due date</label>
+              <input name="dueDate" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job *</label>
+              <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Status</label>
+              <select name="status" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                <option value="sent">Sent</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
+              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add invoice</button>
+              <button type="button" onclick="document.getElementById('invoice-form-wrap').classList.add('hidden')"
+                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="invoices-list"></div>
+      </section>
+
+      <!-- VEHICLES -->
+      <section id="tab-vehicles" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Fleet</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Vehicles</h1>
+            <p class="text-sm text-slate-500 mt-3">Trucks and vans — service and mileage</p>
+          </div>
+          <button onclick="document.getElementById('vehicle-form-wrap').classList.toggle('hidden')"
+            class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New vehicle
+          </button>
+        </div>
+
+        <div id="vehicle-form-wrap" class="hidden mb-6">
+          <form id="vehicle-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
+              <input name="name" placeholder="e.g. White Van" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Plate</label>
+              <input name="plate" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Odometer</label>
+              <input name="odometer" type="number" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Last service</label>
+              <input name="lastService" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Next service due</label>
+              <input name="nextServiceDue" type="date" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Notes</label>
+              <input name="notes" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+            </div>
+            <div class="md:col-span-2 flex gap-3 pt-1">
+              <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add vehicle</button>
+              <button type="button" onclick="document.getElementById('vehicle-form-wrap').classList.add('hidden')"
+                class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="vehicles-list"></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="tab-settings" class="tab-panel hidden fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Configure</div>
+            <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none">Settings</h1>
+            <p class="text-sm text-slate-500 mt-3">Team directory and preferences</p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-white tracking-tight">Team Directory</h2>
+              <p class="text-sm text-slate-500 mt-0.5">People you can send reports and briefs to</p>
+            </div>
+            <button onclick="document.getElementById('team-form-wrap').classList.toggle('hidden')"
+              class="inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              Add member
+            </button>
+          </div>
+
+          <div id="team-form-wrap" class="hidden mb-6">
+            <form id="team-form" class="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
+                <input name="name" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Email</label>
+                <input name="email" type="email" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Phone</label>
+                <input name="phone" type="tel" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Role</label>
+                <input name="role" placeholder="e.g. Accountant" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div class="md:col-span-2 flex gap-3 pt-1">
+                <button class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Add member</button>
+                <button type="button" onclick="document.getElementById('team-form-wrap').classList.add('hidden')"
+                  class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="team-list"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- SIGN-IN MODAL -->
+<div id="signin-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="signin-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
+  <div class="relative w-full max-w-md modal-in">
+    <div class="relative rounded-2xl ai-glow">
+      <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-8 shadow-2xl shadow-black/60">
+        <button id="signin-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <div class="flex items-center gap-3 mb-6">
+          <div class="relative">
+            <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 blur-md opacity-40"></div>
+            <div class="relative w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black text-sm font-bold brand-glow">JW</div>
+          </div>
+          <div>
+            <div class="text-white font-medium leading-tight">Joe Westlake LLC</div>
+            <div class="text-[11px] text-slate-500 tracking-wide uppercase">Business Portal</div>
+          </div>
+        </div>
+        <h2 class="font-serif text-3xl text-white tracking-tight mb-1" id="signin-title">Welcome back</h2>
+        <p class="text-sm text-slate-500 mb-6" id="signin-subtitle">Sign in to your account to continue</p>
+        <form id="signin-form" class="space-y-4">
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Email</label>
+            <input id="signin-email" type="email" required placeholder="you@example.com"
+              class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Password</label>
+            <input id="signin-password" type="password" required placeholder="••••••••" minlength="6"
+              class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+          </div>
+          <div id="signin-error" class="text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2"></div>
+          <button type="submit" id="signin-submit"
+            class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl py-3 text-sm font-medium shadow-lg shadow-amber-500/20 mt-2">
+            Sign in
+          </button>
+        </form>
+        <div class="mt-6 pt-6 border-t border-white/[0.06] text-center">
+          <p class="text-xs text-slate-500">
+            <span id="signin-toggle-text">Don't have an account?</span>
+            <button id="signin-toggle" class="text-amber-400 hover:text-amber-300 font-medium ml-1 transition">Create one</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="edit-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
+  <div class="relative w-full max-w-lg modal-in">
+    <div class="relative rounded-2xl ai-glow">
+      <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-8 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
+        <button id="edit-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <div class="mb-6">
+          <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Editing</div>
+          <h2 id="edit-title" class="font-serif text-3xl text-white tracking-tight">Edit</h2>
+        </div>
+        <form id="edit-form">
+          <div id="edit-fields" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6"></div>
+          <div class="flex gap-3 pt-6 border-t border-white/[0.06]">
+            <button type="submit" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20">Save changes</button>
+            <button type="button" id="edit-cancel" class="text-slate-400 hover:text-white px-4 py-2.5 text-sm font-medium">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div id="job-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="job-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
+  <div class="relative w-full max-w-3xl modal-in">
+    <div class="relative rounded-2xl ai-glow">
+      <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-6 sm:p-8 shadow-2xl shadow-black/60 max-h-[92vh] overflow-y-auto">
+        <button id="job-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition z-10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <div id="job-detail"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEND TO MODAL -->
+<div id="send-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="send-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in"></div>
+  <div class="relative w-full max-w-lg modal-in">
+    <div class="relative rounded-2xl ai-glow">
+      <div class="rounded-2xl bg-[#0d0d10]/95 backdrop-blur-2xl border border-white/[0.06] p-8 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
+        <button id="send-close" class="absolute top-4 right-4 text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <div class="mb-5">
+          <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Send</div>
+          <h2 class="font-serif text-3xl text-white tracking-tight">Send to team</h2>
+        </div>
+
+        <div class="text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Message preview</div>
+        <div id="send-preview" class="bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-[13px] text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto mb-5"></div>
+
+        <div class="text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Recipients</div>
+        <div id="send-team-list" class="border border-white/[0.08] rounded-xl mb-5 max-h-60 overflow-y-auto"></div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
+          <button id="send-copy-btn" type="button"
+            class="flex-1 inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-xl px-5 py-2.5 text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copy text
+          </button>
+          <button id="send-email-btn" type="button"
+            class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-lg shadow-amber-500/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            Open in email
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+
+<script type="module">
+// ─────────────────────────────────────────────────────────────
+// FIREBASE
+// ─────────────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, query, where,
+  orderBy, serverTimestamp, deleteDoc, doc, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAngYDBkXD6iW_drxB-CgsFID1hevE4mlU",
+  authDomain: "joe-westlake-llc.firebaseapp.com",
+  projectId: "joe-westlake-llc",
+  storageBucket: "joe-westlake-llc.firebasestorage.app",
+  messagingSenderId: "54204985542",
+  appId: "1:54204985542:web:1a3f7d157c34dff15267c7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+// ─────────────────────────────────────────────────────────────
+// GEMINI
+// ─────────────────────────────────────────────────────────────
+const GEMINI_KEY = "AQ.Ab8RN6JGLbk8ManD4LRD_Q3caYppQO6wMqQvwD_NJPl6p4dhkQ";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+
+// ─────────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────────
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const fmtDate  = (s) => s ? new Date(s + "T00:00:00").toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : "—";
+const money    = (n) => n == null || n === "" ? "$0.00" : `$${Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const monthLabel = () => new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+function isInThisMonth(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
+
+function toast(msg, type = "success") {
+  const c = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  const styles = {
+    success: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    error:   "border-red-500/30 bg-red-500/10 text-red-200",
+    info:    "border-white/10 bg-white/5 text-slate-200"
+  };
+  el.className = `toast backdrop-blur-xl border ${styles[type]} text-sm px-4 py-3 rounded-xl shadow-2xl shadow-black/50`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => { el.style.opacity = 0; el.style.transition = "opacity .3s"; }, 2200);
+  setTimeout(() => el.remove(), 2600);
+}
+
+// ─────────────────────────────────────────────────────────────
+// CACHE
+// ─────────────────────────────────────────────────────────────
+let cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [] };
+function jobById(id) { return cache.jobs.find(j => j.id === id) || null; }
+function jobLabel(id) {
+  const j = jobById(id);
+  return j ? `${j.customer}${j.address ? " — " + j.address : ""}` : (id ? "(deleted job)" : "Overhead");
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────
+const modal       = document.getElementById("signin-modal");
+const modalBack   = document.getElementById("signin-backdrop");
+const modalClose  = document.getElementById("signin-close");
+const authForm    = document.getElementById("signin-form");
+const authEmail   = document.getElementById("signin-email");
+const authPass    = document.getElementById("signin-password");
+const authError   = document.getElementById("signin-error");
+const authSubmit  = document.getElementById("signin-submit");
+const toggleBtn   = document.getElementById("signin-toggle");
+const toggleText  = document.getElementById("signin-toggle-text");
+const titleEl     = document.getElementById("signin-title");
+const subtitleEl  = document.getElementById("signin-subtitle");
+
+let authMode = "signin";
+function openModal() { modal.classList.remove("hidden"); modal.classList.add("flex"); setTimeout(() => authEmail.focus(), 50); }
+function closeModal() { modal.classList.add("hidden"); modal.classList.remove("flex"); authError.classList.add("hidden"); authForm.reset(); }
+function setMode(mode) {
+  authMode = mode;
+  if (mode === "signup") {
+    titleEl.textContent = "Create account";
+    subtitleEl.textContent = "Set up your business portal access";
+    authSubmit.textContent = "Create account";
+    toggleText.textContent = "Already have an account?";
+    toggleBtn.textContent = "Sign in";
+  } else {
+    titleEl.textContent = "Welcome back";
+    subtitleEl.textContent = "Sign in to your account to continue";
+    authSubmit.textContent = "Sign in";
+    toggleText.textContent = "Don't have an account?";
+    toggleBtn.textContent = "Create one";
+  }
+  authError.classList.add("hidden");
+}
+modalBack.onclick = closeModal;
+modalClose.onclick = closeModal;
+toggleBtn.onclick = () => setMode(authMode === "signin" ? "signup" : "signin");
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!modal.classList.contains("hidden")) closeModal();
+    if (!document.getElementById("edit-modal").classList.contains("hidden")) closeEditModal();
+    if (!document.getElementById("job-modal").classList.contains("hidden")) closeJobModal();
+    if (!document.getElementById("send-modal").classList.contains("hidden")) closeSendModal();
+  }
+});
+
+authForm.onsubmit = async (e) => {
+  e.preventDefault();
+  authError.classList.add("hidden");
+  authSubmit.disabled = true;
+  authSubmit.textContent = authMode === "signup" ? "Creating…" : "Signing in…";
+  try {
+    if (authMode === "signup") {
+      await createUserWithEmailAndPassword(auth, authEmail.value.trim(), authPass.value);
+      toast("Account created");
+    } else {
+      await signInWithEmailAndPassword(auth, authEmail.value.trim(), authPass.value);
+      toast("Signed in");
+    }
+    closeModal();
+  } catch (err) {
+    const messages = {
+      "auth/invalid-email": "That email doesn't look right.",
+      "auth/user-not-found": "No account with that email.",
+      "auth/wrong-password": "Wrong password.",
+      "auth/invalid-credential": "Wrong email or password.",
+      "auth/email-already-in-use": "That email is already registered. Try signing in.",
+      "auth/weak-password": "Password needs at least 6 characters.",
+      "auth/too-many-requests": "Too many attempts. Wait a minute and try again.",
+      "auth/configuration-not-found": "Enable Email/Password in Firebase Console → Authentication → Sign-in method."
+    };
+    authError.textContent = messages[err.code] || err.message;
+    authError.classList.remove("hidden");
+  } finally {
+    authSubmit.disabled = false;
+    authSubmit.textContent = authMode === "signup" ? "Create account" : "Sign in";
+  }
+};
+
+function signInButtonHTML(prefix) {
+  return `<button id="${prefix}-signin"
+    class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-medium rounded-xl py-2.5 shadow-lg shadow-amber-500/15 transition">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+    Sign in
+  </button>`;
+}
+function signOutButtonHTML(prefix, email) {
+  return `
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center shrink-0">
+          <span class="text-[10px] font-semibold text-amber-300">${(email || "?").charAt(0).toUpperCase()}</span>
+        </div>
+        <div class="text-[11px] text-slate-400 truncate" title="${email}">${email}</div>
+      </div>
+      <button id="${prefix}-out" class="text-slate-500 hover:text-white text-[11px] font-medium transition shrink-0">Sign out</button>
+    </div>`;
+}
+
+onAuthStateChanged(auth, (user) => {
+  const d = document.getElementById("auth-area-desktop");
+  const m = document.getElementById("auth-area-mobile");
+  if (user) {
+    d.innerHTML = signOutButtonHTML("d", user.email);
+    m.innerHTML = signOutButtonHTML("m", user.email);
+    document.getElementById("d-out").onclick = () => signOut(auth);
+    document.getElementById("m-out").onclick = () => signOut(auth);
+    loadAll();
+    loadChatHistory();
+  } else {
+    d.innerHTML = signInButtonHTML("d");
+    m.innerHTML = `<button id="m-signin" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Sign in</button>`;
+    document.getElementById("d-signin").onclick = openModal;
+    document.getElementById("m-signin").onclick = openModal;
+    chatHistory = [];
+    renderChat();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────
+const tabs = document.querySelectorAll(".nav-item");
+const panels = document.querySelectorAll(".tab-panel");
+tabs.forEach(t => t.onclick = () => {
+  tabs.forEach(x => x.classList.remove("active"));
+  panels.forEach(p => p.classList.add("hidden"));
+  document.querySelectorAll(`.nav-item[data-tab="${t.dataset.tab}"]`).forEach(x => x.classList.add("active"));
+  document.getElementById(`tab-${t.dataset.tab}`).classList.remove("hidden");
+  if (t.dataset.tab === "ai") setTimeout(() => document.getElementById("chat-input")?.focus(), 100);
+  if (t.dataset.tab === "calendar") setTimeout(() => initCalendar(), 60);
+});
+document.querySelectorAll('.nav-item[data-tab="today"]').forEach(x => x.classList.add("active"));
+
+document.getElementById("today-date").textContent =
+  new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+// ─────────────────────────────────────────────────────────────
+// TABLE HELPERS
+// ─────────────────────────────────────────────────────────────
+function emptyState(title, hint) {
+  const div = document.createElement("div");
+  div.className = "glass rounded-2xl p-12 text-center";
+  div.innerHTML = `
+    <div class="mx-auto w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
+      <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+    </div>
+    <div class="font-medium text-slate-300 text-sm">${title}</div>
+    <div class="text-slate-500 text-xs mt-1.5">${hint}</div>`;
+  return div;
+}
+
+function statusPill(status) {
+  const s = document.createElement("span");
+  const map = {
+    "estimate":    "bg-white/[0.04] text-slate-300 border-white/[0.08]",
+    "scheduled":   "bg-blue-500/10 text-blue-300 border-blue-500/20",
+    "in-progress": "bg-amber-500/10 text-amber-300 border-amber-500/20",
+    "complete":    "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+    "sent":        "bg-blue-500/10 text-blue-300 border-blue-500/20",
+    "paid":        "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+    "overdue":     "bg-red-500/10 text-red-300 border-red-500/20"
+  };
+  s.className = `inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${map[status] || "bg-white/[0.04] text-slate-400 border-white/[0.08]"}`;
+  s.textContent = status || "—";
+  return s;
+}
+
+function iconButton(icon, cls, title, onClick) {
+  const btn = document.createElement("button");
+  btn.innerHTML = icon;
+  btn.className = cls;
+  btn.title = title;
+  btn.onclick = onClick;
+  return btn;
+}
+
+const ICON_EDIT = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`;
+const ICON_DELETE = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>`;
+const ICON_EYE = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+const ICON_CHECK = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+
+function renderTable(headers, rows) {
+  const wrap = document.createElement("div");
+  wrap.className = "glass rounded-2xl overflow-hidden";
+  const t = document.createElement("table");
+  t.className = "w-full text-sm";
+  t.innerHTML = `<thead><tr class="border-b border-white/[0.06]">
+    ${headers.map(h => `<th class="text-left px-5 py-3.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">${h}</th>`).join("")}
+    <th class="w-28"></th>
+  </tr></thead>`;
+  const tbody = document.createElement("tbody");
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.className = "border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition";
+    r.forEach(c => {
+      const td = document.createElement("td");
+      td.className = "px-5 py-3.5 text-slate-300";
+      if (c instanceof Node) td.appendChild(c); else td.textContent = c;
+      tr.appendChild(td);
+    });
+    const td = document.createElement("td");
+    td.className = "px-3 py-3.5 text-right whitespace-nowrap";
+    td.dataset.actions = "true";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  });
+  t.appendChild(tbody);
+  wrap.appendChild(t);
+  return wrap;
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOADERS
+// ─────────────────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.all([fetchJobs(), fetchExpenses(), fetchInvoices(), fetchVehicles(), fetchTeam()]);
+  populateJobSelectors();
+  renderJobs();
+  renderExpenses();
+  renderInvoices();
+  renderVehicles();
+  renderTeam();
+  updateStats();
+  updatePnL();
+  refreshCalendar();
+  updateSendButton();
+}
+
+async function fetchJobs() {
+  const snap = await getDocs(query(collection(db, "jobs"), orderBy("date", "desc")));
+  cache.jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function fetchExpenses() {
+  const snap = await getDocs(query(collection(db, "expenses"), orderBy("date", "desc")));
+  cache.expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function fetchInvoices() {
+  const snap = await getDocs(query(collection(db, "invoices"), orderBy("date", "desc")));
+  cache.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function fetchVehicles() {
+  const snap = await getDocs(collection(db, "vehicles"));
+  cache.vehicles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function fetchTeam() {
+  const snap = await getDocs(query(collection(db, "team"), orderBy("name", "asc")));
+  cache.team = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+function populateJobSelectors() {
+  document.querySelectorAll("[data-job-select]").forEach(sel => {
+    const current = sel.value;
+    const isInvoice = sel.closest("form")?.id === "invoice-form";
+    sel.innerHTML = "";
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = isInvoice ? "— No job —" : "— Overhead (no job) —";
+    sel.appendChild(none);
+    cache.jobs.forEach(j => {
+      const opt = document.createElement("option");
+      opt.value = j.id;
+      opt.textContent = `${j.customer}${j.address ? " — " + j.address : ""} (${fmtDate(j.date)})`;
+      sel.appendChild(opt);
+    });
+    sel.value = current;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — JOBS
+// ─────────────────────────────────────────────────────────────
+function computeJobMetrics(jobId) {
+  const invs = cache.invoices.filter(i => i.jobId === jobId);
+  const exps = cache.expenses.filter(e => e.jobId === jobId);
+  const invoiced = invs.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const collected = invs.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.amount || 0), 0);
+  const expenses = exps.reduce((s, e) => s + Number(e.amount || 0), 0);
+  return { invoiced, collected, expenses, profit: invoiced - expenses, invoiceCount: invs.length, expenseCount: exps.length };
+}
+
+function renderJobs() {
+  const c = document.getElementById("jobs-list");
+  c.innerHTML = "";
+  if (!cache.jobs.length) { c.appendChild(emptyState("No jobs yet", "Click \"New job\" to add your first one.")); return; }
+  const rows = cache.jobs.map(j => {
+    const m = computeJobMetrics(j.id);
+    const profitCell = document.createElement("span");
+    profitCell.className = m.profit >= 0 ? "text-emerald-400 font-medium" : "text-red-400 font-medium";
+    profitCell.textContent = money(m.profit);
+    return [fmtDate(j.date), j.customer, statusPill(j.status), money(j.amount), money(m.invoiced), money(m.expenses), profitCell];
+  });
+  const table = renderTable(["Date","Customer","Status","Contract","Invoiced","Expenses","Profit"], rows);
+  c.appendChild(table);
+
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const j = cache.jobs[i];
+    tr.classList.add("row-clickable");
+    tr.onclick = (e) => { if (e.target.closest("[data-actions]")) return; openJobModal(j.id); };
+    const actions = tr.querySelector("[data-actions]");
+    actions.appendChild(iconButton(ICON_EYE, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "View", (e) => { e.stopPropagation(); openJobModal(j.id); }));
+    actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", (e) => { e.stopPropagation(); openEditModal("jobs", j.id, j); }));
+    actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async (e) => {
+      e.stopPropagation();
+      if (!confirm("Delete this job? Linked invoices and expenses will stay but become unlinked.")) return;
+      await deleteDoc(doc(db, "jobs", j.id));
+      toast("Deleted"); loadAll();
+    }));
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — EXPENSES
+// ─────────────────────────────────────────────────────────────
+function renderExpenses() {
+  const c = document.getElementById("expenses-list");
+  c.innerHTML = "";
+  if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Click \"New expense\" to log your first one.")); return; }
+  const rows = cache.expenses.map(e => [fmtDate(e.date), e.vendor, e.category || "—", money(e.amount), jobLabel(e.jobId)]);
+  const table = renderTable(["Date","Vendor","Category","Amount","Job"], rows);
+  c.appendChild(table);
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const e = cache.expenses[i];
+    const actions = tr.querySelector("[data-actions]");
+    actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "Edit", () => openEditModal("expenses", e.id, e)));
+    actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this expense?")) return;
+      await deleteDoc(doc(db, "expenses", e.id));
+      toast("Deleted"); loadAll();
+    }));
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — INVOICES
+// ─────────────────────────────────────────────────────────────
+function renderInvoices() {
+  const c = document.getElementById("invoices-list");
+  c.innerHTML = "";
+  if (!cache.invoices.length) { c.appendChild(emptyState("No invoices yet", "Click \"New invoice\" to add your first one.")); return; }
+  const rows = cache.invoices.map(inv => [fmtDate(inv.date), inv.customer, money(inv.amount), fmtDate(inv.dueDate), jobLabel(inv.jobId), statusPill(inv.status)]);
+  const table = renderTable(["Sent","Customer","Amount","Due","Job","Status"], rows);
+  c.appendChild(table);
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const inv = cache.invoices[i];
+    const actions = tr.querySelector("[data-actions]");
+    if (inv.status !== "paid") {
+      actions.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10 transition", "Mark paid", async () => {
+        await updateDoc(doc(db, "invoices", inv.id), { status: "paid", paidDate: todayISO() });
+        toast("Marked paid"); loadAll();
+      }));
+    }
+    actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("invoices", inv.id, inv)));
+    actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this invoice?")) return;
+      await deleteDoc(doc(db, "invoices", inv.id));
+      toast("Deleted"); loadAll();
+    }));
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — VEHICLES
+// ─────────────────────────────────────────────────────────────
+function renderVehicles() {
+  const c = document.getElementById("vehicles-list");
+  c.innerHTML = "";
+  if (!cache.vehicles.length) { c.appendChild(emptyState("No vehicles yet", "Click \"New vehicle\" to add your truck or van.")); return; }
+  const rows = cache.vehicles.map(v => [v.name, v.plate || "—", v.odometer || "—", fmtDate(v.lastService), fmtDate(v.nextServiceDue)]);
+  const table = renderTable(["Name","Plate","Odometer","Last service","Next due"], rows);
+  c.appendChild(table);
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const v = cache.vehicles[i];
+    const actions = tr.querySelector("[data-actions]");
+    actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "Edit", () => openEditModal("vehicles", v.id, v)));
+    actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this vehicle?")) return;
+      await deleteDoc(doc(db, "vehicles", v.id));
+      toast("Deleted"); loadAll();
+    }));
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — TEAM
+// ─────────────────────────────────────────────────────────────
+function renderTeam() {
+  const c = document.getElementById("team-list");
+  c.innerHTML = "";
+  if (!cache.team.length) { c.appendChild(emptyState("No team members yet", "Add people so you can send reports and briefs to them.")); return; }
+  const rows = cache.team.map(t => [t.name, t.email || "—", t.phone || "—", t.role || "—"]);
+  const table = renderTable(["Name", "Email", "Phone", "Role"], rows);
+  c.appendChild(table);
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const member = cache.team[i];
+    const actions = tr.querySelector("[data-actions]");
+    actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "Edit", () => openEditModal("team", member.id, member)));
+    actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this team member?")) return;
+      await deleteDoc(doc(db, "team", member.id));
+      toast("Deleted"); loadAll();
+    }));
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// CALENDAR
+// ─────────────────────────────────────────────────────────────
+let calInstance = null;
+const calendarFilters = { jobs: true, invoices: true, service: true };
+const STATUS_COLORS = {
+  estimate:     { bg: "#64748b", fg: "#0b1220" },
+  scheduled:    { bg: "#3b82f6", fg: "#0b1220" },
+  "in-progress": { bg: "#f59e0b", fg: "#0b1220" },
+  complete:     { bg: "#10b981", fg: "#0b1220" }
+};
+
+function getCalendarEvents() {
+  const events = [];
+  if (calendarFilters.jobs) {
+    cache.jobs.forEach(j => {
+      const c = STATUS_COLORS[j.status] || STATUS_COLORS.estimate;
+      events.push({
+        id: "job-" + j.id,
+        title: j.customer + (j.address ? " — " + j.address : ""),
+        date: j.date,
+        backgroundColor: c.bg, borderColor: c.bg, textColor: c.fg,
+        extendedProps: { kind: "job", data: j }
+      });
+    });
+  }
+  if (calendarFilters.invoices) {
+    cache.invoices.filter(i => i.status !== "paid" && i.dueDate).forEach(i => {
+      events.push({
+        id: "inv-" + i.id,
+        title: "$ " + i.customer + " — " + money(i.amount),
+        date: i.dueDate,
+        backgroundColor: "rgba(239,68,68,0.18)",
+        borderColor: "rgba(239,68,68,0.45)",
+        textColor: "#fca5a5",
+        extendedProps: { kind: "invoice", data: i }
+      });
+    });
+  }
+  if (calendarFilters.service) {
+    cache.vehicles.filter(v => v.nextServiceDue).forEach(v => {
+      events.push({
+        id: "veh-" + v.id,
+        title: "Service: " + v.name,
+        date: v.nextServiceDue,
+        backgroundColor: "rgba(139,92,246,0.18)",
+        borderColor: "rgba(139,92,246,0.45)",
+        textColor: "#c4b5fd",
+        extendedProps: { kind: "vehicle", data: v }
+      });
+    });
+  }
+  return events;
+}
+
+function initCalendar() {
+  if (calInstance) { calInstance.updateSize(); return; }
+  const el = document.getElementById("calendar");
+  calInstance = new FullCalendar.Calendar(el, {
+    initialView: "dayGridMonth",
+    headerToolbar: false,
+    height: "auto",
+    firstDay: 0,
+    fixedWeekCount: false,
+    dayMaxEvents: 3,
+    events: getCalendarEvents(),
+    eventClick: (info) => {
+      const { kind, data } = info.event.extendedProps;
+      if (kind === "job") openJobModal(data.id);
+      else if (kind === "invoice") openEditModal("invoices", data.id, data);
+      else if (kind === "vehicle") openEditModal("vehicles", data.id, data);
+    },
+    datesSet: (info) => {
+      const t = document.getElementById("cal-title");
+      if (t) t.textContent = info.view.title;
+    }
+  });
+  calInstance.render();
+
+  document.getElementById("cal-prev").onclick = () => calInstance.prev();
+  document.getElementById("cal-next").onclick = () => calInstance.next();
+  document.getElementById("cal-today").onclick = () => calInstance.today();
+
+  document.querySelectorAll("[data-cal-view]").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("[data-cal-view]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      calInstance.changeView(btn.dataset.calView);
+    };
+  });
+  const monthBtn = document.querySelector('[data-cal-view="dayGridMonth"]');
+  if (monthBtn) monthBtn.classList.add("active");
+
+  document.querySelectorAll("[data-cal-filter]").forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.calFilter;
+      calendarFilters[key] = !calendarFilters[key];
+      btn.classList.toggle("active", calendarFilters[key]);
+      refreshCalendar();
+    };
+  });
+}
+
+function refreshCalendar() {
+  if (!calInstance) return;
+  calInstance.removeAllEvents();
+  getCalendarEvents().forEach(ev => calInstance.addEvent(ev));
+}
+
+// ─────────────────────────────────────────────────────────────
+// MONTHLY P&L
+// ─────────────────────────────────────────────────────────────
+function updatePnL() {
+  const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
+  const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
+  const collectedThisMonth = cache.invoices.filter(i => i.status === "paid" && (isInThisMonth(i.paidDate) || (!i.paidDate && isInThisMonth(i.date))));
+
+  const invoiced = invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const collected = collectedThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const expenses = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const net = invoiced - expenses;
+  const margin = invoiced > 0 ? (net / invoiced) * 100 : 0;
+
+  document.getElementById("pnl-month").textContent = monthLabel();
+  document.getElementById("pnl-invoiced").textContent = money(invoiced);
+  document.getElementById("pnl-invoiced-sub").textContent = `${invsThisMonth.length} invoice${invsThisMonth.length === 1 ? "" : "s"}`;
+  document.getElementById("pnl-collected").textContent = money(collected);
+  document.getElementById("pnl-collected-sub").textContent = `${collectedThisMonth.length} paid`;
+  document.getElementById("pnl-expenses").textContent = money(expenses);
+  document.getElementById("pnl-expenses-sub").textContent = `${expsThisMonth.length} entr${expsThisMonth.length === 1 ? "y" : "ies"}`;
+  document.getElementById("pnl-net").textContent = money(net);
+  document.getElementById("pnl-net").className = "font-serif text-3xl " + (net >= 0 ? "text-emerald-400" : "text-red-400");
+  document.getElementById("pnl-net-sub").textContent = invoiced > 0 ? `${margin.toFixed(1)}% margin` : "—";
+
+  const bar = document.getElementById("pnl-bar-fill");
+  const pct = invoiced > 0 ? Math.max(0, Math.min(100, (net / invoiced) * 100)) : 0;
+  bar.style.width = pct + "%";
+  bar.className = "h-full " + (net >= 0 ? "bg-gradient-to-r from-emerald-500 to-teal-400" : "bg-gradient-to-r from-red-500 to-rose-400");
+}
+
+// ─────────────────────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────────────────────
+function updateStats() {
+  const today = todayISO();
+  const jobsToday = cache.jobs.filter(j => j.date === today).length;
+  const spentToday = cache.expenses.filter(e => e.date === today).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const owed = cache.invoices.filter(i => i.status !== "paid").reduce((s, i) => s + Number(i.amount || 0), 0);
+  const in30 = new Date(); in30.setDate(in30.getDate() + 30);
+  const serviceDue = cache.vehicles.filter(v => v.nextServiceDue && new Date(v.nextServiceDue) <= in30).length;
+
+  document.getElementById("stat-jobs").textContent    = jobsToday;
+  document.getElementById("stat-spent").textContent   = money(spentToday);
+  document.getElementById("stat-owed").textContent    = money(owed);
+  document.getElementById("stat-service").textContent = serviceDue;
+}
+
+// ─────────────────────────────────────────────────────────────
+// JOB DETAIL MODAL
+// ─────────────────────────────────────────────────────────────
+let jobModalJobId = null;
+function openJobModal(jobId) {
+  jobModalJobId = jobId;
+  renderJobModal();
+  const m = document.getElementById("job-modal");
+  m.classList.remove("hidden"); m.classList.add("flex");
+}
+function closeJobModal() {
+  const m = document.getElementById("job-modal");
+  m.classList.add("hidden"); m.classList.remove("flex");
+  jobModalJobId = null;
+}
+document.getElementById("job-backdrop").onclick = closeJobModal;
+document.getElementById("job-close").onclick = closeJobModal;
+
+function renderJobModal() {
+  const j = jobById(jobModalJobId);
+  if (!j) return closeJobModal();
+  const m = computeJobMetrics(j.id);
+  const jobInvoices = cache.invoices.filter(i => i.jobId === j.id);
+  const jobExpenses = cache.expenses.filter(e => e.jobId === j.id);
+  const margin = m.invoiced > 0 ? (m.profit / m.invoiced) * 100 : 0;
+
+  const el = document.getElementById("job-detail");
+  el.innerHTML = `
+    <div class="mb-6">
+      <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Job Detail</div>
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="font-serif text-3xl text-white tracking-tight leading-tight">${escapeHtml(j.customer)}</h2>
+          <div class="text-sm text-slate-500 mt-1">${escapeHtml(j.address || "—")} · ${fmtDate(j.date)}</div>
+        </div>
+        <div>${statusPill(j.status).outerHTML}</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div class="glass rounded-xl p-4">
+        <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Contract</div>
+        <div class="font-serif text-2xl text-white">${money(j.amount)}</div>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Invoiced</div>
+        <div class="font-serif text-2xl text-white">${money(m.invoiced)}</div>
+        <div class="text-[10px] text-slate-500 mt-1">${m.invoiceCount} invoice${m.invoiceCount === 1 ? "" : "s"}</div>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Expenses</div>
+        <div class="font-serif text-2xl text-amber-400">${money(m.expenses)}</div>
+        <div class="text-[10px] text-slate-500 mt-1">${m.expenseCount} entr${m.expenseCount === 1 ? "y" : "ies"}</div>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-2">Profit</div>
+        <div class="font-serif text-2xl ${m.profit >= 0 ? "text-emerald-400" : "text-red-400"}">${money(m.profit)}</div>
+        <div class="text-[10px] text-slate-500 mt-1">${m.invoiced > 0 ? margin.toFixed(1) + "% margin" : "—"}</div>
+      </div>
+    </div>
+    <div class="flex gap-2 mb-6 flex-wrap">
+      <button class="add-to-job-btn inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-3.5 py-2 rounded-lg text-xs font-medium transition" data-add="invoice">+ Add invoice</button>
+      <button class="add-to-job-btn inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-3.5 py-2 rounded-lg text-xs font-medium transition" data-add="expense">+ Add expense</button>
+    </div>
+    <div class="space-y-6">
+      <div>
+        <div class="text-[11px] font-medium text-slate-500 tracking-[0.15em] uppercase mb-3">Invoices</div>
+        ${jobInvoices.length ? `
+          <div class="glass rounded-xl overflow-hidden">
+            <table class="w-full text-sm">
+              <thead><tr class="border-b border-white/[0.06]">
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Sent</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Amount</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Due</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Status</th>
+                <th></th>
+              </tr></thead>
+              <tbody>
+                ${jobInvoices.map(inv => `
+                  <tr class="border-b border-white/[0.04] last:border-0">
+                    <td class="px-4 py-2.5 text-slate-300">${fmtDate(inv.date)}</td>
+                    <td class="px-4 py-2.5 text-slate-300">${money(inv.amount)}</td>
+                    <td class="px-4 py-2.5 text-slate-400">${fmtDate(inv.dueDate)}</td>
+                    <td class="px-4 py-2.5">${statusPill(inv.status).outerHTML}</td>
+                    <td class="px-3 py-2.5 text-right" data-inv-actions="${inv.id}"></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : `<div class="text-sm text-slate-500 glass rounded-xl p-4">No invoices linked to this job yet.</div>`}
+      </div>
+      <div>
+        <div class="text-[11px] font-medium text-slate-500 tracking-[0.15em] uppercase mb-3">Expenses</div>
+        ${jobExpenses.length ? `
+          <div class="glass rounded-xl overflow-hidden">
+            <table class="w-full text-sm">
+              <thead><tr class="border-b border-white/[0.06]">
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Date</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Vendor</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Category</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Amount</th>
+                <th></th>
+              </tr></thead>
+              <tbody>
+                ${jobExpenses.map(ex => `
+                  <tr class="border-b border-white/[0.04] last:border-0">
+                    <td class="px-4 py-2.5 text-slate-300">${fmtDate(ex.date)}</td>
+                    <td class="px-4 py-2.5 text-slate-300">${escapeHtml(ex.vendor)}</td>
+                    <td class="px-4 py-2.5 text-slate-400">${ex.category || "—"}</td>
+                    <td class="px-4 py-2.5 text-amber-400">${money(ex.amount)}</td>
+                    <td class="px-3 py-2.5 text-right" data-exp-actions="${ex.id}"></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : `<div class="text-sm text-slate-500 glass rounded-xl p-4">No expenses linked to this job yet.</div>`}
+      </div>
+    </div>
+  `;
+
+  jobInvoices.forEach(inv => {
+    const cell = el.querySelector(`[data-inv-actions="${inv.id}"]`);
+    if (inv.status !== "paid") {
+      cell.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10 transition", "Mark paid", async () => {
+        await updateDoc(doc(db, "invoices", inv.id), { status: "paid", paidDate: todayISO() });
+        toast("Marked paid"); await loadAll(); renderJobModal();
+      }));
+    }
+    cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("invoices", inv.id, inv)));
+    cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this invoice?")) return;
+      await deleteDoc(doc(db, "invoices", inv.id));
+      toast("Deleted"); await loadAll(); renderJobModal();
+    }));
+  });
+
+  jobExpenses.forEach(ex => {
+    const cell = el.querySelector(`[data-exp-actions="${ex.id}"]`);
+    cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition", "Edit", () => openEditModal("expenses", ex.id, ex)));
+    cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this expense?")) return;
+      await deleteDoc(doc(db, "expenses", ex.id));
+      toast("Deleted"); await loadAll(); renderJobModal();
+    }));
+  });
+
+  el.querySelectorAll(".add-to-job-btn").forEach(btn => {
+    btn.onclick = () => {
+      const kind = btn.dataset.add;
+      closeJobModal();
+      const tabBtn = document.querySelector(`.nav-item[data-tab="${kind === "invoice" ? "invoices" : "expenses"}"]`);
+      tabBtn?.click();
+      setTimeout(() => {
+        const wrapId = kind === "invoice" ? "invoice-form-wrap" : "expense-form-wrap";
+        const wrap = document.getElementById(wrapId);
+        wrap.classList.remove("hidden");
+        const sel = wrap.querySelector("[data-job-select]");
+        if (sel) sel.value = j.id;
+        wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    };
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEND TO MODAL
+// ─────────────────────────────────────────────────────────────
+const sendModal = document.getElementById("send-modal");
+const sendBackdrop = document.getElementById("send-backdrop");
+const sendClose = document.getElementById("send-close");
+
+function getLastAIMessage() {
+  for (let i = chatHistory.length - 1; i >= 0; i--) {
+    if (chatHistory[i].role === "model") return chatHistory[i].text;
+  }
+  return null;
+}
+
+function updateSendButton() {
+  const btn = document.getElementById("send-to-btn");
+  if (!btn) return;
+  btn.disabled = !getLastAIMessage();
+}
+
+function openSendModal() {
+  const text = getLastAIMessage();
+  if (!text) { toast("Nothing to send yet — generate a brief or ask a question first", "error"); return; }
+  document.getElementById("send-preview").textContent = text;
+
+  const list = document.getElementById("send-team-list");
+  list.innerHTML = "";
+  if (!cache.team.length) {
+    list.innerHTML = `<div class="text-sm text-slate-500 py-6 text-center px-4">No team members yet.<br><button id="send-goto-settings" class="text-amber-400 hover:text-amber-300 font-medium mt-2">Add people in Settings →</button></div>`;
+    const goto = document.getElementById("send-goto-settings");
+    if (goto) goto.onclick = () => { closeSendModal(); document.querySelector('.nav-item[data-tab="settings"]')?.click(); };
+  } else {
+    cache.team.forEach(t => {
+      const label = document.createElement("label");
+      label.className = "flex items-center gap-3 p-3 hover:bg-white/[0.03] cursor-pointer transition border-b border-white/[0.04] last:border-0";
+      label.innerHTML = `
+        <input type="checkbox" value="${t.id}" class="send-team-checkbox w-4 h-4 rounded border-white/20 bg-white/[0.03] text-amber-500 focus:ring-amber-500/50" />
+        <div class="flex-1 min-w-0">
+          <div class="text-sm text-white truncate">${escapeHtml(t.name)}${t.role ? ` <span class="text-slate-500 text-xs">· ${escapeHtml(t.role)}</span>` : ""}</div>
+          <div class="text-xs text-slate-500 truncate">${escapeHtml(t.email || t.phone || "—")}</div>
+        </div>
+      `;
+      list.appendChild(label);
+    });
+  }
+
+  sendModal.classList.remove("hidden"); sendModal.classList.add("flex");
+}
+function closeSendModal() {
+  sendModal.classList.add("hidden"); sendModal.classList.remove("flex");
+}
+
+sendBackdrop.onclick = closeSendModal;
+sendClose.onclick = closeSendModal;
+document.getElementById("send-to-btn").onclick = openSendModal;
+
+document.getElementById("send-copy-btn").onclick = async () => {
+  const text = getLastAIMessage();
+  if (!text) return;
+  const selected = Array.from(document.querySelectorAll(".send-team-checkbox:checked"));
+  if (!selected.length) { toast("Pick at least one person", "error"); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    const names = cache.team.filter(t => selected.some(s => s.value === t.id)).map(t => t.name).join(", ");
+    toast(`Copied for ${names}`);
+    closeSendModal();
+  } catch {
+    toast("Couldn't copy to clipboard", "error");
+  }
+};
+
+document.getElementById("send-email-btn").onclick = () => {
+  const text = getLastAIMessage();
+  if (!text) return;
+  const selected = Array.from(document.querySelectorAll(".send-team-checkbox:checked"));
+  if (!selected.length) { toast("Pick at least one person", "error"); return; }
+  const members = cache.team.filter(t => selected.some(s => s.value === t.id));
+  const emails = members.map(m => m.email).filter(Boolean).join(",");
+  if (!emails) { toast("Selected people have no email address", "error"); return; }
+  const subject = encodeURIComponent(`Joe Westlake LLC — Brief (${new Date().toLocaleDateString()})`);
+  const body = encodeURIComponent(text);
+  window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+  toast("Opening email client…");
+  closeSendModal();
+};
+
+// ─────────────────────────────────────────────────────────────
+// EDIT MODAL
+// ─────────────────────────────────────────────────────────────
+const EDIT_CONFIG = {
+  jobs: { label: "Job", fields: [
+    { name: "customer", label: "Customer", type: "text", required: true },
+    { name: "address",  label: "Address",  type: "text" },
+    { name: "date",     label: "Date",     type: "date", required: true },
+    { name: "status",   label: "Status",   type: "select", options: ["estimate","scheduled","in-progress","complete"] },
+    { name: "amount",   label: "Contract amount", type: "number", step: "0.01" },
+    { name: "notes",    label: "Notes",    type: "text", full: true }
+  ]},
+  expenses: { label: "Expense", fields: [
+    { name: "vendor",   label: "Vendor",   type: "text", required: true },
+    { name: "category", label: "Category", type: "select", options: ["paint","gas","supplies","tools","vehicle","other"] },
+    { name: "amount",   label: "Amount",   type: "number", step: "0.01", required: true },
+    { name: "date",     label: "Date",     type: "date", required: true },
+    { name: "jobId",    label: "Job",      type: "job-select", full: true },
+    { name: "note",     label: "Note",     type: "text", full: true }
+  ]},
+  invoices: { label: "Invoice", fields: [
+    { name: "customer", label: "Customer",  type: "text", required: true },
+    { name: "amount",   label: "Amount",    type: "number", step: "0.01", required: true },
+    { name: "date",     label: "Sent date", type: "date", required: true },
+    { name: "dueDate",  label: "Due date",  type: "date" },
+    { name: "jobId",    label: "Job",       type: "job-select", full: true },
+    { name: "status",   label: "Status",    type: "select", options: ["sent","paid","overdue"] },
+    { name: "notes",    label: "Notes",     type: "text", full: true }
+  ]},
+  vehicles: { label: "Vehicle", fields: [
+    { name: "name",           label: "Name",             type: "text", required: true },
+    { name: "plate",          label: "Plate",            type: "text" },
+    { name: "odometer",       label: "Odometer",         type: "number" },
+    { name: "lastService",    label: "Last service",     type: "date" },
+    { name: "nextServiceDue", label: "Next service due", type: "date" },
+    { name: "notes",          label: "Notes",            type: "text", full: true }
+  ]},
+  team: { label: "Team Member", fields: [
+    { name: "name",  label: "Name",  type: "text", required: true },
+    { name: "email", label: "Email", type: "email" },
+    { name: "phone", label: "Phone", type: "tel" },
+    { name: "role",  label: "Role",  type: "text", full: true }
+  ]}
+};
+
+let editContext = null;
+
+function openEditModal(collectionName, docId, data) {
+  const cfg = EDIT_CONFIG[collectionName];
+  if (!cfg) return;
+  editContext = { collectionName, docId };
+  document.getElementById("edit-title").textContent = "Edit " + cfg.label;
+  const fields = document.getElementById("edit-fields");
+  fields.innerHTML = "";
+  cfg.fields.forEach(f => {
+    const wrap = document.createElement("div");
+    if (f.full) wrap.className = "md:col-span-2";
+    const label = document.createElement("label");
+    label.className = "block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2";
+    label.textContent = f.label + (f.required ? " *" : "");
+    wrap.appendChild(label);
+    let input;
+    if (f.type === "select") {
+      input = document.createElement("select");
+      f.options.forEach(opt => { const o = document.createElement("option"); o.value = opt; o.textContent = opt; input.appendChild(o); });
+    } else if (f.type === "job-select") {
+      input = document.createElement("select");
+      const none = document.createElement("option");
+      none.value = ""; none.textContent = "— Overhead (no job) —";
+      input.appendChild(none);
+      cache.jobs.forEach(j => {
+        const o = document.createElement("option");
+        o.value = j.id;
+        o.textContent = `${j.customer}${j.address ? " — " + j.address : ""} (${fmtDate(j.date)})`;
+        input.appendChild(o);
+      });
+    } else {
+      input = document.createElement("input");
+      input.type = f.type;
+      if (f.step) input.step = f.step;
+      if (f.required) input.required = true;
+    }
+    input.name = f.name;
+    input.className = "w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition";
+    const v = data[f.name];
+    if (v !== undefined && v !== null) input.value = v;
+    wrap.appendChild(input);
+    fields.appendChild(wrap);
+  });
+  const m = document.getElementById("edit-modal");
+  m.classList.remove("hidden"); m.classList.add("flex");
+  setTimeout(() => fields.querySelector("input, select")?.focus(), 100);
+}
+function closeEditModal() {
+  const m = document.getElementById("edit-modal");
+  m.classList.add("hidden"); m.classList.remove("flex");
+  editContext = null;
+}
+document.getElementById("edit-backdrop").onclick = closeEditModal;
+document.getElementById("edit-close").onclick = closeEditModal;
+document.getElementById("edit-cancel").onclick = closeEditModal;
+
+document.getElementById("edit-form").onsubmit = async (e) => {
+  e.preventDefault();
+  if (!editContext) return;
+  const { collectionName, docId } = editContext;
+  const cfg = EDIT_CONFIG[collectionName];
+  const data = {};
+  cfg.fields.forEach(f => {
+    const input = e.target.querySelector(`[name="${f.name}"]`);
+    if (!input) return;
+    const raw = input.value;
+    data[f.name] = (f.type === "number" && raw !== "") ? Number(raw) : raw;
+  });
+  if (collectionName === "invoices" && data.status === "paid") {
+    const existing = cache.invoices.find(i => i.id === docId);
+    if (!existing?.paidDate) data.paidDate = todayISO();
+  }
+  try {
+    await updateDoc(doc(db, collectionName, docId), data);
+    toast("Updated");
+    closeEditModal();
+    await loadAll();
+    if (jobModalJobId) renderJobModal();
+  } catch (err) { toast(err.message, "error"); }
+};
+
+// ─────────────────────────────────────────────────────────────
+// ADD FORMS
+// ─────────────────────────────────────────────────────────────
+function formToObject(form) {
+  const obj = {};
+  new FormData(form).forEach((v, k) => {
+    if (v !== "") obj[k] = (k === "amount" || k === "odometer") ? Number(v) : v;
+  });
+  return obj;
+}
+function wireForm(id, collectionName, reload, label) {
+  document.getElementById(id).onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const data = formToObject(e.target);
+      if (collectionName === "invoices" && data.status === "paid" && !data.paidDate) data.paidDate = todayISO();
+      await addDoc(collection(db, collectionName), { ...data, createdAt: serverTimestamp() });
+      e.target.reset();
+      toast(`${label} added`);
+      await loadAll();
+      const wrap = e.target.closest("[id$='-form-wrap']");
+      if (wrap) wrap.classList.add("hidden");
+      if (jobModalJobId) renderJobModal();
+    } catch (err) { toast(err.message, "error"); }
+  };
+}
+wireForm("job-form",     "jobs",     loadAll, "Job");
+wireForm("expense-form", "expenses", loadAll, "Expense");
+wireForm("invoice-form", "invoices", loadAll, "Invoice");
+wireForm("vehicle-form", "vehicles", loadAll, "Vehicle");
+wireForm("team-form",    "team",     loadAll, "Team member");
+
+// ─────────────────────────────────────────────────────────────
+// AI — DAILY BRIEF (now on the AI tab)
+// ─────────────────────────────────────────────────────────────
+async function generateDailyBrief() {
+  const btn = document.getElementById("daily-brief-btn");
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="w-4 h-4 spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2"/><path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg><span>Generating…</span>`;
+
+  const today = todayISO();
+  try {
+    const jobsToday = cache.jobs.filter(j => j.date === today);
+    const expensesToday = cache.expenses.filter(e => e.date === today);
+    const invoicesToday = cache.invoices.filter(i => i.date === today);
+    const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
+    const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
+    const monthlyInvoiced = invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
+    const monthlyExpenses = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+    const context = {
+      today, month: monthLabel(),
+      jobsToday: jobsToday.map(j => ({ customer: j.customer, address: j.address, status: j.status, amount: j.amount })),
+      expensesToday: expensesToday.map(e => ({ vendor: e.vendor, category: e.category, amount: e.amount })),
+      invoicesToday: invoicesToday.map(i => ({ customer: i.customer, amount: i.amount })),
+      monthly: { invoiced: monthlyInvoiced, expenses: monthlyExpenses, net: monthlyInvoiced - monthlyExpenses }
+    };
+
+    const prompt = `You are an assistant for a painting business owner.
+Today is ${today}.
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Write a short daily brief (4-6 lines max) covering:
+- What jobs happened today
+- What was spent today
+- Monthly financial snapshot (invoiced vs expenses)
+- Anything needing attention
+
+Be specific with numbers. If a section has no data, say so briefly. No markdown, no bullet symbols, just clean sentences.`;
+
+    const res = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      addMessage("model", text);
+    } else {
+      toast("No response from Gemini. Check the console.", "error");
+    }
+  } catch (err) {
+    console.error(err);
+    toast("Error: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+document.getElementById("daily-brief-btn").onclick = generateDailyBrief;
+
+// ─────────────────────────────────────────────────────────────
+// COMPANY AI CHAT
+// ─────────────────────────────────────────────────────────────
+const chatMessages = document.getElementById("chat-messages");
+const chatInput    = document.getElementById("chat-input");
+const chatForm     = document.getElementById("chat-form");
+const chatSend     = document.getElementById("chat-send");
+const chatEmpty    = document.getElementById("chat-empty");
+
+let chatHistory = [];
+let chatLoading = false;
+
+function loadChatHistory() {
+  try { const saved = localStorage.getItem("jw_chat_history"); chatHistory = saved ? JSON.parse(saved) : []; } catch { chatHistory = []; }
+  renderChat();
+  updateSendButton();
+}
+function saveChatHistory() {
+  try { localStorage.setItem("jw_chat_history", JSON.stringify(chatHistory.slice(-30))); } catch {}
+}
+function renderChat() {
+  [...chatMessages.children].forEach(c => { if (c.id !== "chat-empty") c.remove(); });
+  if (chatHistory.length === 0) { chatEmpty.style.display = ""; return; }
+  chatEmpty.style.display = "none";
+  chatHistory.forEach(m => {
+    const el = document.createElement("div");
+    el.className = "msg-in flex " + (m.role === "user" ? "justify-end" : "justify-start");
+    if (m.role === "user") {
+      el.innerHTML = `<div class="max-w-[80%] sm:max-w-[70%] bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-[13.5px] leading-relaxed shadow-lg shadow-amber-500/10">${escapeHtml(m.text)}</div>`;
+    } else {
+      el.innerHTML = `<div class="flex items-start gap-3 max-w-[85%] sm:max-w-[75%]"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center shrink-0 mt-0.5"><svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></div><div class="flex-1 bg-white/[0.03] border border-white/[0.06] text-slate-200 rounded-2xl rounded-tl-md px-4 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap">${escapeHtml(m.text)}</div></div>`;
+    }
+    chatMessages.appendChild(el);
+  });
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  updateSendButton();
+}
+function addMessage(role, text) { chatHistory.push({ role, text }); saveChatHistory(); renderChat(); }
+function showTypingIndicator() {
+  const el = document.createElement("div");
+  el.id = "chat-typing"; el.className = "msg-in flex justify-start";
+  el.innerHTML = `<div class="flex items-start gap-3"><div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center shrink-0 mt-0.5"><svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></div><div class="bg-white/[0.03] border border-white/[0.06] rounded-2xl rounded-tl-md px-4 py-3"><div class="flex gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-bounce" style="animation-delay:0ms"></span><span class="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-bounce" style="animation-delay:150ms"></span><span class="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-bounce" style="animation-delay:300ms"></span></div></div></div>`;
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function removeTypingIndicator() { document.getElementById("chat-typing")?.remove(); }
+
+chatInput.addEventListener("input", () => { chatInput.style.height = "auto"; chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + "px"; });
+chatInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); } });
+document.querySelectorAll(".suggestion").forEach(btn => {
+  btn.onclick = () => { chatInput.value = btn.textContent.trim(); chatInput.focus(); chatForm.requestSubmit(); };
+});
+document.getElementById("clear-chat-btn").onclick = () => {
+  if (!confirm("Clear conversation?")) return;
+  chatHistory = []; saveChatHistory(); renderChat(); toast("Chat cleared");
+};
+
+async function fetchCompanySnapshot() {
+  const jobs = cache.jobs.map(j => {
+    const m = computeJobMetrics(j.id);
+    return { customer: j.customer, address: j.address, date: j.date, status: j.status, contract: j.amount, invoiced: m.invoiced, collected: m.collected, expenses: m.expenses, profit: m.profit, notes: j.notes };
+  });
+  const expenses = cache.expenses.slice(0, 200).map(e => ({ date: e.date, vendor: e.vendor, category: e.category, amount: e.amount, job: jobLabel(e.jobId), note: e.note }));
+  const invoices = cache.invoices.slice(0, 200).map(i => ({ date: i.date, customer: i.customer, amount: i.amount, dueDate: i.dueDate, status: i.status, paidDate: i.paidDate, job: jobLabel(i.jobId) }));
+  const vehicles = cache.vehicles.slice(0, 50).map(v => ({ name: v.name, plate: v.plate, odometer: v.odometer, lastService: v.lastService, nextServiceDue: v.nextServiceDue }));
+  const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
+  const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
+  return {
+    today: todayISO(), month: monthLabel(),
+    monthly: { invoiced: invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0), expenses: expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0) },
+    jobs, expenses, invoices, vehicles
+  };
+}
+
+chatForm.onsubmit = async (e) => {
+  e.preventDefault();
+  if (chatLoading) return;
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = ""; chatInput.style.height = "46px";
+  addMessage("user", text);
+  chatLoading = true; chatSend.disabled = true;
+  showTypingIndicator();
+
+  try {
+    const snapshot = await fetchCompanySnapshot();
+    const systemPrompt = `You are the Company AI for Joe Westlake Painting LLC — a painting business.
+You help the owner understand the business. You have access to the full data snapshot below.
+
+Rules:
+- Always answer using the data provided. Never invent numbers, names, or jobs.
+- If the data doesn't contain the answer, say so plainly.
+- Be concise. Use short paragraphs or simple lists when helpful.
+- Currency is USD. Today's date is ${snapshot.today}.
+- Jobs include invoiced, expenses, and profit totals — use these for profitability questions.
+- When referring to money or jobs, cite the specific figures from the data.
+
+Company data snapshot (JSON):
+${JSON.stringify(snapshot)}`;
+
+    const contents = [
+      { role: "user",  parts: [{ text: systemPrompt }] },
+      { role: "model", parts: [{ text: "Understood. I have the full company snapshot and will answer using only that data." }] },
+      ...chatHistory.slice(0, -1).map(m => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] })),
+      { role: "user", parts: [{ text: text }] }
+    ];
+
+    const res = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
+      body: JSON.stringify({ contents })
+    });
+    const data = await res.json();
+    removeTypingIndicator();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response. Check the console for details.";
+    addMessage("model", reply);
+  } catch (err) {
+    console.error(err);
+    removeTypingIndicator();
+    addMessage("model", `Error: ${err.message}`);
+  } finally {
+    chatLoading = false; chatSend.disabled = false; chatInput.focus();
+  }
+};
+</script>
+
 </body>
 </html>
