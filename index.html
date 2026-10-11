@@ -238,9 +238,10 @@
   .cal-filter:hover { color: #cbd5e1; }
   .cal-filter.active { color: #e2e8f0; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
   .cal-dot { width: 8px; height: 8px; border-radius: 9999px; display: inline-block; }
-  .cal-dot.jobs     { background: #3b82f6; }
-  .cal-dot.invoices { background: #ef4444; }
-  .cal-dot.service  { background: #8b5cf6; }
+  .cal-dot.jobs      { background: #3b82f6; }
+  .cal-dot.invoices  { background: #ef4444; }
+  .cal-dot.service   { background: #8b5cf6; }
+  .cal-dot.recurring { background: #f59e0b; }
 
   .chart-shell {
     position: relative;
@@ -278,9 +279,10 @@
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
     margin-bottom: 24px;
+    flex-wrap: wrap;
   }
   .money-subtabs button {
-    padding: 10px 20px;
+    padding: 10px 16px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
@@ -290,10 +292,25 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    position: relative;
   }
   .money-subtabs button.active {
     background: rgba(255,255,255,0.08);
     color: #fff;
+  }
+  .money-subtabs button .subtab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    background: rgba(251, 146, 60, 0.9);
+    color: #1a1000;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 2px;
   }
 
   .import-drop {
@@ -566,6 +583,7 @@
   @media (max-width: 400px) {
     .bottom-nav-item { font-size: 9px; padding: 4px 2px; }
     .bottom-nav-item svg { width: 20px; height: 20px; }
+    .money-subtabs button { padding: 8px 12px; font-size: 13px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -592,7 +610,7 @@
         <div class="min-w-0">
           <div class="text-white font-medium leading-tight tracking-tight truncate">Joe Westlake</div>
           <div class="text-[11px] text-slate-500 tracking-wide uppercase truncate">Painting LLC</div>
-          <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.6</div>
+          <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.7</div>
         </div>
       </div>
     </div>
@@ -665,7 +683,7 @@
         </div>
         <div class="min-w-0">
           <div class="text-white font-medium text-sm tracking-tight truncate">Joe Westlake LLC</div>
-          <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5">v1.6</div>
+          <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5">v1.7</div>
         </div>
       </div>
       <div id="auth-area-mobile" class="shrink-0"></div>
@@ -886,7 +904,7 @@
           <div>
             <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Schedule</div>
             <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Calendar</h1>
-            <p class="text-sm text-slate-500 mt-3">Jobs, invoices due, and vehicle service</p>
+            <p class="text-sm text-slate-500 mt-3">Jobs, invoices due, vehicle service, and recurring bills</p>
           </div>
         </div>
 
@@ -918,6 +936,9 @@
           </button>
           <button data-cal-filter="service" class="cal-filter active">
             <span class="cal-dot service"></span> Service
+          </button>
+          <button data-cal-filter="recurring" class="cal-filter active">
+            <span class="cal-dot recurring"></span> Recurring
           </button>
         </div>
 
@@ -1067,6 +1088,11 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
             Expenses
           </button>
+          <button data-money-view="recurring" id="money-recurring-tab">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Recurring
+            <span id="recurring-subtab-badge" class="subtab-badge hidden">0</span>
+          </button>
         </div>
 
         <!-- INCOME SUB-VIEW -->
@@ -1173,6 +1199,11 @@
                   <option value="supplies">Supplies</option>
                   <option value="tools">Tools</option>
                   <option value="vehicle">Vehicle</option>
+                  <option value="insurance">Insurance</option>
+                  <option value="credit_card">Credit card</option>
+                  <option value="rent">Rent</option>
+                  <option value="utilities">Utilities</option>
+                  <option value="subscription">Subscription</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -1229,6 +1260,129 @@
             </div>
             <div id="chart-legend" class="glass rounded-2xl mt-4 p-4 space-y-2"></div>
           </div>
+        </div>
+
+        <!-- RECURRING SUB-VIEW -->
+        <div id="money-recurring-view" class="hidden">
+          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
+            <div>
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1">Fixed monthly</div>
+              <p class="text-sm text-slate-500">Credit cards, insurance, rent, subscriptions — the bills that come around every month. Set them once, apply them with one tap.</p>
+            </div>
+            <button data-toggle="recurring-form-wrap"
+              class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              New recurring
+            </button>
+          </div>
+
+          <!-- Unapplied banner -->
+          <div id="recurring-unapplied-banner" class="hidden mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.04] p-4 sm:p-5">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-white font-medium" id="recurring-unapplied-title">Recurring bills not applied yet</div>
+                <div class="text-xs text-slate-400 mt-0.5" id="recurring-unapplied-sub">—</div>
+              </div>
+              <button id="recurring-apply-all-btn"
+                class="shrink-0 inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-3.5 py-2.5 rounded-lg text-xs font-medium shadow-lg shadow-amber-500/20 transition btn-touch">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                Apply all
+              </button>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Monthly total</div>
+                <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8"/></svg>
+                </div>
+              </div>
+              <div id="recurring-stat-total" class="font-serif text-2xl sm:text-3xl text-amber-400">—</div>
+              <div class="text-[11px] text-slate-500 mt-1">Fixed cost per month</div>
+            </div>
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Active</div>
+                <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </div>
+              </div>
+              <div id="recurring-stat-active" class="font-serif text-2xl sm:text-3xl text-white">—</div>
+              <div id="recurring-stat-active-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+            </div>
+            <div class="glass glass-hover rounded-2xl p-4 sm:p-5 col-span-2 lg:col-span-1">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">Applied this month</div>
+                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+              </div>
+              <div id="recurring-stat-applied" class="font-serif text-2xl sm:text-3xl text-emerald-400">—</div>
+              <div id="recurring-stat-applied-sub" class="text-[11px] text-slate-500 mt-1">—</div>
+            </div>
+          </div>
+
+          <div id="recurring-form-wrap" class="hidden mb-6">
+            <form id="recurring-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Name *</label>
+                <input name="name" required placeholder="e.g. State Farm — Truck Insurance" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Vendor</label>
+                <input name="vendor" placeholder="e.g. State Farm" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Amount *</label>
+                <input name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Category</label>
+                <select name="category" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                  <option value="insurance">Insurance</option>
+                  <option value="credit_card">Credit card</option>
+                  <option value="rent">Rent</option>
+                  <option value="utilities">Utilities</option>
+                  <option value="subscription">Subscription</option>
+                  <option value="vehicle">Vehicle</option>
+                  <option value="tools">Tools</option>
+                  <option value="supplies">Supplies</option>
+                  <option value="paint">Paint</option>
+                  <option value="gas">Gas</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Day of month</label>
+                <input name="dayOfMonth" type="number" inputmode="numeric" min="1" max="31" value="1" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+                <p class="text-[11px] text-slate-500 mt-1.5">The date the bill hits each month</p>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Active</label>
+                <select name="active" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                  <option value="true">Active — apply each month</option>
+                  <option value="false">Paused — skip for now</option>
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Note</label>
+                <input name="note" placeholder="Optional" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
+              </div>
+              <div class="md:col-span-2 flex gap-3 pt-1">
+                <button class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg shadow-amber-500/20 btn-touch">Add recurring</button>
+                <button type="button" data-toggle="recurring-form-wrap"
+                  class="text-slate-400 hover:text-white px-4 py-3 text-sm font-medium">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="recurring-list" class="mobile-cards"></div>
         </div>
       </section>
 
@@ -1455,7 +1609,7 @@
           <div class="min-w-0">
             <div class="text-white font-medium leading-tight truncate">Joe Westlake LLC</div>
             <div class="text-[11px] text-slate-500 tracking-wide uppercase">Business Portal</div>
-            <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.6</div>
+            <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.7</div>
           </div>
         </div>
         <h2 class="font-serif text-3xl text-white tracking-tight mb-1" id="signin-title">Welcome back</h2>
@@ -1643,7 +1797,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, getDocs, query, where,
-  orderBy, serverTimestamp, deleteDoc, doc, updateDoc
+  orderBy, serverTimestamp, deleteDoc, doc, updateDoc,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -1673,11 +1828,42 @@ const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"
 const monthLabel = () => new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 const isMobile = () => window.matchMedia("(max-width: 1023px)").matches;
 
+// Category list — central place so everything stays in sync
+const ALL_CATEGORIES = ["paint","gas","supplies","tools","vehicle","insurance","credit_card","rent","utilities","subscription","other"];
+const CATEGORY_LABELS = {
+  paint: "Paint", gas: "Gas", supplies: "Supplies", tools: "Tools", vehicle: "Vehicle",
+  insurance: "Insurance", credit_card: "Credit card", rent: "Rent",
+  utilities: "Utilities", subscription: "Subscription", other: "Other"
+};
+const CATEGORY_COLORS = {
+  paint:        "#f59e0b",
+  gas:          "#3b82f6",
+  supplies:     "#8b5cf6",
+  tools:        "#10b981",
+  vehicle:      "#ef4444",
+  insurance:    "#06b6d4",
+  credit_card:  "#ec4899",
+  rent:         "#f97316",
+  utilities:    "#84cc16",
+  subscription: "#a855f7",
+  other:        "#64748b"
+};
+
 function isInThisMonth(dateStr) {
   if (!dateStr) return false;
   const d = new Date(dateStr + "T00:00:00");
   const now = new Date();
   return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
+
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+function monthKeyLabel(key) {
+  if (!key) return "";
+  const [y, m] = key.split("-");
+  return new Date(Number(y), Number(m)-1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
 
 function toast(msg, type = "success") {
@@ -1700,7 +1886,7 @@ function lockScroll(lock) {
 }
 
 // CACHE
-let cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [], income: [] };
+let cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [], income: [], recurring: [] };
 function jobById(id) { return cache.jobs.find(j => j.id === id) || null; }
 function jobLabel(id) {
   const j = jobById(id);
@@ -1810,8 +1996,9 @@ function signOutButtonHTML(prefix, email) {
   return `
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center shrink-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center shrink-0 relative">
           <span class="text-[10px] font-semibold text-amber-300">${(email || "?").charAt(0).toUpperCase()}</span>
+          <span id="${prefix}-sync-dot" class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-[#0d0d10]" title="Live sync on"></span>
         </div>
         <div class="text-[11px] text-slate-400 truncate max-w-[100px] lg:max-w-[140px]" title="${email}">${email}</div>
       </div>
@@ -1827,9 +2014,11 @@ onAuthStateChanged(auth, (user) => {
     m.innerHTML = signOutButtonHTML("m", user.email);
     document.getElementById("d-out").onclick = () => signOut(auth);
     document.getElementById("m-out").onclick = () => signOut(auth);
-    loadAll();
+    initListeners();   // <-- starts real-time sync
     loadChatHistory();
   } else {
+    detachAllListeners();  // <-- stop sync on sign out
+    cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [], income: [], recurring: [] };
     d.innerHTML = signInButtonHTML("d");
     m.innerHTML = `<button id="m-signin" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Sign in</button>`;
     document.getElementById("d-signin").onclick = openModal;
@@ -1838,6 +2027,127 @@ onAuthStateChanged(auth, (user) => {
     renderChat();
   }
 });
+
+// ═════════════════════════════════════════════════════════════
+// REALTIME SYNC — Firestore onSnapshot listeners on all collections
+// ═════════════════════════════════════════════════════════════
+let listeners = [];
+let renderScheduled = false;
+
+function detachAllListeners() {
+  listeners.forEach(unsub => { try { unsub(); } catch (e) { console.warn("unsub:", e); } });
+  listeners = [];
+}
+
+function scheduleRender() {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  // requestAnimationFrame batches multiple rapid-fire snapshots into one repaint
+  requestAnimationFrame(() => {
+    renderScheduled = false;
+    renderAll();
+  });
+}
+
+function renderAll() {
+  populateJobSelectors();
+  renderJobs();
+  renderExpenses();
+  renderInvoices();
+  renderIncome();
+  renderVehicles();
+  renderTeam();
+  renderRecurring();
+  updateStats();
+  updatePnL();
+  refreshCalendar();
+  updateSendButton();
+  maybeShowWelcome();
+  if (moneySubTab === "income" && incomeView === "chart") renderIncomeChart();
+  if (moneySubTab === "expenses" && expenseView === "chart") renderExpenseChart();
+  // Refresh the open job detail modal if one is showing
+  const jobModalEl = document.getElementById("job-modal");
+  if (jobModalJobId && jobModalEl && !jobModalEl.classList.contains("hidden")) {
+    renderJobModal();
+  }
+}
+
+function initListeners() {
+  detachAllListeners();
+  if (!auth.currentUser) return;
+
+  listeners.push(onSnapshot(
+    query(collection(db, "jobs"), orderBy("date", "desc")),
+    snap => {
+      cache.jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    },
+    err => console.error("jobs listener:", err)
+  ));
+
+  listeners.push(onSnapshot(
+    query(collection(db, "expenses"), orderBy("date", "desc")),
+    snap => {
+      cache.expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    },
+    err => console.error("expenses listener:", err)
+  ));
+
+  listeners.push(onSnapshot(
+    query(collection(db, "invoices"), orderBy("date", "desc")),
+    snap => {
+      cache.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    },
+    err => console.error("invoices listener:", err)
+  ));
+
+  listeners.push(onSnapshot(
+    collection(db, "vehicles"),
+    snap => {
+      cache.vehicles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    },
+    err => console.error("vehicles listener:", err)
+  ));
+
+  listeners.push(onSnapshot(
+    query(collection(db, "team"), orderBy("name", "asc")),
+    snap => {
+      cache.team = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    },
+    err => console.error("team listener:", err)
+  ));
+
+  listeners.push(onSnapshot(
+    query(collection(db, "income"), orderBy("date", "desc")),
+    snap => {
+      cache.income = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    },
+    err => {
+      console.warn("income listener:", err);
+      cache.income = [];
+      scheduleRender();
+    }
+  ));
+
+  listeners.push(onSnapshot(
+    collection(db, "recurring"),
+    snap => {
+      cache.recurring = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cache.recurring.sort((a, b) => (Number(a.dayOfMonth) || 1) - (Number(b.dayOfMonth) || 1));
+      scheduleRender();
+    },
+    err => {
+      console.warn("recurring listener:", err);
+      cache.recurring = [];
+      scheduleRender();
+    }
+  ));
+}
 
 // TABS
 const tabs = document.querySelectorAll(".nav-item");
@@ -1901,8 +2211,9 @@ document.getElementById("mobile-fab").onclick = () => {
   if (id === "tab-jobs") toggleForm("job-form-wrap");
   else if (id === "tab-money") {
     if (moneySubTab === "income") {
-      // No direct "add income" form — open bank import instead
       openBankModal();
+    } else if (moneySubTab === "recurring") {
+      toggleForm("recurring-form-wrap");
     } else {
       toggleForm("expense-form-wrap");
     }
@@ -2048,54 +2359,6 @@ function renderTable(headers, rows) {
   return wrap;
 }
 
-// LOADERS
-async function loadAll() {
-  await Promise.all([fetchJobs(), fetchExpenses(), fetchInvoices(), fetchVehicles(), fetchTeam(), fetchIncome()]);
-  populateJobSelectors();
-  renderJobs();
-  renderExpenses();
-  renderInvoices();
-  renderIncome();
-  renderVehicles();
-  renderTeam();
-  updateStats();
-  updatePnL();
-  refreshCalendar();
-  updateSendButton();
-  maybeShowWelcome();
-  if (moneySubTab === "income" && incomeView === "chart") renderIncomeChart();
-  if (moneySubTab === "expenses" && expenseView === "chart") renderExpenseChart();
-}
-
-async function fetchJobs() {
-  const snap = await getDocs(query(collection(db, "jobs"), orderBy("date", "desc")));
-  cache.jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function fetchExpenses() {
-  const snap = await getDocs(query(collection(db, "expenses"), orderBy("date", "desc")));
-  cache.expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function fetchInvoices() {
-  const snap = await getDocs(query(collection(db, "invoices"), orderBy("date", "desc")));
-  cache.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function fetchVehicles() {
-  const snap = await getDocs(collection(db, "vehicles"));
-  cache.vehicles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function fetchTeam() {
-  const snap = await getDocs(query(collection(db, "team"), orderBy("name", "asc")));
-  cache.team = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function fetchIncome() {
-  try {
-    const snap = await getDocs(query(collection(db, "income"), orderBy("date", "desc")));
-    cache.income = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch (err) {
-    cache.income = [];
-  }
-}
-
 function populateJobSelectors() {
   document.querySelectorAll("[data-job-select]").forEach(sel => {
     const current = sel.value;
@@ -2150,7 +2413,7 @@ function renderJobs() {
       e.stopPropagation();
       if (!confirm("Delete this job?")) return;
       await deleteDoc(doc(db, "jobs", j.id));
-      toast("Deleted"); loadAll();
+      toast("Deleted");
     }));
   });
 }
@@ -2160,7 +2423,7 @@ function renderExpenses() {
   const c = document.getElementById("expenses-list");
   c.innerHTML = "";
   if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Tap the + button or import a bank statement.")); return; }
-  const rows = cache.expenses.map(e => [fmtDate(e.date), e.vendor, e.category || "—", money(e.amount), jobLabel(e.jobId)]);
+  const rows = cache.expenses.map(e => [fmtDate(e.date), e.vendor, CATEGORY_LABELS[e.category] || e.category || "—", money(e.amount), jobLabel(e.jobId)]);
   const table = renderTable(["Date","Vendor","Category","Amount","Job"], rows);
   c.appendChild(table);
   table.querySelectorAll("tbody tr").forEach((tr, i) => {
@@ -2170,7 +2433,7 @@ function renderExpenses() {
     actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this expense?")) return;
       await deleteDoc(doc(db, "expenses", e.id));
-      toast("Deleted"); loadAll();
+      toast("Deleted");
     }));
   });
 }
@@ -2247,7 +2510,6 @@ function renderIncome() {
         if (!confirm("Delete this income record?")) return;
         await deleteDoc(doc(db, "income", r.id));
         toast("Deleted");
-        await loadAll();
       }));
     }
   });
@@ -2267,14 +2529,14 @@ function renderInvoices() {
     if (inv.status !== "paid") {
       actions.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10 transition", "Mark paid", async () => {
         await updateDoc(doc(db, "invoices", inv.id), { status: "paid", paidDate: todayISO() });
-        toast("Marked paid"); loadAll();
+        toast("Marked paid");
       }));
     }
     actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("invoices", inv.id, inv)));
     actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this invoice?")) return;
       await deleteDoc(doc(db, "invoices", inv.id));
-      toast("Deleted"); loadAll();
+      toast("Deleted");
     }));
   });
 }
@@ -2294,7 +2556,7 @@ function renderVehicles() {
     actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this vehicle?")) return;
       await deleteDoc(doc(db, "vehicles", v.id));
-      toast("Deleted"); loadAll();
+      toast("Deleted");
     }));
   });
 }
@@ -2314,14 +2576,197 @@ function renderTeam() {
     actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this team member?")) return;
       await deleteDoc(doc(db, "team", member.id));
-      toast("Deleted"); loadAll();
+      toast("Deleted");
     }));
   });
 }
 
+// RENDER — RECURRING
+function isRecurringActive(r) {
+  return r.active === true || r.active === "true" || r.active === undefined;
+}
+
+function getUnappliedRecurring() {
+  const monthKey = currentMonthKey();
+  return cache.recurring.filter(r => isRecurringActive(r) && r.lastAppliedMonth !== monthKey);
+}
+
+function renderRecurring() {
+  const c = document.getElementById("recurring-list");
+  const monthKey = currentMonthKey();
+  const active = cache.recurring.filter(r => isRecurringActive(r));
+  const monthlyTotal = active.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const appliedThisMonth = cache.recurring.filter(r => r.lastAppliedMonth === monthKey);
+  const appliedTotal = appliedThisMonth.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const unapplied = getUnappliedRecurring();
+  const unappliedTotal = unapplied.reduce((s, r) => s + Number(r.amount || 0), 0);
+
+  // Stats
+  document.getElementById("recurring-stat-total").textContent = money(monthlyTotal);
+  document.getElementById("recurring-stat-active").textContent = active.length;
+  document.getElementById("recurring-stat-active-sub").textContent = `${cache.recurring.length} total template${cache.recurring.length === 1 ? "" : "s"}`;
+  document.getElementById("recurring-stat-applied").textContent = money(appliedTotal);
+  document.getElementById("recurring-stat-applied-sub").textContent = `${appliedThisMonth.length} of ${cache.recurring.length} applied in ${monthKeyLabel(monthKey)}`;
+
+  // Subtab badge
+  const badge = document.getElementById("recurring-subtab-badge");
+  if (unapplied.length) {
+    badge.textContent = unapplied.length;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+
+  // Banner
+  const banner = document.getElementById("recurring-unapplied-banner");
+  if (unapplied.length) {
+    document.getElementById("recurring-unapplied-title").textContent =
+      `${unapplied.length} recurring bill${unapplied.length === 1 ? "" : "s"} not applied for ${monthKeyLabel(monthKey)}`;
+    document.getElementById("recurring-unapplied-sub").textContent =
+      `${money(unappliedTotal)} of fixed costs still need to be logged as expenses.`;
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
+  }
+
+  // List
+  c.innerHTML = "";
+  if (!cache.recurring.length) {
+    c.appendChild(emptyState(
+      "No recurring expenses yet",
+      "Add credit cards, insurance, rent, subscriptions — anything you pay every month."
+    ));
+    return;
+  }
+
+  const rows = cache.recurring.map(r => {
+    const applied = r.lastAppliedMonth === monthKey;
+    const statusEl = document.createElement("span");
+    statusEl.className = applied
+      ? "inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+      : "inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-amber-500/10 text-amber-300 border-amber-500/20";
+    statusEl.textContent = applied ? "Applied" : "Not applied";
+
+    const activeEl = document.createElement("span");
+    if (isRecurringActive(r)) {
+      activeEl.className = "inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-white/[0.04] text-slate-300 border-white/[0.08]";
+      activeEl.textContent = "Active";
+    } else {
+      activeEl.className = "inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-white/[0.04] text-slate-500 border-white/[0.06]";
+      activeEl.textContent = "Paused";
+    }
+
+    return [
+      r.name || "—",
+      CATEGORY_LABELS[r.category] || r.category || "—",
+      money(r.amount),
+      `Day ${r.dayOfMonth || 1}`,
+      statusEl,
+      activeEl
+    ];
+  });
+
+  const table = renderTable(
+    ["Name", "Category", "Amount", "When", "This month", "Status"],
+    rows
+  );
+  c.appendChild(table);
+
+  table.querySelectorAll("tbody tr").forEach((tr, i) => {
+    const r = cache.recurring[i];
+    const actions = tr.querySelector("[data-actions]");
+
+    const applied = r.lastAppliedMonth === monthKey;
+    if (isRecurringActive(r) && !applied) {
+      actions.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10 transition", "Apply this month", async () => {
+        await applyRecurring(r);
+        toast(`Applied ${r.name || "recurring"}`);
+      }));
+    }
+
+    actions.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("recurring", r.id, r)));
+    actions.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
+      if (!confirm("Delete this recurring template?\n\nThis will NOT delete any expenses already created from it.")) return;
+      await deleteDoc(doc(db, "recurring", r.id));
+      toast("Deleted");
+    }));
+  });
+}
+
+async function applyRecurring(r) {
+  const monthKey = currentMonthKey();
+  const day = Math.min(Math.max(Number(r.dayOfMonth) || 1, 1), 28);
+  const dateStr = `${monthKey}-${String(day).padStart(2,'0')}`;
+
+  await addDoc(collection(db, "expenses"), {
+    vendor: r.vendor || r.name || "Recurring",
+    category: r.category || "other",
+    amount: Number(r.amount) || 0,
+    date: dateStr,
+    note: r.note || `Recurring: ${r.name || ""}`.trim(),
+    recurringId: r.id,
+    createdAt: serverTimestamp()
+  });
+
+  await updateDoc(doc(db, "recurring", r.id), {
+    lastAppliedMonth: monthKey
+  });
+}
+
+async function applyAllRecurring() {
+  const monthKey = currentMonthKey();
+  const toApply = cache.recurring.filter(r => isRecurringActive(r) && r.lastAppliedMonth !== monthKey);
+  if (!toApply.length) { toast("Nothing to apply", "info"); return; }
+
+  const btn = document.getElementById("recurring-apply-all-btn");
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="w-3.5 h-3.5 spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2"/><path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg><span>Applying…</span>`;
+
+  try {
+    for (const r of toApply) {
+      await applyRecurring(r);
+    }
+    const total = toApply.reduce((s, r) => s + Number(r.amount || 0), 0);
+    toast(`Applied ${toApply.length} recurring · ${money(total)}`);
+  } catch (err) {
+    console.error(err);
+    toast("Failed to apply: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+document.getElementById("recurring-apply-all-btn").onclick = applyAllRecurring;
+
+document.getElementById("recurring-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {
+    name: (fd.get("name") || "").toString().trim(),
+    vendor: (fd.get("vendor") || "").toString().trim(),
+    amount: Number(fd.get("amount")) || 0,
+    category: fd.get("category") || "other",
+    dayOfMonth: Math.min(Math.max(Number(fd.get("dayOfMonth")) || 1, 1), 31),
+    active: fd.get("active") === "true",
+    note: (fd.get("note") || "").toString().trim()
+  };
+  if (!data.name || !data.amount) { toast("Name and amount are required", "error"); return; }
+  try {
+    await addDoc(collection(db, "recurring"), { ...data, createdAt: serverTimestamp() });
+    e.target.reset();
+    e.target.querySelector('[name="active"]').value = "true";
+    toast("Recurring added");
+    document.getElementById("recurring-form-wrap").classList.add("hidden");
+  } catch (err) {
+    toast(err.message, "error");
+  }
+};
+
 // CALENDAR
 let calInstance = null;
-const calendarFilters = { jobs: true, invoices: true, service: true };
+const calendarFilters = { jobs: true, invoices: true, service: true, recurring: true };
 const STATUS_COLORS = {
   estimate:     { bg: "#64748b", fg: "#0b1220" },
   scheduled:    { bg: "#3b82f6", fg: "#0b1220" },
@@ -2369,6 +2814,25 @@ function getCalendarEvents() {
       });
     });
   }
+  if (calendarFilters.recurring) {
+    const now = new Date();
+    cache.recurring.filter(isRecurringActive).forEach(r => {
+      const day = Math.min(Math.max(Number(r.dayOfMonth) || 1, 1), 28);
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, day);
+        const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        events.push({
+          id: `rec-${r.id}-${iso}`,
+          title: `↻ ${r.name || "Recurring"} — ${money(r.amount)}`,
+          date: iso,
+          backgroundColor: "rgba(251,146,60,0.15)",
+          borderColor: "rgba(251,146,60,0.40)",
+          textColor: "#fdba74",
+          extendedProps: { kind: "recurring", data: r }
+        });
+      }
+    });
+  }
   return events;
 }
 
@@ -2389,6 +2853,7 @@ function initCalendar() {
       if (kind === "job") openJobModal(data.id);
       else if (kind === "invoice") openEditModal("invoices", data.id, data);
       else if (kind === "vehicle") openEditModal("vehicles", data.id, data);
+      else if (kind === "recurring") openEditModal("recurring", data.id, data);
     },
     datesSet: (info) => {
       const t = document.getElementById("cal-title");
@@ -2587,7 +3052,7 @@ function renderJobModal() {
                   <tr class="border-b border-white/[0.04] last:border-0">
                     <td class="px-4 py-3 text-slate-300 whitespace-nowrap">${fmtDate(ex.date)}</td>
                     <td class="px-4 py-3 text-slate-300 truncate max-w-[12rem]">${escapeHtml(ex.vendor)}</td>
-                    <td class="px-4 py-3 text-slate-400 hidden sm:table-cell">${ex.category || "—"}</td>
+                    <td class="px-4 py-3 text-slate-400 hidden sm:table-cell">${CATEGORY_LABELS[ex.category] || ex.category || "—"}</td>
                     <td class="px-4 py-3 text-amber-400 whitespace-nowrap">${money(ex.amount)}</td>
                     <td class="px-3 py-3 text-right" data-exp-actions="${ex.id}"></td>
                   </tr>
@@ -2605,14 +3070,14 @@ function renderJobModal() {
     if (inv.status !== "paid") {
       cell.appendChild(iconButton(ICON_CHECK, "text-slate-600 hover:text-emerald-400 p-2 rounded-lg hover:bg-emerald-500/10 transition", "Mark paid", async () => {
         await updateDoc(doc(db, "invoices", inv.id), { status: "paid", paidDate: todayISO() });
-        toast("Marked paid"); await loadAll(); renderJobModal();
+        toast("Marked paid");
       }));
     }
     cell.appendChild(iconButton(ICON_EDIT, "text-slate-600 hover:text-amber-400 p-2 rounded-lg hover:bg-amber-500/10 transition ml-1", "Edit", () => openEditModal("invoices", inv.id, inv)));
     cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this invoice?")) return;
       await deleteDoc(doc(db, "invoices", inv.id));
-      toast("Deleted"); await loadAll(); renderJobModal();
+      toast("Deleted");
     }));
   });
 
@@ -2622,7 +3087,7 @@ function renderJobModal() {
     cell.appendChild(iconButton(ICON_DELETE, "text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition ml-1", "Delete", async () => {
       if (!confirm("Delete this expense?")) return;
       await deleteDoc(doc(db, "expenses", ex.id));
-      toast("Deleted"); await loadAll(); renderJobModal();
+      toast("Deleted");
     }));
   });
 
@@ -2752,7 +3217,7 @@ const EDIT_CONFIG = {
   ]},
   expenses: { label: "Expense", fields: [
     { name: "vendor",   label: "Vendor",   type: "text", required: true },
-    { name: "category", label: "Category", type: "select", options: ["paint","gas","supplies","tools","vehicle","other"] },
+    { name: "category", label: "Category", type: "select", options: ALL_CATEGORIES, labels: CATEGORY_LABELS },
     { name: "amount",   label: "Amount",   type: "number", step: "0.01", required: true },
     { name: "date",     label: "Date",     type: "date", required: true },
     { name: "jobId",    label: "Job",      type: "job-select", full: true },
@@ -2780,6 +3245,15 @@ const EDIT_CONFIG = {
     { name: "email", label: "Email", type: "email" },
     { name: "phone", label: "Phone", type: "tel" },
     { name: "role",  label: "Role",  type: "text", full: true }
+  ]},
+  recurring: { label: "Recurring", fields: [
+    { name: "name",       label: "Name",         type: "text", required: true },
+    { name: "vendor",     label: "Vendor",       type: "text" },
+    { name: "amount",     label: "Amount",       type: "number", step: "0.01", required: true },
+    { name: "category",   label: "Category",     type: "select", options: ALL_CATEGORIES, labels: CATEGORY_LABELS },
+    { name: "dayOfMonth", label: "Day of month", type: "number" },
+    { name: "active",     label: "Active",       type: "select", options: ["true","false"], labels: { "true": "Active", "false": "Paused" } },
+    { name: "note",       label: "Note",         type: "text", full: true }
   ]}
 };
 
@@ -2802,7 +3276,12 @@ function openEditModal(collectionName, docId, data) {
     let input;
     if (f.type === "select") {
       input = document.createElement("select");
-      f.options.forEach(opt => { const o = document.createElement("option"); o.value = opt; o.textContent = opt; input.appendChild(o); });
+      f.options.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt;
+        o.textContent = (f.labels && f.labels[opt]) ? f.labels[opt] : opt;
+        input.appendChild(o);
+      });
     } else if (f.type === "job-select") {
       input = document.createElement("select");
       const none = document.createElement("option");
@@ -2855,7 +3334,13 @@ document.getElementById("edit-form").onsubmit = async (e) => {
     const input = e.target.querySelector(`[name="${f.name}"]`);
     if (!input) return;
     const raw = input.value;
-    data[f.name] = (f.type === "number" && raw !== "") ? Number(raw) : raw;
+    if (collectionName === "recurring" && f.name === "active") {
+      data[f.name] = raw === "true";
+    } else if (collectionName === "recurring" && f.name === "dayOfMonth") {
+      data[f.name] = Math.min(Math.max(Number(raw) || 1, 1), 31);
+    } else {
+      data[f.name] = (f.type === "number" && raw !== "") ? Number(raw) : raw;
+    }
   });
   if (collectionName === "invoices" && data.status === "paid") {
     const existing = cache.invoices.find(i => i.id === docId);
@@ -2865,8 +3350,6 @@ document.getElementById("edit-form").onsubmit = async (e) => {
     await updateDoc(doc(db, collectionName, docId), data);
     toast("Updated");
     closeEditModal();
-    await loadAll();
-    if (jobModalJobId) renderJobModal();
   } catch (err) { toast(err.message, "error"); }
 };
 
@@ -2878,7 +3361,7 @@ function formToObject(form) {
   });
   return obj;
 }
-function wireForm(id, collectionName, reload, label) {
+function wireForm(id, collectionName, label) {
   document.getElementById(id).onsubmit = async (e) => {
     e.preventDefault();
     try {
@@ -2887,18 +3370,16 @@ function wireForm(id, collectionName, reload, label) {
       await addDoc(collection(db, collectionName), { ...data, createdAt: serverTimestamp() });
       e.target.reset();
       toast(`${label} added`);
-      await loadAll();
       const wrap = e.target.closest("[id$='-form-wrap']");
       if (wrap) wrap.classList.add("hidden");
-      if (jobModalJobId) renderJobModal();
     } catch (err) { toast(err.message, "error"); }
   };
 }
-wireForm("job-form",     "jobs",     loadAll, "Job");
-wireForm("expense-form", "expenses", loadAll, "Expense");
-wireForm("invoice-form", "invoices", loadAll, "Invoice");
-wireForm("vehicle-form", "vehicles", loadAll, "Vehicle");
-wireForm("team-form",    "team",     loadAll, "Team member");
+wireForm("job-form",     "jobs",     "Job");
+wireForm("expense-form", "expenses", "Expense");
+wireForm("invoice-form", "invoices", "Invoice");
+wireForm("vehicle-form", "vehicles", "Vehicle");
+wireForm("team-form",    "team",     "Team member");
 
 // ═════════════════════════════════════════════════════════════
 // MONEY TAB — SUB-TAB + VIEW TOGGLES
@@ -2909,24 +3390,19 @@ let incomeView = "table";
 let expenseChart = null;
 let incomeChart = null;
 
-const CATEGORY_COLORS = {
-  paint:    "#f59e0b",
-  gas:      "#3b82f6",
-  supplies: "#8b5cf6",
-  tools:    "#10b981",
-  vehicle:  "#ef4444",
-  other:    "#64748b"
-};
 const INCOME_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#64748b"];
 
 function setMoneySubTab(tab) {
   moneySubTab = tab;
   document.getElementById("money-income-tab").classList.toggle("active", tab === "income");
   document.getElementById("money-expenses-tab").classList.toggle("active", tab === "expenses");
+  document.getElementById("money-recurring-tab").classList.toggle("active", tab === "recurring");
   document.getElementById("money-income-view").classList.toggle("hidden", tab !== "income");
   document.getElementById("money-expenses-view").classList.toggle("hidden", tab !== "expenses");
+  document.getElementById("money-recurring-view").classList.toggle("hidden", tab !== "recurring");
   if (tab === "income" && incomeView === "chart") renderIncomeChart();
   if (tab === "expenses" && expenseView === "chart") renderExpenseChart();
+  if (tab === "recurring") renderRecurring();
 }
 
 const viewTableBtn = document.getElementById("view-table-btn");
@@ -3016,7 +3492,7 @@ function renderExpenseChart() {
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
             <span class="w-3 h-3 rounded-full shrink-0" style="background:${CATEGORY_COLORS[cat] || CATEGORY_COLORS.other}"></span>
-            <span class="text-sm text-white capitalize truncate">${cat}</span>
+            <span class="text-sm text-white capitalize truncate">${CATEGORY_LABELS[cat] || cat}</span>
           </div>
           <div class="flex items-center gap-3 shrink-0">
             <span class="text-xs text-slate-500">${pct}%</span>
@@ -3207,20 +3683,24 @@ Return ONLY valid JSON. No markdown fences, no explanation, no preamble. Exactly
 }
 
 For DEBITS:
-- category MUST be exactly one of: paint, gas, supplies, tools, vehicle, other.
+- category MUST be exactly one of: paint, gas, supplies, tools, vehicle, insurance, credit_card, rent, utilities, subscription, other.
 - Rules:
   - Sherwin-Williams, Benjamin Moore, PPG, Behr, paint stores → paint
   - Shell, Chevron, Exxon, Mobil, BP, 76, Arco, Sunoco, gas stations, fuel → gas
   - Home Depot, Lowe's, Ace Hardware, Menards, hardware stores → supplies
   - Auto repair, oil change, tires, mechanic, dealership, Carquest, AutoZone → vehicle
   - Tool vendors, equipment rental → tools
+  - Insurance companies (State Farm, Geico, Allstate, Progressive, etc.) → insurance
+  - Credit card payments (Chase, Amex, Discover, Capital One, payment to a card, autopay) → credit_card
+  - Rent or lease payments → rent
+  - Utility bills (electric, water, gas utility, internet, phone) → utilities
+  - Software/SaaS subscriptions (Netflix, Spotify, Adobe, Microsoft 365, etc.) → subscription
   - Anything unclear → other
 - Amounts must be positive.
-- Vendor name should be the merchant, cleaned up (e.g. "SHERWIN WILLIAMS #1234" → "Sherwin-Williams").
+- Vendor name should be the merchant, cleaned up.
 
 For DEPOSITS:
 - memo should be the raw memo or payer name from the statement, cleaned up but recognizable.
-- Keep anything that looks like a person or company name.
 - Skip internal transfers between the same account holder's accounts.
 - Amounts must be positive.
 
@@ -3271,7 +3751,7 @@ Rules for both:
       date: t.date || todayISO(),
       vendor: t.vendor || "Unknown",
       amount: Number(t.amount) || 0,
-      category: ["paint","gas","supplies","tools","vehicle","other"].includes(t.category) ? t.category : "other",
+      category: ALL_CATEGORIES.includes(t.category) ? t.category : "other",
       note: t.note || ""
     }));
 
@@ -3358,8 +3838,8 @@ function renderBankReview() {
         <input type="text" value="${escapeHtml(t.vendor)}" data-list="debits" data-idx="${i}" data-field="vendor" />
         <input type="number" step="0.01" value="${t.amount}" data-list="debits" data-idx="${i}" data-field="amount" />
         <select data-list="debits" data-idx="${i}" data-field="category">
-          ${["paint","gas","supplies","tools","vehicle","other"].map(c =>
-            `<option value="${c}" ${t.category === c ? "selected" : ""}>${c}</option>`
+          ${ALL_CATEGORIES.map(c =>
+            `<option value="${c}" ${t.category === c ? "selected" : ""}>${CATEGORY_LABELS[c] || c}</option>`
           ).join("")}
         </select>
       `;
@@ -3495,7 +3975,6 @@ document.getElementById("bank-import-btn").onclick = async () => {
 
     toast(`Imported ${parts.join(" · ")}`);
     closeBankModal();
-    await loadAll();
   } catch (err) {
     console.error(err);
     showBankError("Import failed: " + err.message);
@@ -3521,13 +4000,15 @@ async function generateDailyBrief() {
     const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
     const monthlyInvoiced = invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
     const monthlyExpenses = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const unappliedRec = getUnappliedRecurring();
 
     const context = {
       today, month: monthLabel(),
       jobsToday: jobsToday.map(j => ({ customer: j.customer, address: j.address, status: j.status, amount: j.amount })),
       expensesToday: expensesToday.map(e => ({ vendor: e.vendor, category: e.category, amount: e.amount })),
       invoicesToday: invoicesToday.map(i => ({ customer: i.customer, amount: i.amount })),
-      monthly: { invoiced: monthlyInvoiced, expenses: monthlyExpenses, net: monthlyInvoiced - monthlyExpenses }
+      monthly: { invoiced: monthlyInvoiced, expenses: monthlyExpenses, net: monthlyInvoiced - monthlyExpenses },
+      recurring_unapplied_this_month: unappliedRec.map(r => ({ name: r.name, amount: r.amount, category: r.category }))
     };
 
     const prompt = `You are an assistant for a painting business owner.
@@ -3540,6 +4021,7 @@ Write a short daily brief (4-6 lines max) covering:
 - What jobs happened today
 - What was spent today
 - Monthly financial snapshot (invoiced vs expenses)
+- Whether any recurring monthly bills still need to be applied (credit cards, insurance, rent, subscriptions)
 - Anything needing attention
 
 Be specific with numbers. If a section has no data, say so briefly. No markdown, no bullet symbols, just clean sentences.`;
@@ -3640,12 +4122,8 @@ const chatAttachBtn     = document.getElementById("chat-attach-btn");
 const chatAttachMenu    = document.getElementById("chat-attach-menu");
 const attachmentPreview = document.getElementById("chat-attachment-preview");
 
-function openAttachMenu() {
-  chatAttachMenu.classList.remove("hidden");
-}
-function closeAttachMenu() {
-  chatAttachMenu.classList.add("hidden");
-}
+function openAttachMenu() { chatAttachMenu.classList.remove("hidden"); }
+function closeAttachMenu() { chatAttachMenu.classList.add("hidden"); }
 function toggleAttachMenu(e) {
   e?.stopPropagation?.();
   if (chatAttachMenu.classList.contains("hidden")) openAttachMenu();
@@ -3657,14 +4135,12 @@ chatAttachBtn.onclick = (e) => {
   toggleAttachMenu(e);
 };
 
-// Tap outside the menu closes it
 document.addEventListener("click", (e) => {
   if (chatAttachMenu.classList.contains("hidden")) return;
   if (e.target.closest("#chat-attach-menu") || e.target.closest("#chat-attach-btn")) return;
   closeAttachMenu();
 });
 
-// Attach-menu option handler — sets the right capture/accept, then opens picker
 chatAttachMenu.querySelectorAll("[data-attach-mode]").forEach(btn => {
   btn.onclick = (e) => {
     e.stopPropagation();
@@ -3682,7 +4158,6 @@ chatAttachMenu.querySelectorAll("[data-attach-mode]").forEach(btn => {
       chatFileInput.removeAttribute("capture");
     }
 
-    // Small delay so menu close feels natural on iOS before the picker opens
     setTimeout(() => chatFileInput.click(), 30);
   };
 });
@@ -3699,7 +4174,6 @@ chatFileInput.onchange = async (e) => {
   pendingFileMime = file.type || "application/pdf";
   pendingFileBase64 = await fileToBase64(file);
   renderAttachmentPreview();
-  // Reset so re-selecting the same file triggers change again
   chatFileInput.value = "";
 };
 
@@ -3745,12 +4219,13 @@ async function fetchCompanySnapshot() {
   const invoices = cache.invoices.slice(0, 200).map(i => ({ date: i.date, customer: i.customer, amount: i.amount, dueDate: i.dueDate, status: i.status, paidDate: i.paidDate, job: jobLabel(i.jobId) }));
   const vehicles = cache.vehicles.slice(0, 50).map(v => ({ name: v.name, plate: v.plate, odometer: v.odometer, lastService: v.lastService, nextServiceDue: v.nextServiceDue }));
   const income = (cache.income || []).slice(0, 100).map(r => ({ date: r.date, source: r.source, amount: r.amount }));
+  const recurring = cache.recurring.map(r => ({ name: r.name, amount: r.amount, category: r.category, dayOfMonth: r.dayOfMonth, active: isRecurringActive(r), lastAppliedMonth: r.lastAppliedMonth }));
   const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
   const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
   return {
     today: todayISO(), month: monthLabel(),
     monthly: { invoiced: invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0), expenses: expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0) },
-    jobs, expenses, invoices, vehicles, income
+    jobs, expenses, invoices, vehicles, income, recurring
   };
 }
 
@@ -3775,7 +4250,7 @@ Return ONLY valid JSON. No markdown fences, no commentary before or after. Exact
 ACTION SHAPES (use only these):
 
 Expense (a bill or receipt that WAS PAID — money going out):
-{ "type": "expense", "data": { "date": "YYYY-MM-DD", "vendor": "Clean Vendor Name", "amount": 123.45, "category": "paint|gas|supplies|tools|vehicle|other", "jobId": "optional-existing-job-id", "note": "" } }
+{ "type": "expense", "data": { "date": "YYYY-MM-DD", "vendor": "Clean Vendor Name", "amount": 123.45, "category": "paint|gas|supplies|tools|vehicle|insurance|credit_card|rent|utilities|subscription|other", "jobId": "optional-existing-job-id", "note": "" } }
 
 Job (a new customer project / estimate / contract you'll be working on):
 { "type": "job", "data": { "date": "YYYY-MM-DD", "customer": "Customer Name", "address": "Job site", "status": "estimate|scheduled|in-progress|complete", "amount": 0, "notes": "" } }
@@ -3789,26 +4264,24 @@ Vehicle (title, registration, insurance, maintenance record for a truck/van):
 Income (a deposit with no matching invoice — e.g. cash deposit, interest, refund):
 { "type": "income", "data": { "date": "YYYY-MM-DD", "source": "Payer or memo", "amount": 0, "note": "" } }
 
+Recurring (a bill that repeats every month — insurance, credit card, rent, subscription, utilities):
+{ "type": "recurring", "data": { "name": "State Farm — Truck Insurance", "vendor": "State Farm", "amount": 245.00, "category": "insurance|credit_card|rent|utilities|subscription|vehicle|other", "dayOfMonth": 15, "active": true, "note": "" } }
+
 CLASSIFICATION RULES:
-- Store receipt or vendor bill → "expense". If the receipt has clearly different line items (e.g. paint + snacks), split into multiple expense actions.
+- Store receipt or vendor bill → "expense". If the receipt has clearly different line items, split into multiple expense actions.
 - Bank/credit card statement → one "expense" per outgoing transaction, one "income" per incoming transaction that isn't clearly an invoice payment.
 - Invoice you RECEIVED (someone billing you) → "expense".
 - Invoice you SENT (customer owes you) → "invoice".
 - Signed contract, estimate, or work order for a customer → "job".
 - Vehicle title / registration / insurance / odometer photo → "vehicle".
+- A document describing an ongoing MONTHLY bill (insurance policy with monthly premium, credit card statement showing autopay, rent agreement, subscription confirmation) → ALSO add a "recurring" action.
 - Business card, unrelated doc, illegible image → return "actions": [] and explain in "reply".
-- If the user's instruction says what to do (e.g. "make this a job for the Smiths"), follow the instruction over your guess.
-- Use today (${today}) when a date is missing or unreadable.
+- If the user's instruction says what to do, follow the instruction over your guess.
+- Use today (${today}) when a date is missing.
 - Amounts must be positive numbers. No currency symbols, no commas.
-- Category mapping:
-  - Sherwin-Williams, Benjamin Moore, PPG, Behr, paint stores → paint
-  - Shell, Chevron, Exxon, Mobil, BP, 76, Arco, Sunoco, gas stations, fuel → gas
-  - Home Depot, Lowe's, Ace Hardware, Menards, hardware stores → supplies
-  - Auto repair, oil change, tires, mechanic, dealership, Carquest, AutoZone → vehicle
-  - Tool vendors, equipment rental → tools
-  - Anything unclear → other
+- Category mapping: paint stores → paint; gas stations → gas; hardware stores → supplies; auto repair → vehicle; tool vendors → tools; insurance → insurance; credit card autopay → credit_card; rent → rent; utilities → utilities; software → subscription; unclear → other.
 
-LINKING TO EXISTING JOBS — if the file clearly belongs to one of these jobs, set the jobId on the action. Otherwise omit jobId.
+LINKING TO EXISTING JOBS — if the file clearly belongs to one of these jobs, set the jobId. Otherwise omit.
 Existing jobs (id / customer / address):
 ${JSON.stringify(jobsList)}
 
@@ -3868,7 +4341,7 @@ Today: ${today}`;
           date: d.date || todayISO(),
           vendor: d.vendor || "Unknown",
           amount: Number(d.amount) || 0,
-          category: ["paint","gas","supplies","tools","vehicle","other"].includes(d.category) ? d.category : "other",
+          category: ALL_CATEGORIES.includes(d.category) ? d.category : "other",
           note: d.note || ""
         };
         if (d.jobId) payload.jobId = d.jobId;
@@ -3922,6 +4395,20 @@ Today: ${today}`;
         };
         await addDoc(collection(db, "income"), { ...payload, createdAt: serverTimestamp() });
         results.push(`Income · ${payload.source} · ${money(payload.amount)}`);
+
+      } else if (a.type === "recurring") {
+        const payload = {
+          name: d.name || "Recurring",
+          vendor: d.vendor || d.name || "",
+          amount: Number(d.amount) || 0,
+          category: ALL_CATEGORIES.includes(d.category) ? d.category : "other",
+          dayOfMonth: Math.min(Math.max(Number(d.dayOfMonth) || 1, 1), 31),
+          active: d.active !== false,
+          note: d.note || "",
+          lastAppliedMonth: ""
+        };
+        await addDoc(collection(db, "recurring"), { ...payload, createdAt: serverTimestamp() });
+        results.push(`Recurring · ${payload.name} · ${money(payload.amount)}/mo`);
       }
     } catch (err) {
       console.error("Action failed:", a, err);
@@ -3930,7 +4417,6 @@ Today: ${today}`;
   }
 
   if (actions.length) {
-    await loadAll();
     const summary = `\n\n✅ Added:\n${results.map(r => "• " + r).join("\n")}`;
     addMessage("model", reply + summary);
   } else {
@@ -3975,6 +4461,7 @@ Rules:
 - Currency is USD. Today's date is ${snapshot.today}.
 - Jobs include invoiced, expenses, and profit totals — use these for profitability questions.
 - The "income" list is non-invoice income (bank deposits that didn't match an invoice).
+- The "recurring" list is fixed monthly bills. If a recurring entry's lastAppliedMonth is not the current month, it hasn't been logged as an expense yet this month.
 - When referring to money or jobs, cite the specific figures from the data.
 
 Company data snapshot (JSON):
