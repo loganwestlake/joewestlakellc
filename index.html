@@ -327,7 +327,7 @@
   }
   .import-row {
     display: grid;
-    grid-template-columns: 28px 130px 1fr 100px 120px;
+    grid-template-columns: 28px 120px 1fr 90px 110px 100px;
     gap: 8px;
     align-items: center;
     padding: 10px 12px;
@@ -346,6 +346,7 @@
     font-size: 12px;
     color: #e2e8f0;
     min-height: 34px;
+    width: 100%;
   }
   .import-row input[type="checkbox"] {
     width: 18px; height: 18px;
@@ -610,7 +611,7 @@
         <div class="min-w-0">
           <div class="text-white font-medium leading-tight tracking-tight truncate">Joe Westlake</div>
           <div class="text-[11px] text-slate-500 tracking-wide uppercase truncate">Painting LLC</div>
-          <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.7</div>
+          <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.8</div>
         </div>
       </div>
     </div>
@@ -683,7 +684,7 @@
         </div>
         <div class="min-w-0">
           <div class="text-white font-medium text-sm tracking-tight truncate">Joe Westlake LLC</div>
-          <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5">v1.7</div>
+          <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5">v1.8</div>
         </div>
       </div>
       <div id="auth-area-mobile" class="shrink-0"></div>
@@ -842,7 +843,7 @@
               </div>
             </div>
 
-            <div class="pt-5 border-t border-white/[0.06] grid grid-cols-2 gap-4">
+            <div class="pt-5 border-t border-white/[0.06] grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
                 <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1.5">Billed this month</div>
                 <div id="pnl-invoiced" class="font-serif text-lg text-white">—</div>
@@ -852,6 +853,11 @@
                 <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1.5">Still owed</div>
                 <div id="pnl-outstanding" class="font-serif text-lg text-amber-400">—</div>
                 <div id="pnl-outstanding-sub" class="text-[11px] text-slate-500 mt-0.5">—</div>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <div class="text-[10px] font-semibold text-emerald-400/80 tracking-[0.15em] uppercase mb-1.5">Tax-deductible</div>
+                <div id="pnl-deductible" class="font-serif text-lg text-emerald-400">—</div>
+                <div id="pnl-deductible-sub" class="text-[11px] text-slate-500 mt-0.5">—</div>
               </div>
             </div>
           </div>
@@ -1185,6 +1191,25 @@
             </button>
           </div>
 
+          <!-- Tax/deductible stats -->
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+            <div class="glass rounded-2xl p-4">
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1">This month</div>
+              <div id="expense-stat-total" class="font-serif text-xl sm:text-2xl text-white">—</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Total spent</div>
+            </div>
+            <div class="glass rounded-2xl p-4 border-emerald-500/20">
+              <div class="text-[10px] font-semibold text-emerald-400/80 tracking-[0.15em] uppercase mb-1">Deductible</div>
+              <div id="expense-stat-deductible" class="font-serif text-xl sm:text-2xl text-emerald-400">—</div>
+              <div id="expense-stat-deductible-sub" class="text-[11px] text-slate-500 mt-0.5">—</div>
+            </div>
+            <div class="glass rounded-2xl p-4 col-span-2 lg:col-span-1">
+              <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1">Personal (0%)</div>
+              <div id="expense-stat-personal" class="font-serif text-xl sm:text-2xl text-slate-400">—</div>
+              <div id="expense-stat-personal-sub" class="text-[11px] text-slate-500 mt-0.5">—</div>
+            </div>
+          </div>
+
           <div id="expense-form-wrap" class="hidden mb-6">
             <form id="expense-form" class="glass rounded-2xl p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
               <div>
@@ -1215,7 +1240,17 @@
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Date *</label>
                 <input name="date" type="date" required class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
-              <div class="md:col-span-2">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Tax deductible</label>
+                <select name="deductible" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                  <option value="100">100% — Fully business</option>
+                  <option value="75">75% — Mostly business</option>
+                  <option value="50">50% — Mixed use</option>
+                  <option value="25">25% — Mostly personal</option>
+                  <option value="0">0% — Personal (not deductible)</option>
+                </select>
+              </div>
+              <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Job (optional)</label>
                 <select name="jobId" data-job-select class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition"></select>
               </div>
@@ -1267,7 +1302,7 @@
           <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
             <div>
               <div class="text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase mb-1">Fixed monthly</div>
-              <p class="text-sm text-slate-500">Credit cards, insurance, rent, subscriptions — the bills that come around every month. Set them once, apply them with one tap.</p>
+              <p class="text-sm text-slate-500">Credit cards, insurance, rent, subscriptions — the bills that come around every month.</p>
             </div>
             <button data-toggle="recurring-form-wrap"
               class="hidden sm:inline-flex items-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5 transition btn-touch">
@@ -1276,7 +1311,6 @@
             </button>
           </div>
 
-          <!-- Unapplied banner -->
           <div id="recurring-unapplied-banner" class="hidden mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.04] p-4 sm:p-5">
             <div class="flex items-start gap-3">
               <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
@@ -1294,7 +1328,6 @@
             </div>
           </div>
 
-          <!-- Stats -->
           <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
             <div class="glass glass-hover rounded-2xl p-4 sm:p-5">
               <div class="flex items-center justify-between mb-3">
@@ -1361,7 +1394,16 @@
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Day of month</label>
                 <input name="dayOfMonth" type="number" inputmode="numeric" min="1" max="31" value="1" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
-                <p class="text-[11px] text-slate-500 mt-1.5">The date the bill hits each month</p>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Tax deductible</label>
+                <select name="deductible" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
+                  <option value="100">100% — Fully business</option>
+                  <option value="75">75% — Mostly business</option>
+                  <option value="50">50% — Mixed use</option>
+                  <option value="25">25% — Mostly personal</option>
+                  <option value="0">0% — Personal (not deductible)</option>
+                </select>
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Active</label>
@@ -1370,7 +1412,7 @@
                   <option value="false">Paused — skip for now</option>
                 </select>
               </div>
-              <div class="md:col-span-2">
+              <div>
                 <label class="block text-[11px] font-medium text-slate-400 tracking-wide uppercase mb-2">Note</label>
                 <input name="note" placeholder="Optional" class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition" />
               </div>
@@ -1444,7 +1486,7 @@
           <div>
             <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2 section-eyebrow">Assistant</div>
             <h1 class="font-serif text-4xl sm:text-5xl text-white tracking-tight leading-none section-title">Company AI</h1>
-            <p class="text-sm text-slate-500 mt-3">Ask anything about your business, get a daily brief, or send it to your team</p>
+            <p class="text-sm text-slate-500 mt-3">Ask anything, attach receipts, or tell me to change things — I can update records too</p>
           </div>
           <div class="flex flex-wrap items-center gap-2 page-actions">
             <button id="daily-brief-btn"
@@ -1475,12 +1517,12 @@
                   </div>
                 </div>
                 <div class="font-serif text-2xl text-white mb-2">Ask me anything</div>
-                <div class="text-sm text-slate-500 max-w-sm mb-6">I can see all your jobs, expenses, invoices, and vehicles. Click <strong class="text-slate-400">Daily Brief</strong> for a snapshot, or attach a receipt / invoice / title and I'll log it for you.</div>
+                <div class="text-sm text-slate-500 max-w-sm mb-6">I can see all your jobs, expenses, invoices, vehicles, and recurring bills. Attach a receipt to log it, or tell me to change something.</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
                   <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">What did we do today?</button>
                   <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Which jobs made the most profit this month?</button>
-                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">How much did we spend on paint?</button>
-                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Who owes us money?</button>
+                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">How much was actually tax-deductible this month?</button>
+                  <button class="suggestion glass glass-hover rounded-xl p-3 text-left text-[13px] text-slate-300">Flag anything personal on the business card as 0% deductible</button>
                 </div>
               </div>
             </div>
@@ -1495,7 +1537,6 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                   </button>
 
-                  <!-- ATTACH MENU -->
                   <div id="chat-attach-menu" class="hidden absolute bottom-full left-0 mb-2 z-30 bg-[#0d0d10]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/60 overflow-hidden min-w-[220px] attach-menu-in">
                     <button type="button" data-attach-mode="camera"
                       class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.05] active:bg-white/[0.08] text-left text-sm text-slate-200 transition">
@@ -1516,7 +1557,7 @@
                 </div>
 
                 <div class="flex-1 relative">
-                  <textarea id="chat-input" rows="1" placeholder="Ask, or attach a receipt to auto-log it…"
+                  <textarea id="chat-input" rows="1" placeholder="Ask, attach a receipt, or tell me to change something…"
                     class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition resize-none max-h-40"
                     style="min-height: 46px;"></textarea>
                 </div>
@@ -1609,7 +1650,7 @@
           <div class="min-w-0">
             <div class="text-white font-medium leading-tight truncate">Joe Westlake LLC</div>
             <div class="text-[11px] text-slate-500 tracking-wide uppercase">Business Portal</div>
-            <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.7</div>
+            <div class="text-[10px] text-slate-600 tracking-wide font-mono mt-0.5">v1.8</div>
           </div>
         </div>
         <h2 class="font-serif text-3xl text-white tracking-tight mb-1" id="signin-title">Welcome back</h2>
@@ -1731,7 +1772,7 @@
         <div class="mb-5">
           <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Import</div>
           <h2 class="font-serif text-3xl text-white tracking-tight">Bank statement</h2>
-          <p class="text-sm text-slate-500 mt-1">Upload a PDF or photo. AI pulls out every transaction, categorizes expenses, and matches deposits to unpaid invoices.</p>
+          <p class="text-sm text-slate-500 mt-1">AI reads every transaction, guesses which are business vs personal, and suggests a deductible %.</p>
         </div>
 
         <div id="bank-step-upload">
@@ -1848,6 +1889,51 @@ const CATEGORY_COLORS = {
   subscription: "#a855f7",
   other:        "#64748b"
 };
+
+// Deductible options
+const DEDUCTIBLE_OPTIONS = [
+  { value: 100, label: "100% — Fully business" },
+  { value: 75,  label: "75% — Mostly business" },
+  { value: 50,  label: "50% — Mixed use" },
+  { value: 25,  label: "25% — Mostly personal" },
+  { value: 0,   label: "0% — Personal (not deductible)" }
+];
+
+function getDeductible(rec) {
+  // Older records don't have a deductible field — assume 100% (fully business)
+  if (rec.deductible === undefined || rec.deductible === null || rec.deductible === "") return 100;
+  const n = Number(rec.deductible);
+  return isNaN(n) ? 100 : Math.min(Math.max(n, 0), 100);
+}
+
+function deductibleLabel(pct) {
+  const p = Number(pct);
+  return DEDUCTIBLE_OPTIONS.find(o => o.value === p)?.label || `${p}%`;
+}
+
+function deductibleShort(pct) {
+  const p = Number(pct);
+  if (p >= 100) return "100%";
+  if (p >= 75) return "75%";
+  if (p >= 50) return "50%";
+  if (p >= 25) return "25%";
+  if (p <= 0) return "Personal";
+  return `${p}%`;
+}
+
+function deductiblePill(pct) {
+  const p = getDeductible({ deductible: pct });
+  const s = document.createElement("span");
+  let cls = "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  if (p >= 100) cls = "bg-emerald-500/10 text-emerald-300 border-emerald-500/20";
+  else if (p >= 75) cls = "bg-teal-500/10 text-teal-300 border-teal-500/20";
+  else if (p >= 50) cls = "bg-amber-500/10 text-amber-300 border-amber-500/20";
+  else if (p > 0) cls = "bg-orange-500/10 text-orange-300 border-orange-500/20";
+  else cls = "bg-slate-500/10 text-slate-500 border-slate-500/20";
+  s.className = `inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cls}`;
+  s.textContent = deductibleShort(p);
+  return s;
+}
 
 function isInThisMonth(dateStr) {
   if (!dateStr) return false;
@@ -2014,10 +2100,10 @@ onAuthStateChanged(auth, (user) => {
     m.innerHTML = signOutButtonHTML("m", user.email);
     document.getElementById("d-out").onclick = () => signOut(auth);
     document.getElementById("m-out").onclick = () => signOut(auth);
-    initListeners();   // <-- starts real-time sync
+    initListeners();
     loadChatHistory();
   } else {
-    detachAllListeners();  // <-- stop sync on sign out
+    detachAllListeners();
     cache = { jobs: [], expenses: [], invoices: [], vehicles: [], team: [], income: [], recurring: [] };
     d.innerHTML = signInButtonHTML("d");
     m.innerHTML = `<button id="m-signin" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Sign in</button>`;
@@ -2029,7 +2115,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ═════════════════════════════════════════════════════════════
-// REALTIME SYNC — Firestore onSnapshot listeners on all collections
+// REALTIME SYNC
 // ═════════════════════════════════════════════════════════════
 let listeners = [];
 let renderScheduled = false;
@@ -2042,7 +2128,6 @@ function detachAllListeners() {
 function scheduleRender() {
   if (renderScheduled) return;
   renderScheduled = true;
-  // requestAnimationFrame batches multiple rapid-fire snapshots into one repaint
   requestAnimationFrame(() => {
     renderScheduled = false;
     renderAll();
@@ -2060,12 +2145,12 @@ function renderAll() {
   renderRecurring();
   updateStats();
   updatePnL();
+  updateExpenseStats();
   refreshCalendar();
   updateSendButton();
   maybeShowWelcome();
   if (moneySubTab === "income" && incomeView === "chart") renderIncomeChart();
   if (moneySubTab === "expenses" && expenseView === "chart") renderExpenseChart();
-  // Refresh the open job detail modal if one is showing
   const jobModalEl = document.getElementById("job-modal");
   if (jobModalJobId && jobModalEl && !jobModalEl.classList.contains("hidden")) {
     renderJobModal();
@@ -2078,60 +2163,38 @@ function initListeners() {
 
   listeners.push(onSnapshot(
     query(collection(db, "jobs"), orderBy("date", "desc")),
-    snap => {
-      cache.jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      scheduleRender();
-    },
+    snap => { cache.jobs = snap.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); },
     err => console.error("jobs listener:", err)
   ));
 
   listeners.push(onSnapshot(
     query(collection(db, "expenses"), orderBy("date", "desc")),
-    snap => {
-      cache.expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      scheduleRender();
-    },
+    snap => { cache.expenses = snap.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); },
     err => console.error("expenses listener:", err)
   ));
 
   listeners.push(onSnapshot(
     query(collection(db, "invoices"), orderBy("date", "desc")),
-    snap => {
-      cache.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      scheduleRender();
-    },
+    snap => { cache.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); },
     err => console.error("invoices listener:", err)
   ));
 
   listeners.push(onSnapshot(
     collection(db, "vehicles"),
-    snap => {
-      cache.vehicles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      scheduleRender();
-    },
+    snap => { cache.vehicles = snap.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); },
     err => console.error("vehicles listener:", err)
   ));
 
   listeners.push(onSnapshot(
     query(collection(db, "team"), orderBy("name", "asc")),
-    snap => {
-      cache.team = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      scheduleRender();
-    },
+    snap => { cache.team = snap.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); },
     err => console.error("team listener:", err)
   ));
 
   listeners.push(onSnapshot(
     query(collection(db, "income"), orderBy("date", "desc")),
-    snap => {
-      cache.income = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      scheduleRender();
-    },
-    err => {
-      console.warn("income listener:", err);
-      cache.income = [];
-      scheduleRender();
-    }
+    snap => { cache.income = snap.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); },
+    err => { console.warn("income listener:", err); cache.income = []; scheduleRender(); }
   ));
 
   listeners.push(onSnapshot(
@@ -2141,11 +2204,7 @@ function initListeners() {
       cache.recurring.sort((a, b) => (Number(a.dayOfMonth) || 1) - (Number(b.dayOfMonth) || 1));
       scheduleRender();
     },
-    err => {
-      console.warn("recurring listener:", err);
-      cache.recurring = [];
-      scheduleRender();
-    }
+    err => { console.warn("recurring listener:", err); cache.recurring = []; scheduleRender(); }
   ));
 }
 
@@ -2193,42 +2252,29 @@ document.getElementById("more-btn").onclick = () => {
 };
 document.getElementById("more-backdrop").onclick = () => closeMoreSheet();
 document.querySelectorAll(".more-tab").forEach(b => {
-  b.onclick = () => {
-    closeMoreSheet();
-    setTimeout(() => switchTab(b.dataset.tab), 80);
-  };
+  b.onclick = () => { closeMoreSheet(); setTimeout(() => switchTab(b.dataset.tab), 80); };
 });
 function closeMoreSheet() {
   moreSheet.classList.add("hidden");
   lockScroll(false);
 }
 
-// FAB — does the right thing on each tab
+// FAB
 document.getElementById("mobile-fab").onclick = () => {
   const active = document.querySelector(".tab-panel:not(.hidden)");
   if (!active) return;
   const id = active.id;
   if (id === "tab-jobs") toggleForm("job-form-wrap");
   else if (id === "tab-money") {
-    if (moneySubTab === "income") {
-      openBankModal();
-    } else if (moneySubTab === "recurring") {
-      toggleForm("recurring-form-wrap");
-    } else {
-      toggleForm("expense-form-wrap");
-    }
+    if (moneySubTab === "income") openBankModal();
+    else if (moneySubTab === "recurring") toggleForm("recurring-form-wrap");
+    else toggleForm("expense-form-wrap");
   }
   else if (id === "tab-invoices") toggleForm("invoice-form-wrap");
   else if (id === "tab-vehicles") toggleForm("vehicle-form-wrap");
   else if (id === "tab-settings") toggleForm("team-form-wrap");
-  else if (id === "tab-today") {
-    switchTab("jobs");
-    setTimeout(() => toggleForm("job-form-wrap"), 150);
-  }
-  else {
-    switchTab("jobs");
-    setTimeout(() => toggleForm("job-form-wrap"), 150);
-  }
+  else if (id === "tab-today") { switchTab("jobs"); setTimeout(() => toggleForm("job-form-wrap"), 150); }
+  else { switchTab("jobs"); setTimeout(() => toggleForm("job-form-wrap"), 150); }
 };
 
 // DELEGATED CLICK HANDLERS
@@ -2246,25 +2292,13 @@ function toggleForm(id) {
 
 document.addEventListener("click", (e) => {
   const toggleBtn = e.target.closest("[data-toggle]");
-  if (toggleBtn) {
-    e.preventDefault();
-    toggleForm(toggleBtn.dataset.toggle);
-    return;
-  }
+  if (toggleBtn) { e.preventDefault(); toggleForm(toggleBtn.dataset.toggle); return; }
 
   const gotoBtn = e.target.closest("[data-goto-tab]");
-  if (gotoBtn) {
-    e.preventDefault();
-    switchTab(gotoBtn.dataset.gotoTab);
-    return;
-  }
+  if (gotoBtn) { e.preventDefault(); switchTab(gotoBtn.dataset.gotoTab); return; }
 
   const moneyBtn = e.target.closest("[data-money-view]");
-  if (moneyBtn) {
-    e.preventDefault();
-    setMoneySubTab(moneyBtn.dataset.moneyView);
-    return;
-  }
+  if (moneyBtn) { e.preventDefault(); setMoneySubTab(moneyBtn.dataset.moneyView); return; }
 });
 
 switchTab("today");
@@ -2423,8 +2457,15 @@ function renderExpenses() {
   const c = document.getElementById("expenses-list");
   c.innerHTML = "";
   if (!cache.expenses.length) { c.appendChild(emptyState("No expenses yet", "Tap the + button or import a bank statement.")); return; }
-  const rows = cache.expenses.map(e => [fmtDate(e.date), e.vendor, CATEGORY_LABELS[e.category] || e.category || "—", money(e.amount), jobLabel(e.jobId)]);
-  const table = renderTable(["Date","Vendor","Category","Amount","Job"], rows);
+  const rows = cache.expenses.map(e => [
+    fmtDate(e.date),
+    e.vendor,
+    CATEGORY_LABELS[e.category] || e.category || "—",
+    money(e.amount),
+    deductiblePill(getDeductible(e)),
+    jobLabel(e.jobId)
+  ]);
+  const table = renderTable(["Date","Vendor","Category","Amount","Tax","Job"], rows);
   c.appendChild(table);
   table.querySelectorAll("tbody tr").forEach((tr, i) => {
     const e = cache.expenses[i];
@@ -2601,23 +2642,16 @@ function renderRecurring() {
   const unapplied = getUnappliedRecurring();
   const unappliedTotal = unapplied.reduce((s, r) => s + Number(r.amount || 0), 0);
 
-  // Stats
   document.getElementById("recurring-stat-total").textContent = money(monthlyTotal);
   document.getElementById("recurring-stat-active").textContent = active.length;
   document.getElementById("recurring-stat-active-sub").textContent = `${cache.recurring.length} total template${cache.recurring.length === 1 ? "" : "s"}`;
   document.getElementById("recurring-stat-applied").textContent = money(appliedTotal);
   document.getElementById("recurring-stat-applied-sub").textContent = `${appliedThisMonth.length} of ${cache.recurring.length} applied in ${monthKeyLabel(monthKey)}`;
 
-  // Subtab badge
   const badge = document.getElementById("recurring-subtab-badge");
-  if (unapplied.length) {
-    badge.textContent = unapplied.length;
-    badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
-  }
+  if (unapplied.length) { badge.textContent = unapplied.length; badge.classList.remove("hidden"); }
+  else { badge.classList.add("hidden"); }
 
-  // Banner
   const banner = document.getElementById("recurring-unapplied-banner");
   if (unapplied.length) {
     document.getElementById("recurring-unapplied-title").textContent =
@@ -2629,7 +2663,6 @@ function renderRecurring() {
     banner.classList.add("hidden");
   }
 
-  // List
   c.innerHTML = "";
   if (!cache.recurring.length) {
     c.appendChild(emptyState(
@@ -2661,13 +2694,14 @@ function renderRecurring() {
       CATEGORY_LABELS[r.category] || r.category || "—",
       money(r.amount),
       `Day ${r.dayOfMonth || 1}`,
+      deductiblePill(getDeductible(r)),
       statusEl,
       activeEl
     ];
   });
 
   const table = renderTable(
-    ["Name", "Category", "Amount", "When", "This month", "Status"],
+    ["Name", "Category", "Amount", "When", "Tax", "This month", "Status"],
     rows
   );
   c.appendChild(table);
@@ -2705,6 +2739,7 @@ async function applyRecurring(r) {
     date: dateStr,
     note: r.note || `Recurring: ${r.name || ""}`.trim(),
     recurringId: r.id,
+    deductible: getDeductible(r),
     createdAt: serverTimestamp()
   });
 
@@ -2724,9 +2759,7 @@ async function applyAllRecurring() {
   btn.innerHTML = `<svg class="w-3.5 h-3.5 spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2"/><path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg><span>Applying…</span>`;
 
   try {
-    for (const r of toApply) {
-      await applyRecurring(r);
-    }
+    for (const r of toApply) await applyRecurring(r);
     const total = toApply.reduce((s, r) => s + Number(r.amount || 0), 0);
     toast(`Applied ${toApply.length} recurring · ${money(total)}`);
   } catch (err) {
@@ -2749,6 +2782,7 @@ document.getElementById("recurring-form").onsubmit = async (e) => {
     amount: Number(fd.get("amount")) || 0,
     category: fd.get("category") || "other",
     dayOfMonth: Math.min(Math.max(Number(fd.get("dayOfMonth")) || 1, 1), 31),
+    deductible: Number(fd.get("deductible") ?? 100),
     active: fd.get("active") === "true",
     note: (fd.get("note") || "").toString().trim()
   };
@@ -2757,11 +2791,10 @@ document.getElementById("recurring-form").onsubmit = async (e) => {
     await addDoc(collection(db, "recurring"), { ...data, createdAt: serverTimestamp() });
     e.target.reset();
     e.target.querySelector('[name="active"]').value = "true";
+    e.target.querySelector('[name="deductible"]').value = "100";
     toast("Recurring added");
     document.getElementById("recurring-form-wrap").classList.add("hidden");
-  } catch (err) {
-    toast(err.message, "error");
-  }
+  } catch (err) { toast(err.message, "error"); }
 };
 
 // CALENDAR
@@ -2908,6 +2941,12 @@ function updatePnL() {
   const unpaidList = cache.invoices.filter(i => i.status !== "paid");
   const outstanding = unpaidList.reduce((s, i) => s + Number(i.amount || 0), 0);
 
+  const deductibleTotal = expsThisMonth.reduce((s, e) => {
+    const amt = Number(e.amount || 0);
+    const pct = getDeductible(e);
+    return s + amt * (pct / 100);
+  }, 0);
+
   document.getElementById("pnl-month").textContent = monthLabel();
 
   document.getElementById("pnl-money-in").textContent = money(moneyIn);
@@ -2927,6 +2966,29 @@ function updatePnL() {
 
   document.getElementById("pnl-outstanding").textContent = money(outstanding);
   document.getElementById("pnl-outstanding-sub").textContent = `${unpaidList.length} unpaid invoice${unpaidList.length === 1 ? "" : "s"}`;
+
+  document.getElementById("pnl-deductible").textContent = money(deductibleTotal);
+  document.getElementById("pnl-deductible-sub").textContent = `Of ${money(moneyOut)} spent`;
+}
+
+function updateExpenseStats() {
+  const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
+  const total = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const deductible = expsThisMonth.reduce((s, e) => {
+    const amt = Number(e.amount || 0);
+    return s + amt * (getDeductible(e) / 100);
+  }, 0);
+  const personal = expsThisMonth.filter(e => getDeductible(e) === 0).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const personalCount = expsThisMonth.filter(e => getDeductible(e) === 0).length;
+
+  const elTotal = document.getElementById("expense-stat-total");
+  if (!elTotal) return;
+  elTotal.textContent = money(total);
+  document.getElementById("expense-stat-deductible").textContent = money(deductible);
+  const pct = total > 0 ? ((deductible / total) * 100).toFixed(0) : 0;
+  document.getElementById("expense-stat-deductible-sub").textContent = `${pct}% of what you spent`;
+  document.getElementById("expense-stat-personal").textContent = money(personal);
+  document.getElementById("expense-stat-personal-sub").textContent = `${personalCount} personal entr${personalCount === 1 ? "y" : "ies"}`;
 }
 
 // STATS
@@ -3045,6 +3107,7 @@ function renderJobModal() {
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Vendor</th>
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em] hidden sm:table-cell">Category</th>
                 <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Amount</th>
+                <th class="text-left px-4 py-2.5 font-medium text-slate-500 text-[10px] uppercase tracking-[0.15em]">Tax</th>
                 <th></th>
               </tr></thead>
               <tbody>
@@ -3054,6 +3117,7 @@ function renderJobModal() {
                     <td class="px-4 py-3 text-slate-300 truncate max-w-[12rem]">${escapeHtml(ex.vendor)}</td>
                     <td class="px-4 py-3 text-slate-400 hidden sm:table-cell">${CATEGORY_LABELS[ex.category] || ex.category || "—"}</td>
                     <td class="px-4 py-3 text-amber-400 whitespace-nowrap">${money(ex.amount)}</td>
+                    <td class="px-4 py-3">${deductiblePill(getDeductible(ex)).outerHTML}</td>
                     <td class="px-3 py-3 text-right" data-exp-actions="${ex.id}"></td>
                   </tr>
                 `).join("")}
@@ -3185,9 +3249,7 @@ document.getElementById("send-copy-btn").onclick = async () => {
     const names = cache.team.filter(t => selected.some(s => s.value === t.id)).map(t => t.name).join(", ");
     toast(`Copied for ${names}`);
     closeSendModal();
-  } catch {
-    toast("Couldn't copy to clipboard", "error");
-  }
+  } catch { toast("Couldn't copy to clipboard", "error"); }
 };
 
 document.getElementById("send-email-btn").onclick = () => {
@@ -3216,12 +3278,16 @@ const EDIT_CONFIG = {
     { name: "notes",    label: "Notes",    type: "text", full: true }
   ]},
   expenses: { label: "Expense", fields: [
-    { name: "vendor",   label: "Vendor",   type: "text", required: true },
-    { name: "category", label: "Category", type: "select", options: ALL_CATEGORIES, labels: CATEGORY_LABELS },
-    { name: "amount",   label: "Amount",   type: "number", step: "0.01", required: true },
-    { name: "date",     label: "Date",     type: "date", required: true },
-    { name: "jobId",    label: "Job",      type: "job-select", full: true },
-    { name: "note",     label: "Note",     type: "text", full: true }
+    { name: "vendor",     label: "Vendor",   type: "text", required: true },
+    { name: "category",   label: "Category", type: "select", options: ALL_CATEGORIES, labels: CATEGORY_LABELS },
+    { name: "amount",     label: "Amount",   type: "number", step: "0.01", required: true },
+    { name: "date",       label: "Date",     type: "date", required: true },
+    { name: "deductible", label: "Tax deductible", type: "select", options: [100,75,50,25,0], labels: {
+      100: "100% — Fully business", 75: "75% — Mostly business", 50: "50% — Mixed use",
+      25: "25% — Mostly personal", 0: "0% — Personal (not deductible)"
+    }},
+    { name: "jobId",      label: "Job",      type: "job-select", full: true },
+    { name: "note",       label: "Note",     type: "text", full: true }
   ]},
   invoices: { label: "Invoice", fields: [
     { name: "customer", label: "Customer",  type: "text", required: true },
@@ -3252,6 +3318,10 @@ const EDIT_CONFIG = {
     { name: "amount",     label: "Amount",       type: "number", step: "0.01", required: true },
     { name: "category",   label: "Category",     type: "select", options: ALL_CATEGORIES, labels: CATEGORY_LABELS },
     { name: "dayOfMonth", label: "Day of month", type: "number" },
+    { name: "deductible", label: "Tax deductible", type: "select", options: [100,75,50,25,0], labels: {
+      100: "100% — Fully business", 75: "75% — Mostly business", 50: "50% — Mixed use",
+      25: "25% — Mostly personal", 0: "0% — Personal (not deductible)"
+    }},
     { name: "active",     label: "Active",       type: "select", options: ["true","false"], labels: { "true": "Active", "false": "Paused" } },
     { name: "note",       label: "Note",         type: "text", full: true }
   ]}
@@ -3305,7 +3375,11 @@ function openEditModal(collectionName, docId, data) {
     input.name = f.name;
     input.className = "w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition";
     const v = data[f.name];
-    if (v !== undefined && v !== null) input.value = v;
+    if (f.name === "deductible" && (v === undefined || v === null)) {
+      input.value = 100;
+    } else if (v !== undefined && v !== null) {
+      input.value = v;
+    }
     wrap.appendChild(input);
     fields.appendChild(wrap);
   });
@@ -3338,6 +3412,8 @@ document.getElementById("edit-form").onsubmit = async (e) => {
       data[f.name] = raw === "true";
     } else if (collectionName === "recurring" && f.name === "dayOfMonth") {
       data[f.name] = Math.min(Math.max(Number(raw) || 1, 1), 31);
+    } else if (f.name === "deductible") {
+      data[f.name] = Math.min(Math.max(Number(raw) || 0, 0), 100);
     } else {
       data[f.name] = (f.type === "number" && raw !== "") ? Number(raw) : raw;
     }
@@ -3357,7 +3433,10 @@ document.getElementById("edit-form").onsubmit = async (e) => {
 function formToObject(form) {
   const obj = {};
   new FormData(form).forEach((v, k) => {
-    if (v !== "") obj[k] = (k === "amount" || k === "odometer") ? Number(v) : v;
+    if (v === "") return;
+    if (k === "amount" || k === "odometer") obj[k] = Number(v);
+    else if (k === "deductible") obj[k] = Number(v);
+    else obj[k] = v;
   });
   return obj;
 }
@@ -3366,6 +3445,7 @@ function wireForm(id, collectionName, label) {
     e.preventDefault();
     try {
       const data = formToObject(e.target);
+      if (data.deductible === undefined) data.deductible = 100;
       if (collectionName === "invoices" && data.status === "paid" && !data.paidDate) data.paidDate = todayISO();
       await addDoc(collection(db, collectionName), { ...data, createdAt: serverTimestamp() });
       e.target.reset();
@@ -3382,7 +3462,7 @@ wireForm("vehicle-form", "vehicles", "Vehicle");
 wireForm("team-form",    "team",     "Team member");
 
 // ═════════════════════════════════════════════════════════════
-// MONEY TAB — SUB-TAB + VIEW TOGGLES
+// MONEY TAB
 // ═════════════════════════════════════════════════════════════
 let moneySubTab = "expenses";
 let expenseView = "table";
@@ -3402,6 +3482,7 @@ function setMoneySubTab(tab) {
   document.getElementById("money-recurring-view").classList.toggle("hidden", tab !== "recurring");
   if (tab === "income" && incomeView === "chart") renderIncomeChart();
   if (tab === "expenses" && expenseView === "chart") renderExpenseChart();
+  if (tab === "expenses") updateExpenseStats();
   if (tab === "recurring") renderRecurring();
 }
 
@@ -3472,7 +3553,9 @@ function renderExpenseChart() {
   const totals = {};
   filtered.forEach(e => {
     const cat = e.category || "other";
-    totals[cat] = (totals[cat] || 0) + Number(e.amount || 0);
+    // Chart uses deductible amount so the chart shows what actually counts for tax
+    const amt = Number(e.amount || 0) * (getDeductible(e) / 100);
+    totals[cat] = (totals[cat] || 0) + amt;
   });
 
   const labels = Object.keys(totals);
@@ -3480,7 +3563,7 @@ function renderExpenseChart() {
   const colors = labels.map(l => CATEGORY_COLORS[l] || CATEGORY_COLORS.other);
   const grandTotal = data.reduce((a, b) => a + b, 0);
 
-  document.getElementById("chart-total").textContent = money(grandTotal);
+  document.getElementById("chart-total").textContent = money(grandTotal) + " (deductible)";
 
   const legend = document.getElementById("chart-legend");
   if (!labels.length) {
@@ -3602,7 +3685,7 @@ function renderIncomeChart() {
 }
 
 // ═════════════════════════════════════════════════════════════
-// BANK IMPORT (debits → expenses · deposits → invoices or income)
+// BANK IMPORT
 // ═════════════════════════════════════════════════════════════
 const bankModal = document.getElementById("bank-modal");
 const bankBackdrop = document.getElementById("bank-backdrop");
@@ -3672,10 +3755,12 @@ async function processBankFile(file) {
 
 Extract EVERY transaction and classify each as either a DEBIT (money going out) or a DEPOSIT (money coming in).
 
+For DEBITS, you must ALSO guess the tax deductibility, since the owner sometimes uses the business card for personal purchases.
+
 Return ONLY valid JSON. No markdown fences, no explanation, no preamble. Exactly this shape:
 {
   "debits": [
-    { "date": "YYYY-MM-DD", "vendor": "Vendor name", "amount": 123.45, "category": "paint", "note": "" }
+    { "date": "YYYY-MM-DD", "vendor": "Vendor name", "amount": 123.45, "category": "paint", "deductible": 100, "note": "" }
   ],
   "deposits": [
     { "date": "YYYY-MM-DD", "memo": "Payer name or memo", "amount": 3000.00, "note": "" }
@@ -3684,23 +3769,31 @@ Return ONLY valid JSON. No markdown fences, no explanation, no preamble. Exactly
 
 For DEBITS:
 - category MUST be exactly one of: paint, gas, supplies, tools, vehicle, insurance, credit_card, rent, utilities, subscription, other.
-- Rules:
-  - Sherwin-Williams, Benjamin Moore, PPG, Behr, paint stores → paint
-  - Shell, Chevron, Exxon, Mobil, BP, 76, Arco, Sunoco, gas stations, fuel → gas
-  - Home Depot, Lowe's, Ace Hardware, Menards, hardware stores → supplies
-  - Auto repair, oil change, tires, mechanic, dealership, Carquest, AutoZone → vehicle
-  - Tool vendors, equipment rental → tools
-  - Insurance companies (State Farm, Geico, Allstate, Progressive, etc.) → insurance
-  - Credit card payments (Chase, Amex, Discover, Capital One, payment to a card, autopay) → credit_card
-  - Rent or lease payments → rent
-  - Utility bills (electric, water, gas utility, internet, phone) → utilities
-  - Software/SaaS subscriptions (Netflix, Spotify, Adobe, Microsoft 365, etc.) → subscription
-  - Anything unclear → other
+- deductible MUST be one of: 100, 75, 50, 25, 0. It means the % that's tax-deductible as a business expense.
+  - 100 = clearly a business expense (paint stores, hardware stores, gas for the work truck, tools, business insurance)
+  - 75 = almost certainly business with minor personal overlap
+  - 50 = ambiguous — could be either (e.g. a Home Depot run that may include personal items, mixed-use vehicle costs)
+  - 25 = mostly personal but some business use (a restaurant, general grocery store that could have cleaning supplies)
+  - 0 = clearly personal (Walmart groceries, personal clothing, entertainment, personal restaurant, personal travel, gym, medical, personal subscriptions like Netflix)
+- Category rules:
+  - Sherwin-Williams, Benjamin Moore, PPG, Behr, paint stores → paint, deductible 100
+  - Shell, Chevron, Exxon, Mobil, BP, 76, Arco, Sunoco, gas stations, fuel → gas, deductible 75 (unless it's a chain clearly serving the vehicle)
+  - Home Depot, Lowe's, Ace Hardware, Menards, hardware stores → supplies, deductible 100
+  - Auto repair, oil change, tires, mechanic, dealership, Carquest, AutoZone → vehicle, deductible 100
+  - Tool vendors, equipment rental → tools, deductible 100
+  - Insurance companies (State Farm, Geico, Allstate, Progressive, etc.) → insurance, deductible 100
+  - Credit card payments (autopay to a card) → credit_card, deductible 100
+  - Rent or lease payments → rent, deductible 100
+  - Utility bills (electric, water, internet, phone) → utilities, deductible 100 (or 50 if it looks residential)
+  - Software/SaaS subscriptions (Adobe, Microsoft 365, QuickBooks) → subscription, deductible 100
+  - Grocery stores, restaurants, coffee, entertainment, clothing, personal care → other, deductible 0 or 25
+  - Anything unclear → other, deductible 50
 - Amounts must be positive.
 - Vendor name should be the merchant, cleaned up.
+- In "note", add a short reason if deductible is not 100 (e.g. "personal-looking", "mixed use", "may include personal items").
 
 For DEPOSITS:
-- memo should be the raw memo or payer name from the statement, cleaned up but recognizable.
+- memo should be the raw memo or payer name, cleaned up but recognizable.
 - Skip internal transfers between the same account holder's accounts.
 - Amounts must be positive.
 
@@ -3752,6 +3845,7 @@ Rules for both:
       vendor: t.vendor || "Unknown",
       amount: Number(t.amount) || 0,
       category: ALL_CATEGORIES.includes(t.category) ? t.category : "other",
+      deductible: [0,25,50,75,100].includes(Number(t.deductible)) ? Number(t.deductible) : 100,
       note: t.note || ""
     }));
 
@@ -3832,6 +3926,9 @@ function renderBankReview() {
     parsedDebits.forEach((t, i) => {
       const row = document.createElement("div");
       row.className = "import-row";
+      const dedPct = Number(t.deductible);
+      const rowHighlight = dedPct === 0 ? "background:rgba(148,163,184,0.04);" : "";
+      row.setAttribute("style", rowHighlight);
       row.innerHTML = `
         <input type="checkbox" ${t.include ? "checked" : ""} data-list="debits" data-idx="${i}" data-field="include" />
         <input type="date" value="${t.date}" data-list="debits" data-idx="${i}" data-field="date" />
@@ -3840,6 +3937,11 @@ function renderBankReview() {
         <select data-list="debits" data-idx="${i}" data-field="category">
           ${ALL_CATEGORIES.map(c =>
             `<option value="${c}" ${t.category === c ? "selected" : ""}>${CATEGORY_LABELS[c] || c}</option>`
+          ).join("")}
+        </select>
+        <select data-list="debits" data-idx="${i}" data-field="deductible" title="${escapeHtml(t.note || "")}">
+          ${DEDUCTIBLE_OPTIONS.map(o =>
+            `<option value="${o.value}" ${dedPct === o.value ? "selected" : ""}>${deductibleShort(o.value)}${o.value === 0 ? " (personal)" : ""}</option>`
           ).join("")}
         </select>
       `;
@@ -3887,6 +3989,7 @@ function renderBankReview() {
       const field = e.target.dataset.field;
       if (field === "include") parsedDebits[idx].include = e.target.checked;
       else if (field === "amount") parsedDebits[idx].amount = Number(e.target.value);
+      else if (field === "deductible") parsedDebits[idx].deductible = Number(e.target.value);
       else parsedDebits[idx][field] = e.target.value;
     });
   });
@@ -3943,6 +4046,7 @@ document.getElementById("bank-import-btn").onclick = async () => {
         amount: t.amount,
         date: t.date,
         note: t.note || "",
+        deductible: Number(t.deductible) || 0,
         createdAt: serverTimestamp()
       });
       expenseCount++;
@@ -4000,14 +4104,22 @@ async function generateDailyBrief() {
     const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
     const monthlyInvoiced = invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0);
     const monthlyExpenses = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const deductible = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0) * (getDeductible(e) / 100), 0);
+    const personal = expsThisMonth.filter(e => getDeductible(e) === 0).reduce((s, e) => s + Number(e.amount || 0), 0);
     const unappliedRec = getUnappliedRecurring();
 
     const context = {
       today, month: monthLabel(),
       jobsToday: jobsToday.map(j => ({ customer: j.customer, address: j.address, status: j.status, amount: j.amount })),
-      expensesToday: expensesToday.map(e => ({ vendor: e.vendor, category: e.category, amount: e.amount })),
+      expensesToday: expensesToday.map(e => ({ vendor: e.vendor, category: e.category, amount: e.amount, deductible: getDeductible(e) })),
       invoicesToday: invoicesToday.map(i => ({ customer: i.customer, amount: i.amount })),
-      monthly: { invoiced: monthlyInvoiced, expenses: monthlyExpenses, net: monthlyInvoiced - monthlyExpenses },
+      monthly: {
+        invoiced: monthlyInvoiced,
+        expenses: monthlyExpenses,
+        deductible,
+        personal,
+        net: monthlyInvoiced - monthlyExpenses
+      },
       recurring_unapplied_this_month: unappliedRec.map(r => ({ name: r.name, amount: r.amount, category: r.category }))
     };
 
@@ -4021,7 +4133,8 @@ Write a short daily brief (4-6 lines max) covering:
 - What jobs happened today
 - What was spent today
 - Monthly financial snapshot (invoiced vs expenses)
-- Whether any recurring monthly bills still need to be applied (credit cards, insurance, rent, subscriptions)
+- How much of this month's spending is actually tax-deductible vs personal
+- Whether any recurring monthly bills still need to be applied
 - Anything needing attention
 
 Be specific with numbers. If a section has no data, say so briefly. No markdown, no bullet symbols, just clean sentences.`;
@@ -4033,12 +4146,8 @@ Be specific with numbers. If a section has no data, say so briefly. No markdown,
     });
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (text) {
-      addMessage("model", text);
-    } else {
-      toast("No response from Gemini", "error");
-      console.error("Gemini response:", data);
-    }
+    if (text) addMessage("model", text);
+    else { toast("No response from Gemini", "error"); console.error("Gemini response:", data); }
   } catch (err) {
     console.error(err);
     toast("Error: " + err.message, "error");
@@ -4112,7 +4221,7 @@ chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); }
 });
 
-// ── ATTACHMENT HANDLING ───────────────────────────────────────
+// ATTACHMENT HANDLING
 let pendingFile = null;
 let pendingFileBase64 = null;
 let pendingFileMime = null;
@@ -4130,10 +4239,7 @@ function toggleAttachMenu(e) {
   else closeAttachMenu();
 }
 
-chatAttachBtn.onclick = (e) => {
-  e.stopPropagation();
-  toggleAttachMenu(e);
-};
+chatAttachBtn.onclick = (e) => { e.stopPropagation(); toggleAttachMenu(e); };
 
 document.addEventListener("click", (e) => {
   if (chatAttachMenu.classList.contains("hidden")) return;
@@ -4210,26 +4316,50 @@ document.getElementById("clear-chat-btn").onclick = () => {
   chatHistory = []; saveChatHistory(); renderChat(); toast("Chat cleared");
 };
 
+// Compact record snapshot for the AI with IDs so it can update
+function slimExpense(e) {
+  return { id: e.id, date: e.date, vendor: e.vendor, amount: Number(e.amount || 0), category: e.category, deductible: getDeductible(e), job: jobLabel(e.jobId), note: e.note || "" };
+}
+function slimJob(j) {
+  const m = computeJobMetrics(j.id);
+  return { id: j.id, customer: j.customer, address: j.address, date: j.date, status: j.status, contract: j.amount, invoiced: m.invoiced, expenses: m.expenses, profit: m.profit, notes: j.notes || "" };
+}
+function slimInvoice(i) {
+  return { id: i.id, date: i.date, dueDate: i.dueDate || "", customer: i.customer, amount: Number(i.amount || 0), status: i.status, paidDate: i.paidDate || "", job: jobLabel(i.jobId), notes: i.notes || "" };
+}
+function slimVehicle(v) {
+  return { id: v.id, name: v.name, plate: v.plate || "", odometer: v.odometer || "", lastService: v.lastService || "", nextServiceDue: v.nextServiceDue || "" };
+}
+function slimIncome(r) {
+  return { id: r.id, date: r.date, source: r.source, amount: Number(r.amount || 0), note: r.note || "" };
+}
+function slimRecurring(r) {
+  return { id: r.id, name: r.name, amount: Number(r.amount || 0), category: r.category, dayOfMonth: r.dayOfMonth || 1, deductible: getDeductible(r), active: isRecurringActive(r), lastAppliedMonth: r.lastAppliedMonth || "" };
+}
+
 async function fetchCompanySnapshot() {
-  const jobs = cache.jobs.map(j => {
-    const m = computeJobMetrics(j.id);
-    return { customer: j.customer, address: j.address, date: j.date, status: j.status, contract: j.amount, invoiced: m.invoiced, collected: m.collected, expenses: m.expenses, profit: m.profit, notes: j.notes };
-  });
-  const expenses = cache.expenses.slice(0, 200).map(e => ({ date: e.date, vendor: e.vendor, category: e.category, amount: e.amount, job: jobLabel(e.jobId), note: e.note }));
-  const invoices = cache.invoices.slice(0, 200).map(i => ({ date: i.date, customer: i.customer, amount: i.amount, dueDate: i.dueDate, status: i.status, paidDate: i.paidDate, job: jobLabel(i.jobId) }));
-  const vehicles = cache.vehicles.slice(0, 50).map(v => ({ name: v.name, plate: v.plate, odometer: v.odometer, lastService: v.lastService, nextServiceDue: v.nextServiceDue }));
-  const income = (cache.income || []).slice(0, 100).map(r => ({ date: r.date, source: r.source, amount: r.amount }));
-  const recurring = cache.recurring.map(r => ({ name: r.name, amount: r.amount, category: r.category, dayOfMonth: r.dayOfMonth, active: isRecurringActive(r), lastAppliedMonth: r.lastAppliedMonth }));
+  const jobs = cache.jobs.slice(0, 200).map(slimJob);
+  const expenses = cache.expenses.slice(0, 200).map(slimExpense);
+  const invoices = cache.invoices.slice(0, 200).map(slimInvoice);
+  const vehicles = cache.vehicles.slice(0, 50).map(slimVehicle);
+  const income = (cache.income || []).slice(0, 100).map(slimIncome);
+  const recurring = cache.recurring.map(slimRecurring);
   const invsThisMonth = cache.invoices.filter(i => isInThisMonth(i.date));
   const expsThisMonth = cache.expenses.filter(e => isInThisMonth(e.date));
+  const deductible = expsThisMonth.reduce((s, e) => s + Number(e.amount || 0) * (getDeductible(e) / 100), 0);
+  const personal = expsThisMonth.filter(e => getDeductible(e) === 0).reduce((s, e) => s + Number(e.amount || 0), 0);
   return {
     today: todayISO(), month: monthLabel(),
-    monthly: { invoiced: invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0), expenses: expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0) },
+    monthly: {
+      invoiced: invsThisMonth.reduce((s, i) => s + Number(i.amount || 0), 0),
+      expenses: expsThisMonth.reduce((s, e) => s + Number(e.amount || 0), 0),
+      deductible, personal
+    },
     jobs, expenses, invoices, vehicles, income, recurring
   };
 }
 
-// ── FILE → AUTO-LOG ───────────────────────────────────────────
+// FILE → AUTO-LOG
 async function handleFileAction(userText, base64, mime, fileObj) {
   const today = todayISO();
   const jobsList = cache.jobs.slice(0, 80).map(j => ({ id: j.id, customer: j.customer, address: j.address }));
@@ -4241,7 +4371,9 @@ The user attached a file (${fileObj.name}) and wrote this instruction:
 
 READ THE FILE. Decide what it is. Then take the right action(s) and return structured JSON.
 
-Return ONLY valid JSON. No markdown fences, no commentary before or after. Exact shape:
+IMPORTANT CONTEXT: The owner sometimes uses the business card for personal purchases. When logging an EXPENSE, you MUST guess the % that is tax-deductible and set the "deductible" field to one of: 100, 75, 50, 25, 0.
+
+Return ONLY valid JSON. No markdown fences, no commentary. Exact shape:
 {
   "reply": "1-3 sentence message for the user explaining what you saw and what you did.",
   "actions": [ ...one or more action objects from the list below... ]
@@ -4250,38 +4382,42 @@ Return ONLY valid JSON. No markdown fences, no commentary before or after. Exact
 ACTION SHAPES (use only these):
 
 Expense (a bill or receipt that WAS PAID — money going out):
-{ "type": "expense", "data": { "date": "YYYY-MM-DD", "vendor": "Clean Vendor Name", "amount": 123.45, "category": "paint|gas|supplies|tools|vehicle|insurance|credit_card|rent|utilities|subscription|other", "jobId": "optional-existing-job-id", "note": "" } }
+{ "type": "expense", "data": { "date": "YYYY-MM-DD", "vendor": "Clean Vendor Name", "amount": 123.45, "category": "paint|gas|supplies|tools|vehicle|insurance|credit_card|rent|utilities|subscription|other", "deductible": 100, "jobId": "optional-existing-job-id", "note": "" } }
 
-Job (a new customer project / estimate / contract you'll be working on):
+Job:
 { "type": "job", "data": { "date": "YYYY-MM-DD", "customer": "Customer Name", "address": "Job site", "status": "estimate|scheduled|in-progress|complete", "amount": 0, "notes": "" } }
 
-Invoice (an invoice YOU sent to a customer — money coming IN):
+Invoice (an invoice YOU sent):
 { "type": "invoice", "data": { "date": "YYYY-MM-DD", "dueDate": "YYYY-MM-DD", "customer": "Customer Name", "amount": 0, "status": "sent|paid|overdue", "jobId": "optional", "notes": "" } }
 
-Vehicle (title, registration, insurance, maintenance record for a truck/van):
+Vehicle:
 { "type": "vehicle", "data": { "name": "e.g. White Ford Transit", "plate": "", "odometer": 0, "lastService": "YYYY-MM-DD", "nextServiceDue": "YYYY-MM-DD", "notes": "" } }
 
-Income (a deposit with no matching invoice — e.g. cash deposit, interest, refund):
+Income:
 { "type": "income", "data": { "date": "YYYY-MM-DD", "source": "Payer or memo", "amount": 0, "note": "" } }
 
-Recurring (a bill that repeats every month — insurance, credit card, rent, subscription, utilities):
-{ "type": "recurring", "data": { "name": "State Farm — Truck Insurance", "vendor": "State Farm", "amount": 245.00, "category": "insurance|credit_card|rent|utilities|subscription|vehicle|other", "dayOfMonth": 15, "active": true, "note": "" } }
+Recurring (a bill that repeats every month):
+{ "type": "recurring", "data": { "name": "State Farm — Truck Insurance", "vendor": "State Farm", "amount": 245.00, "category": "insurance|credit_card|rent|utilities|subscription|vehicle|other", "dayOfMonth": 15, "deductible": 100, "active": true, "note": "" } }
 
-CLASSIFICATION RULES:
-- Store receipt or vendor bill → "expense". If the receipt has clearly different line items, split into multiple expense actions.
-- Bank/credit card statement → one "expense" per outgoing transaction, one "income" per incoming transaction that isn't clearly an invoice payment.
-- Invoice you RECEIVED (someone billing you) → "expense".
-- Invoice you SENT (customer owes you) → "invoice".
+DEDUCTIBLE GUIDANCE (very important):
+- 100 = clearly a business expense (paint stores, hardware, tools, gas for the truck, business insurance)
+- 75 = almost certainly business, minor personal overlap
+- 50 = ambiguous / mixed-use (Home Depot run that might include personal items)
+- 25 = mostly personal with some business angle (restaurant, general grocery)
+- 0 = clearly personal (personal clothing, personal entertainment, groceries, personal travel, gym, personal subscriptions)
+
+OTHER CLASSIFICATION RULES:
+- Store receipt or vendor bill → "expense". Split into multiple lines if the receipt clearly mixes categories.
+- Bank/credit card statement → one "expense" per outgoing transaction (with its own deductible guess), one "income" per incoming transaction.
+- Invoice you RECEIVED → "expense".
+- Invoice you SENT → "invoice".
 - Signed contract, estimate, or work order for a customer → "job".
 - Vehicle title / registration / insurance / odometer photo → "vehicle".
-- A document describing an ongoing MONTHLY bill (insurance policy with monthly premium, credit card statement showing autopay, rent agreement, subscription confirmation) → ALSO add a "recurring" action.
-- Business card, unrelated doc, illegible image → return "actions": [] and explain in "reply".
+- A document describing an ongoing MONTHLY bill → ALSO add a "recurring" action.
 - If the user's instruction says what to do, follow the instruction over your guess.
 - Use today (${today}) when a date is missing.
-- Amounts must be positive numbers. No currency symbols, no commas.
-- Category mapping: paint stores → paint; gas stations → gas; hardware stores → supplies; auto repair → vehicle; tool vendors → tools; insurance → insurance; credit card autopay → credit_card; rent → rent; utilities → utilities; software → subscription; unclear → other.
+- Amounts must be positive numbers.
 
-LINKING TO EXISTING JOBS — if the file clearly belongs to one of these jobs, set the jobId. Otherwise omit.
 Existing jobs (id / customer / address):
 ${JSON.stringify(jobsList)}
 
@@ -4342,11 +4478,12 @@ Today: ${today}`;
           vendor: d.vendor || "Unknown",
           amount: Number(d.amount) || 0,
           category: ALL_CATEGORIES.includes(d.category) ? d.category : "other",
+          deductible: [0,25,50,75,100].includes(Number(d.deductible)) ? Number(d.deductible) : 100,
           note: d.note || ""
         };
         if (d.jobId) payload.jobId = d.jobId;
         await addDoc(collection(db, "expenses"), { ...payload, createdAt: serverTimestamp() });
-        results.push(`Expense · ${payload.vendor} · ${money(payload.amount)}`);
+        results.push(`Expense · ${payload.vendor} · ${money(payload.amount)} · ${deductibleShort(payload.deductible)}`);
 
       } else if (a.type === "job") {
         const payload = {
@@ -4403,6 +4540,7 @@ Today: ${today}`;
           amount: Number(d.amount) || 0,
           category: ALL_CATEGORIES.includes(d.category) ? d.category : "other",
           dayOfMonth: Math.min(Math.max(Number(d.dayOfMonth) || 1, 1), 31),
+          deductible: [0,25,50,75,100].includes(Number(d.deductible)) ? Number(d.deductible) : 100,
           active: d.active !== false,
           note: d.note || "",
           lastAppliedMonth: ""
@@ -4422,6 +4560,54 @@ Today: ${today}`;
   } else {
     addMessage("model", reply);
   }
+}
+
+// APPLY UPDATE ACTIONS FROM COMPANY AI CHAT
+const UPDATABLE_COLLECTIONS = ["expenses","invoices","jobs","vehicles","income","recurring"];
+
+async function applyUpdates(updates) {
+  if (!Array.isArray(updates)) return [];
+  const results = [];
+  for (const u of updates) {
+    try {
+      if (!u || !u.collection || !u.id || !u.changes || typeof u.changes !== "object") {
+        results.push(`❌ Bad update shape`);
+        continue;
+      }
+      if (!UPDATABLE_COLLECTIONS.includes(u.collection)) {
+        results.push(`❌ Can't update "${u.collection}"`);
+        continue;
+      }
+      // Sanitize changes — only allow the fields we know about
+      const clean = {};
+      if (u.changes.deductible !== undefined) {
+        const d = Number(u.changes.deductible);
+        clean.deductible = [0,25,50,75,100].includes(d) ? d : 100;
+      }
+      if (u.changes.category !== undefined && ALL_CATEGORIES.includes(u.changes.category)) clean.category = u.changes.category;
+      if (u.changes.vendor !== undefined) clean.vendor = String(u.changes.vendor);
+      if (u.changes.customer !== undefined) clean.customer = String(u.changes.customer);
+      if (u.changes.amount !== undefined) clean.amount = Number(u.changes.amount);
+      if (u.changes.date !== undefined) clean.date = String(u.changes.date);
+      if (u.changes.dueDate !== undefined) clean.dueDate = String(u.changes.dueDate);
+      if (u.changes.status !== undefined) clean.status = String(u.changes.status);
+      if (u.changes.notes !== undefined) clean.notes = String(u.changes.notes);
+      if (u.changes.note !== undefined) clean.note = String(u.changes.note);
+
+      if (!Object.keys(clean).length) {
+        results.push(`⚠️ No valid changes for ${u.collection} ${u.id}`);
+        continue;
+      }
+
+      await updateDoc(doc(db, u.collection, u.id), clean);
+      const fieldList = Object.keys(clean).map(k => `${k}=${clean[k]}`).join(", ");
+      results.push(`Updated ${u.collection}/${u.id}: ${fieldList}`);
+    } catch (err) {
+      console.error("Update failed:", u, err);
+      results.push(`❌ ${u.collection}/${u.id}: ${err.message}`);
+    }
+  }
+  return results;
 }
 
 chatForm.onsubmit = async (e) => {
@@ -4452,24 +4638,48 @@ chatForm.onsubmit = async (e) => {
     } else {
       const snapshot = await fetchCompanySnapshot();
       const systemPrompt = `You are the Company AI for Joe Westlake Painting LLC — a painting business.
-You help the owner understand the business. You have access to the full data snapshot below.
+You help the owner understand AND modify the business. You have the full data snapshot below, including record IDs.
+
+You have TWO jobs:
+1. ANSWER QUESTIONS using only the data provided. Never invent numbers, names, or jobs.
+2. MAKE CHANGES when the user asks — update records, mark things personal, fix a deductible, change a category, etc.
+
+When the user asks you to change something, return STRICT JSON in this shape (no code fences):
+{
+  "reply": "short message explaining what you did",
+  "updates": [
+    { "collection": "expenses", "id": "abc123", "changes": { "deductible": 0 } }
+  ]
+}
+
+Valid collections: expenses, invoices, jobs, vehicles, income, recurring.
+Common change fields on expenses: deductible (0, 25, 50, 75, or 100), category, vendor, amount, date, note.
+
+DEDUCTIBLE SEMANTICS:
+- 100 = fully business / fully deductible
+- 75 = mostly business
+- 50 = mixed use
+- 25 = mostly personal
+- 0 = personal, not deductible
+
+If the user just asks a question, return plain text (no JSON). If they ask you to change something, return the JSON shape.
+Examples of change requests:
+- "mark Whole Foods as personal" → set that expense's deductible to 0
+- "make the Home Depot on 10/3 50% deductible"
+- "this Chase payment is personal" → 0%
+- "change the Miller job to complete"
 
 Rules:
-- Always answer using the data provided. Never invent numbers, names, or jobs.
-- If the data doesn't contain the answer, say so plainly.
-- Be concise. Use short paragraphs or simple lists when helpful.
-- Currency is USD. Today's date is ${snapshot.today}.
-- Jobs include invoiced, expenses, and profit totals — use these for profitability questions.
-- The "income" list is non-invoice income (bank deposits that didn't match an invoice).
-- The "recurring" list is fixed monthly bills. If a recurring entry's lastAppliedMonth is not the current month, it hasn't been logged as an expense yet this month.
-- When referring to money or jobs, cite the specific figures from the data.
+- Currency is USD. Today is ${snapshot.today}.
+- Be concise. Cite the specific figures from the data.
+- When updating, only use IDs that appear in the snapshot below. If you can't find the record, say so instead of guessing.
 
 Company data snapshot (JSON):
 ${JSON.stringify(snapshot)}`;
 
       const contents = [
         { role: "user",  parts: [{ text: systemPrompt }] },
-        { role: "model", parts: [{ text: "Understood. I have the full company snapshot and will answer using only that data." }] },
+        { role: "model", parts: [{ text: "Understood. I'll answer questions plainly and return strict JSON with an updates array only when you ask me to change records." }] },
         ...chatHistory.slice(0, -1).filter(m => m.text).map(m => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] })),
         { role: "user", parts: [{ text: text }] }
       ];
@@ -4481,8 +4691,30 @@ ${JSON.stringify(snapshot)}`;
       });
       const data = await res.json();
       removeTypingIndicator();
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response. Check the console for details.";
-      addMessage("model", reply);
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      if (!raw) {
+        addMessage("model", "I couldn't generate a response. Check the console for details.");
+        return;
+      }
+
+      // Try to detect JSON updates
+      const cleaned = raw.replace(/```json\s*/i, "").replace(/```\s*$/i, "").trim();
+      let parsed = null;
+      if (cleaned.startsWith("{") || cleaned.startsWith("[")) {
+        try { parsed = JSON.parse(cleaned); } catch (_) {
+          const m = cleaned.match(/\{[\s\S]*\}/);
+          if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+        }
+      }
+
+      if (parsed && typeof parsed === "object" && Array.isArray(parsed.updates)) {
+        const updateResults = await applyUpdates(parsed.updates);
+        const summary = updateResults.length ? `\n\n✅ Changes:\n${updateResults.map(r => "• " + r).join("\n")}` : "";
+        addMessage("model", (parsed.reply || "Done.") + summary);
+      } else {
+        addMessage("model", raw);
+      }
     }
   } catch (err) {
     console.error(err);
