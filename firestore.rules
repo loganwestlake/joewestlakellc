@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Joe Westlake Painting LLC — Firestore security rules
+//
+// Only approved people can read or change business data. Signing up is not enough:
+// an account is approved when a document exists at  members/{their user ID}.
+//
+// To approve someone (Firebase console → Firestore → Data):
+//   1. Have them sign up / sign in once. The app shows their user ID in the
+//      "doesn't have access yet" message (also listed in Authentication → Users).
+//   2. Create collection "members", document ID = that user ID,
+//      with a field such as  name: "Joe"  (any field works).
+// To remove someone, delete their members document.
+//
+// The members collection can't be written from the app — only from the console
+// (or the Admin SDK), so nobody can approve themselves.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMember() {
+      return signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.uid));
+    }
+
+    // Members can see their own approval record (the AI proxy uses this check too), nothing else.
+    match /members/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Business data — approved members only.
+    match /jobs/{id}      { allow read, write: if isMember(); }
+    match /expenses/{id}  { allow read, write: if isMember(); }
+    match /invoices/{id}  { allow read, write: if isMember(); }
+    match /income/{id}    { allow read, write: if isMember(); }
+    match /recurring/{id} { allow read, write: if isMember(); }
+    match /vehicles/{id}  { allow read, write: if isMember(); }
+    match /team/{id}      { allow read, write: if isMember(); }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

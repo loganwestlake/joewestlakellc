@@ -356,6 +356,8 @@
   }
   .fab:active { transform: scale(0.94); }
   .fab[hidden] { display: none; }
+  /* Never float the + button over a popup (it used to sit on top of the "More" sheet). */
+  body.has-modal .fab { display: none; }
   @media (min-width: 1024px) { .fab { display: none !important; } }
 
   .chat-shell { height: calc(100vh - 260px); min-height: 480px; }
@@ -495,15 +497,6 @@
 
   <!-- MOBILE BOTTOM NAV -->
   <nav class="lg:hidden bottom-nav" aria-label="Main navigation"><div id="bottom-nav" class="bottom-nav-inner"></div></nav>
-
-  <!-- MOBILE MORE SHEET -->
-  <div id="more-sheet" class="modal-root fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="More pages">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close></div>
-    <div class="absolute bottom-0 inset-x-0 bg-[#0d0d10] border-t border-white/[0.08] rounded-t-3xl p-5 sheet-up" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);">
-      <div class="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5"></div>
-      <div id="more-grid" class="grid grid-cols-2 gap-3"></div>
-    </div>
-  </div>
 
   <!-- MAIN -->
   <main id="main" class="app-main" tabindex="-1">
@@ -882,6 +875,15 @@
   </main>
 </div>
 
+<!-- MOBILE MORE SHEET -->
+<div id="more-sheet" class="modal-root fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="More pages">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close></div>
+  <div class="absolute bottom-0 inset-x-0 bg-[#0d0d10] border-t border-white/[0.08] rounded-t-3xl p-5 sheet-up" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);">
+    <div class="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5"></div>
+    <div id="more-grid" class="grid grid-cols-2 gap-3"></div>
+  </div>
+</div>
+
 <button type="button" id="mobile-fab" class="fab" data-action="fab" aria-label="Quick add"><span data-icon="plus" data-cls="w-6 h-6" data-sw="2.5"></span></button>
 
 <!-- SIGN-IN MODAL -->
@@ -1065,7 +1067,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.0";
+const APP_VERSION = "v2.1";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -1096,7 +1098,9 @@ const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const pad2 = (n) => String(n).padStart(2, "0");
 const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi);
-const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+// Amounts sometimes arrive as text ("$1,250.00") from older records or the AI; strip $, commas and spaces before converting.
+const toNumber = (v) => (typeof v === "string" ? Number(v.replace(/[$,\s]/g, "")) : Number(v));
+const num = (v) => { const n = toNumber(v); return Number.isFinite(n) ? n : 0; };
 const round2 = (n) => Math.round(num(n) * 100) / 100;
 const sum = (list, pick = (r) => r.amount) => list.reduce((s, r) => s + num(pick(r)), 0);
 const plural = (n, one, many = one + "s") => `${n} ${n === 1 ? one : many}`;
@@ -1270,8 +1274,13 @@ const INVOICE_STATUSES = {
 };
 const isPaid = (inv) => inv.status === "paid";
 const paidDateOf = (inv) => inv.paidDate || inv.date;
-// "Sent" invoices past their due date are overdue without anyone having to remember to flip them.
-const invoiceStatus = (inv) => isPaid(inv) ? "paid" : (inv.status === "overdue" || (inv.dueDate && inv.dueDate < todayISO())) ? "overdue" : (inv.status || "sent");
+// Unpaid invoices with a due date are overdue exactly when that date has passed — so moving the due date
+// later clears a saved "overdue". Only invoices with no due date rely on the stored status.
+const invoiceStatus = (inv) => {
+  if (isPaid(inv)) return "paid";
+  if (validISO(inv.dueDate)) return inv.dueDate < todayISO() ? "overdue" : "sent";
+  return inv.status === "overdue" ? "overdue" : "sent";
+};
 
 const isRecurringActive = (r) => r.active === true || r.active === "true" || r.active === undefined;
 // Day 31 bills land on the last day of short months (the old code forced everything past the 28th to the 28th).
@@ -1296,7 +1305,8 @@ function periodRange(key) {
     default:           return [null, null];
   }
 }
-const inRange = (iso, [a, b]) => !!iso && (!a || iso >= a) && (!b || iso <= b);
+// An open range ("All time") includes everything, even records with a blank or missing date.
+const inRange = (iso, [a, b]) => (!a && !b) || (!!iso && (!a || iso >= a) && (!b || iso <= b));
 const thisMonth = () => periodRange("this-month");
 
 // ═════════════════════════════════════════════════════════════
@@ -1341,7 +1351,9 @@ function startSync() {
         scheduleRender();
         if (!syncErrorShown) {
           syncErrorShown = true;
-          toast(err.code === "permission-denied" ? "This account doesn't have access to the business data." : `Sync problem: ${err.message}`, "error");
+          toast(err.code === "permission-denied"
+            ? `This account doesn't have access to the business data yet. Ask the owner to approve user ID ${auth.currentUser?.uid || "?"}.`
+            : `Sync problem: ${err.message}`, err.code === "permission-denied" ? { type: "error", duration: 15000 } : "error");
         }
       }
     ));
@@ -1364,6 +1376,7 @@ function renderAll() {
   renderJobs();
   renderInvoices();
   renderMoney();
+  if (currentTab === "money" && moneyState.mode === "chart") renderMoneyChart();
   renderRecurring();
   renderVehicles();
   renderTeam();
@@ -1385,7 +1398,28 @@ function jobMetrics(jobId) {
   return metricsCache.get(jobId) || ZERO_METRICS;
 }
 
-const unappliedRecurring = () => store.recurring.filter((r) => isRecurringActive(r) && r.lastAppliedMonth !== monthKey());
+// Months a recurring bill still needs logging for, oldest first: every month after the last one applied,
+// through this month — so a month nobody pressed "Apply" in still gets logged. Capped at a year.
+const MAX_CATCHUP_MONTHS = 12;
+const MONTH_KEY_RE = /^\d{4}-\d{2}$/;
+const addMonthsKey = (mk, n) => { const [y, m] = mk.split("-").map(Number); return monthKey(new Date(y, m - 1 + n, 1)); };
+const isAppliedFor = (r, mk) => MONTH_KEY_RE.test(r.lastAppliedMonth || "") && r.lastAppliedMonth >= mk;
+function pendingMonths(r) {
+  if (!r || !isRecurringActive(r)) return [];
+  const cur = monthKey();
+  if (isAppliedFor(r, cur)) return [];
+  const last = MONTH_KEY_RE.test(r.lastAppliedMonth || "") ? r.lastAppliedMonth : "";
+  // Never applied: we can't know when it started, so only this month is due.
+  let first = last ? addMonthsKey(last, 1) : cur;
+  const floor = addMonthsKey(cur, -(MAX_CATCHUP_MONTHS - 1));
+  if (first < floor) first = floor;
+  const out = [];
+  for (let mk = first; mk <= cur; mk = addMonthsKey(mk, 1)) out.push(mk);
+  return out;
+}
+const unappliedRecurring = () => store.recurring.filter((r) => pendingMonths(r).length > 0);
+const recurringDue = (list) => list.reduce((s, r) => s + num(r.amount) * pendingMonths(r).length, 0);
+const missedMonthCount = (list) => list.reduce((s, r) => s + Math.max(0, pendingMonths(r).length - 1), 0);
 
 // ═════════════════════════════════════════════════════════════
 // TOASTS (with Undo)
@@ -1441,6 +1475,7 @@ function openModal(id, { focus = true } = {}) {
   m.classList.remove("hidden");
   modalStack.push({ id, restore: document.activeElement });
   document.body.style.overflow = "hidden";
+  document.body.classList.add("has-modal");
   if (focus && !isMobile()) setTimeout(() => m.querySelector("[autofocus], input:not([type=hidden]):not([type=checkbox]):not(.hidden), select, textarea")?.focus(), 60);
 }
 function closeModal(id) {
@@ -1449,7 +1484,7 @@ function closeModal(id) {
   m.classList.add("hidden");
   const i = modalStack.findIndex((x) => x.id === id);
   const [entry] = i >= 0 ? modalStack.splice(i, 1) : [];
-  if (!modalStack.length) document.body.style.overflow = "";
+  if (!modalStack.length) { document.body.style.overflow = ""; document.body.classList.remove("has-modal"); }
   modalCloseHooks[id]?.();
   if (entry?.restore?.isConnected) entry.restore.focus?.({ preventScroll: true });
 }
@@ -1461,12 +1496,27 @@ document.addEventListener("keydown", (e) => {
     if (!$("#quick-add-menu").classList.contains("hidden")) { closeQuickAdd(); return $("#quick-add-btn").focus(); }
     if (top) { e.preventDefault(); closeModal(top.id); }
   } else if (e.key === "Tab" && top) {
-    const focusables = $$('button:not([disabled]), [href], input:not([disabled]):not(.hidden), select, textarea, [tabindex]:not([tabindex="-1"])', $("#" + top.id)).filter((el) => el.offsetParent !== null);
-    if (!focusables.length) return;
-    const first = focusables[0], last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    const focusables = modalFocusables(top.id);
+    if (!focusables.length) { e.preventDefault(); return; }
+    const first = focusables[0], last = focusables[focusables.length - 1], active = document.activeElement;
+    // Focus that's outside the popup (or on a non-tabbable spot inside it) wraps back in instead of escaping.
+    if (!focusables.includes(active)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+    else if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
   }
+});
+function modalFocusables(id) {
+  return $$('button:not([disabled]), [href], input:not([disabled]):not(.hidden):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])', $("#" + id))
+    .filter((el) => el.offsetParent !== null);
+}
+// Focus moving behind an open popup (a click on the page behind, or code focusing something) is pulled back in.
+// Toasts are exempt so their Undo button stays usable.
+document.addEventListener("focusin", (e) => {
+  const top = modalStack[modalStack.length - 1];
+  if (!top) return;
+  const root = $("#" + top.id);
+  if (!root || root.contains(e.target) || e.target.closest?.("#toast-container")) return;
+  modalFocusables(top.id)[0]?.focus({ preventScroll: true });
 });
 
 // ═════════════════════════════════════════════════════════════
@@ -1861,6 +1911,11 @@ function fieldValue(f, existing, prefill) {
   if (existing) {
     if (f.name === "deductible") return String(getDeductible(existing));
     if (f.type === "bool") return String(isRecurringActive(existing));
+    // A blank category would otherwise show (and save) as the first option, "Paint".
+    if (f.name === "category" && !existing.category) return "other";
+    // "$1,250" saved as text would show as an empty number box and block saving.
+    if (f.type === "money" && existing[f.name] != null && existing[f.name] !== "") return String(round2(existing[f.name]));
+    if (f.name === "status" && SCHEMAS.invoices.fields.includes(f)) return invoiceStatus(existing);
     return existing[f.name] ?? "";
   }
   if (prefill[f.name] !== undefined) return prefill[f.name];
@@ -1936,9 +1991,16 @@ function saveRecord(e) {
   const existing = id ? byId(col, id) : null;
 
   if (col === "invoices") {
-    if (data.status === "paid" && !data.paidDate) data.paidDate = todayISO();
+    // Newly paid → today. Already paid but never had a paid date → keep the income in the month it always
+    // showed in (the invoice's own date), instead of jumping to today.
+    if (data.status === "paid" && !data.paidDate) data.paidDate = existing && isPaid(existing) ? (validISO(existing.paidDate) || validISO(data.date) || validISO(existing.date) || todayISO()) : todayISO();
+    if (data.status === "overdue" && validISO(data.dueDate) && data.dueDate >= todayISO()) data.status = "sent";
     if (data.status !== "paid") data.paidDate = existing ? deleteField() : "";
     if (!existing && !data.paidDate) delete data.paidDate;
+  }
+  // Un-pausing a recurring bill shouldn't back-fill the months it was paused — start again from this month.
+  if (col === "recurring" && existing && !isRecurringActive(existing) && data.active && !isAppliedFor(existing, addMonthsKey(monthKey(), -1))) {
+    data.lastAppliedMonth = addMonthsKey(monthKey(), -1);
   }
   if (existing) persist(updateDoc(doc(db, col, id), data), `Couldn't update ${schema.label.toLowerCase()}`);
   else persist(addDoc(collection(db, col), { ...data, createdAt: serverTimestamp() }), `Couldn't add ${schema.label.toLowerCase()}`);
@@ -1965,31 +2027,48 @@ function markPaid(id) {
   toast(`${inv.customer || "Invoice"} marked paid · ${money(inv.amount)}`, { action: { label: "Undo", run: () => persist(updateDoc(doc(db, "invoices", id), prev), "Couldn't undo") } });
 }
 
+// Bill-months already being applied this session — a fast double tap on "Apply all" used to log bills twice
+// because the second tap landed before Firestore's local snapshot updated lastAppliedMonth.
+const recurringInFlight = new Set();
 function applyRecurring(list) {
-  const mk = monthKey(), now = new Date();
-  const todo = list.filter((r) => r && isRecurringActive(r) && r.lastAppliedMonth !== mk);
-  if (!todo.length) { toast("Nothing to apply", "info"); return; }
-  const created = [];
-  persist(runBatched(todo.map((r) => (b) => {
-    const ref = doc(collection(db, "expenses"));
-    created.push({ ref, r });
+  const todo = [], bills = [];
+  for (const r of list) {
+    const months = pendingMonths(r);
+    // Skip a bill entirely while a previous tap on it is still landing.
+    if (!months.length || months.some((mk) => recurringInFlight.has(`${r.id}:${mk}`))) continue;
+    bills.push({ r, mk: monthKey() });
+    for (const mk of months) {
+      // Already logged by hand or on another device? Don't double it.
+      if (store.expenses.some((e) => e.recurringId === r.id && String(e.date || "").startsWith(mk))) continue;
+      todo.push({ r, mk, key: `${r.id}:${mk}` });
+    }
+  }
+  if (!bills.length) { toast("Nothing to apply", "info"); return; }
+  bills.forEach(({ r }) => pendingMonths(r).forEach((mk) => recurringInFlight.add(`${r.id}:${mk}`)));
+  const created = todo.map((t) => ({ ...t, ref: doc(collection(db, "expenses")) }));
+  const ops = created.map(({ r, mk, ref }) => (b) => {
+    const [y, m] = mk.split("-").map(Number);
     b.set(ref, {
       vendor: r.vendor || r.name || "Recurring",
       category: normCategory(r.category),
       amount: round2(r.amount),
-      date: recurringDateFor(r, now.getFullYear(), now.getMonth()),
+      date: recurringDateFor(r, y, m - 1),
       note: r.note || `Recurring: ${r.name || ""}`.trim(),
       recurringId: r.id,
       deductible: getDeductible(r),
       createdAt: serverTimestamp()
     });
-    b.update(doc(db, "recurring", r.id), { lastAppliedMonth: mk });
-  })), "Couldn't apply recurring bills");
-  toast(`Applied ${plural(todo.length, "recurring bill")} · ${money(sum(todo))}`, { action: { label: "Undo", run: () => {
-    persist(runBatched(created.map(({ ref, r }) => (b) => {
-      b.delete(ref);
-      b.update(doc(db, "recurring", r.id), { lastAppliedMonth: r.lastAppliedMonth ?? "" });
-    })), "Couldn't undo");
+  });
+  bills.forEach(({ r, mk }) => ops.push((b) => b.update(doc(db, "recurring", r.id), { lastAppliedMonth: mk })));
+  persist(runBatched(ops), "Couldn't apply recurring bills");
+  const total = created.reduce((s, c) => s + num(c.r.amount), 0);
+  const missed = created.filter((c) => c.mk !== monthKey()).length;
+  toast(`Logged ${plural(created.length, "recurring bill")}${missed ? ` (${missed} from missed months)` : ""} · ${money(total)}`, { action: { label: "Undo", run: () => {
+    bills.forEach(({ r }) => [...recurringInFlight].forEach((k) => k.startsWith(`${r.id}:`) && recurringInFlight.delete(k)));
+    persist(runBatched([
+      ...created.map(({ ref }) => (b) => b.delete(ref)),
+      ...bills.map(({ r }) => (b) => b.update(doc(db, "recurring", r.id), { lastAppliedMonth: r.lastAppliedMonth ?? "" }))
+    ]), "Couldn't undo");
   } } });
 }
 
@@ -2061,7 +2140,7 @@ function renderAttention(today, overdue) {
   const unapplied = unappliedRecurring();
   if (unapplied.length) items.push({
     tone: "amber", title: `${plural(unapplied.length, "recurring bill")} not logged for ${monthKeyLabel(monthKey())}`,
-    sub: `${money(sum(unapplied))} of fixed costs`, attrs: `data-action="goto-recurring"`
+    sub: `${money(recurringDue(unapplied))} of fixed costs${missedMonthCount(unapplied) ? ` · includes ${plural(missedMonthCount(unapplied), "missed month")}` : ""}`, attrs: `data-action="goto-recurring"`
   });
   store.vehicles.filter((v) => v.nextServiceDue && daysBetween(today, v.nextServiceDue) <= 14).forEach((v) => {
     const d = daysBetween(today, v.nextServiceDue);
@@ -2088,7 +2167,7 @@ function renderUpcoming(today) {
     const y = now.getFullYear(), m0 = now.getMonth() + offset, mk = monthKey(new Date(y, m0, 1));
     store.recurring.filter(isRecurringActive).forEach((r) => {
       const iso = recurringDateFor(r, new Date(y, m0, 1).getFullYear(), new Date(y, m0, 1).getMonth());
-      if (within(iso) && r.lastAppliedMonth !== mk) items.push({ date: iso, tone: "amber", title: r.name || "Recurring bill", sub: money(r.amount), attrs: `data-action="edit" data-col="recurring" data-id="${escapeHtml(r.id)}"` });
+      if (within(iso) && !isAppliedFor(r, mk)) items.push({ date: iso, tone: "amber", title: r.name || "Recurring bill", sub: money(r.amount), attrs: `data-action="edit" data-col="recurring" data-id="${escapeHtml(r.id)}"` });
     });
   });
   items.sort((a, b) => a.date.localeCompare(b.date));
@@ -2354,7 +2433,7 @@ function downloadBackup() {
 function renderRecurring() {
   const mk = monthKey();
   const active = store.recurring.filter(isRecurringActive);
-  const applied = store.recurring.filter((r) => r.lastAppliedMonth === mk);
+  const applied = store.recurring.filter((r) => isAppliedFor(r, mk));
   const unapplied = unappliedRecurring();
 
   $("#recurring-stats").innerHTML = html`
@@ -2365,7 +2444,8 @@ function renderRecurring() {
   $("#recurring-banner").classList.toggle("hidden", !unapplied.length);
   if (unapplied.length) {
     setText("#recurring-banner-title", `${plural(unapplied.length, "recurring bill")} not applied for ${monthKeyLabel(mk)}`);
-    setText("#recurring-banner-sub", `${money(sum(unapplied))} of fixed costs still need to be logged as expenses.`);
+    const missed = missedMonthCount(unapplied);
+    setText("#recurring-banner-sub", `${money(recurringDue(unapplied))} of fixed costs still need to be logged as expenses${missed ? `, including ${plural(missed, "missed month")}` : ""}.`);
   }
 
   const el = $("#recurring-list");
@@ -2379,13 +2459,13 @@ function renderRecurring() {
       { label: "Name", render: (r) => html`<span class="text-white">${r.name || "—"}</span>` },
       { label: "Category", render: (r) => categoryLabel(r.category) },
       { label: "Amount", render: (r) => money(r.amount), cls: "whitespace-nowrap" },
-      { label: "Next", render: (r) => fmtDate(recurringDateFor(r, now.getFullYear(), now.getMonth() + (r.lastAppliedMonth === mk ? 1 : 0))).replace(/, \d{4}$/, ""), cls: "whitespace-nowrap" },
+      { label: "Next", render: (r) => fmtDate(recurringDateFor(r, now.getFullYear(), now.getMonth() + (isAppliedFor(r, mk) ? 1 : 0))).replace(/, \d{4}$/, ""), cls: "whitespace-nowrap" },
       { label: "Tax", render: (r) => deductiblePill(getDeductible(r)) },
       { label: "This month", render: (r) => !isRecurringActive(r)
           ? pill("Paused", "bg-white/[0.04] text-slate-500 border-white/[0.06]")
-          : r.lastAppliedMonth === mk ? pill("Applied", INVOICE_STATUSES.paid.pill) : pill("Not applied", "bg-amber-500/10 text-amber-300 border-amber-500/20") }
+          : isAppliedFor(r, mk) ? pill("Applied", INVOICE_STATUSES.paid.pill) : pill("Not applied", "bg-amber-500/10 text-amber-300 border-amber-500/20") }
     ],
-    actions: (r) => html`${isRecurringActive(r) && r.lastAppliedMonth !== mk ? actionBtn("apply-recurring", "recurring", r.id, "check", "Apply this month", "ok") : ""}${editBtn("recurring", r.id)}${deleteBtn("recurring", r.id)}`
+    actions: (r) => html`${pendingMonths(r).length ? actionBtn("apply-recurring", "recurring", r.id, "check", pendingMonths(r).length > 1 ? `Apply ${pendingMonths(r).length} months` : "Apply this month", "ok") : ""}${editBtn("recurring", r.id)}${deleteBtn("recurring", r.id)}`
   });
 }
 
@@ -2534,7 +2614,7 @@ function calendarEvents(start, end) {
       store.recurring.filter(isRecurringActive).forEach((r) => {
         const iso = recurringDateFor(r, d.getFullYear(), d.getMonth());
         if (!within(iso)) return;
-        events.push({ id: `rec-${r.id}-${iso}`, title: `${r.lastAppliedMonth === mk ? "✓" : "↻"} ${r.name || "Recurring"} — ${money(r.amount)}`, start: iso, allDay: true, ...tint("251,146,60", "#fdba74"), extendedProps: { col: "recurring", id: r.id } });
+        events.push({ id: `rec-${r.id}-${iso}`, title: `${isAppliedFor(r, mk) ? "✓" : "↻"} ${r.name || "Recurring"} — ${money(r.amount)}`, start: iso, allDay: true, ...tint("251,146,60", "#fdba74"), extendedProps: { col: "recurring", id: r.id } });
       });
     }
   }
@@ -2590,7 +2670,19 @@ async function callAI({ contents, parts, json = false, timeoutMs = 90000 }) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctrl.signal });
+    // The proxy only serves signed-in members: it checks this Firebase ID token.
+    const token = await auth.currentUser?.getIdToken().catch(() => null);
+    const post = (headers) => fetch(WORKER_URL, { method: "POST", headers, body: JSON.stringify(body), signal: ctrl.signal });
+    let res;
+    try {
+      res = await post({ "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) });
+    } catch (err) {
+      // An older proxy that doesn't allow the Authorization header fails the CORS preflight (TypeError).
+      // Retry once without it so the AI keeps working until the locked-down proxy is deployed.
+      if (!(err instanceof TypeError) || !token) throw err;
+      res = await post({ "Content-Type": "application/json" });
+    }
+    if (res.status === 401 || res.status === 403) throw new Error("The AI service only works for approved accounts. Ask the owner to add yours.");
     let data;
     try { data = await res.json(); } catch { throw new Error(`AI service returned an unreadable response (HTTP ${res.status})`); }
     if (data.error) throw new Error(data.error.message || "AI service error");
@@ -2651,10 +2743,11 @@ const AI_EDITABLE = {
 const DATE_FIELDS = new Set(["date", "dueDate", "paidDate", "lastService", "nextServiceDue"]);
 function sanitizeChange(col, field, value) {
   if (!AI_EDITABLE[col]?.includes(field)) return { ok: false };
-  if (field === "amount" || field === "odometer") return Number.isFinite(Number(value)) ? { ok: true, value: field === "amount" ? posAmount(value) : Math.round(Math.abs(num(value))) } : { ok: false };
+  if (field === "amount" || field === "odometer") return Number.isFinite(toNumber(value)) ? { ok: true, value: field === "amount" ? posAmount(value) : Math.round(Math.abs(num(value))) } : { ok: false };
   if (field === "deductible") return isDeductibleLevel(value) ? { ok: true, value: Number(value) } : { ok: false };
   if (field === "category") return CATEGORIES[value] ? { ok: true, value } : { ok: false };
   if (field === "status") return (col === "jobs" ? JOB_STATUSES : INVOICE_STATUSES)[value] ? { ok: true, value } : { ok: false };
+  if (field === "date") return validISO(value) ? { ok: true, value } : { ok: false }; // required — never blank it
   if (DATE_FIELDS.has(field)) return value === "" || validISO(value) ? { ok: true, value: value || "" } : { ok: false };
   if (field === "jobId") return value === "" || byId("jobs", value) ? { ok: true, value } : { ok: false };
   if (field === "dayOfMonth") return { ok: true, value: clamp(Math.round(num(value)) || 1, 1, 31) };
@@ -2676,7 +2769,11 @@ function applyAIUpdates(updates) {
       clean[field] = r.value;
       prev[field] = rec[field] === undefined ? deleteField() : rec[field];
     }
-    if (u.collection === "invoices" && clean.status === "paid" && !rec.paidDate && !clean.paidDate) { clean.paidDate = todayISO(); prev.paidDate = deleteField(); }
+    if (u.collection === "invoices" && clean.status === "paid" && !rec.paidDate && !clean.paidDate) { clean.paidDate = isPaid(rec) ? (validISO(clean.date) || validISO(rec.date) || todayISO()) : todayISO(); prev.paidDate = deleteField(); }
+    if (u.collection === "recurring" && clean.active === true && !isRecurringActive(rec) && !isAppliedFor(rec, addMonthsKey(monthKey(), -1))) {
+      clean.lastAppliedMonth = addMonthsKey(monthKey(), -1);
+      prev.lastAppliedMonth = rec.lastAppliedMonth ?? deleteField();
+    }
     if (!Object.keys(clean).length) continue;
     const ref = doc(db, u.collection, u.id);
     ops.push((b) => b.update(ref, clean));
@@ -2711,7 +2808,7 @@ function createAIRecords(actions) {
 // ═════════════════════════════════════════════════════════════
 // BANK IMPORT
 // ═════════════════════════════════════════════════════════════
-const bank = { debits: [], deposits: [] };
+const bank = { debits: [], deposits: [], req: 0 };
 const BANK_PROMPT = `You are parsing a bank statement for a painting business owner (Joe Westlake Painting LLC).
 
 Extract EVERY transaction and classify each as either a DEBIT (money going out) or a DEPOSIT (money coming in).
@@ -2749,7 +2846,7 @@ function showBankStep(step) {
   ["upload", "loading", "review"].forEach((s) => $(`#bank-step-${s}`).classList.toggle("hidden", s !== step));
 }
 function showBankError(msg) { const el = $("#bank-error"); el.textContent = msg || ""; el.classList.toggle("hidden", !msg); }
-function resetBank() { bank.debits = []; bank.deposits = []; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
+function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
 function openBankModal() { resetBank(); openModal("bank-modal", { focus: false }); }
 modalCloseHooks["bank-modal"] = resetBank;
 
@@ -2776,11 +2873,17 @@ async function processBankFile(file) {
   if (!auth.currentUser) { openModal("signin-modal"); return; }
   if (file.size > MAX_UPLOAD_BYTES) { showBankError("That file is larger than 10MB. Try a smaller export or a single page."); return; }
   if (!/^(application\/pdf|image\/)/.test(file.type || "application/pdf")) { showBankError("Please choose a PDF or an image."); return; }
+  // Each read gets a ticket. If another file was picked (or the dialog was closed or reset) while this one was
+  // still with the AI, its late answer is thrown away instead of replacing the newer one.
+  const req = ++bank.req;
+  const stale = () => req !== bank.req;
   showBankError("");
   showBankStep("loading");
   try {
     const base64 = await fileToBase64(file);
+    if (stale()) return;
     const text = await callAI({ parts: [{ text: BANK_PROMPT }, { inlineData: { mimeType: file.type || "application/pdf", data: base64 } }], json: true, timeoutMs: 120000 });
+    if (stale()) return;
     const parsed = parseJSON(text);
     if (!parsed) throw new Error("Couldn't understand the AI's response. Try a clearer statement or a different page.");
 
@@ -2805,10 +2908,11 @@ async function processBankFile(file) {
     showBankStep("review");
   } catch (err) {
     console.error(err);
+    if (stale()) return;
     showBankError(err.message);
     showBankStep("upload");
   } finally {
-    $("#bank-file").value = "";
+    if (!stale()) $("#bank-file").value = "";
   }
 }
 
@@ -2868,7 +2972,7 @@ function importBank() {
   let paidCount = 0, incomeCount = 0;
   for (const t of debits) {
     const ref = doc(collection(db, "expenses"));
-    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: t.date, note: t.note, deductible: t.deductible, createdAt: serverTimestamp() }));
+    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, createdAt: serverTimestamp() }));
     undo.push((b) => b.delete(ref));
   }
   for (const d of deposits) {
@@ -2877,12 +2981,12 @@ function importBank() {
       used.add(inv.id); paidCount++;
       const ref = doc(db, "invoices", inv.id);
       const prev = { status: inv.status ?? "sent", paidDate: inv.paidDate ?? deleteField() };
-      ops.push((b) => b.update(ref, { status: "paid", paidDate: d.date }));
+      ops.push((b) => b.update(ref, { status: "paid", paidDate: validISO(d.date) || todayISO() }));
       undo.push((b) => b.update(ref, prev));
     } else {
       incomeCount++;
       const ref = doc(collection(db, "income"));
-      ops.push((b) => b.set(ref, { date: d.date, source: d.source, amount: round2(d.amount), note: d.note, createdAt: serverTimestamp() }));
+      ops.push((b) => b.set(ref, { date: validISO(d.date) || todayISO(), source: d.source, amount: round2(d.amount), note: d.note, createdAt: serverTimestamp() }));
       undo.push((b) => b.delete(ref));
     }
   }
@@ -2911,6 +3015,7 @@ function initBank() {
     if (f === "include") row.include = t.checked;
     else if (f === "amount") row.amount = posAmount(t.value);
     else if (f === "deductible") row.deductible = Number(t.value);
+    else if (f === "date") { row.date = validISO(t.value) || row.date || todayISO(); t.value = row.date; }
     else row[f] = t.value;
     if (f === "invoiceId") renderBankReview(); else updateBankImportButton();
   });
@@ -2922,7 +3027,7 @@ function initBank() {
 let chatHistory = [];
 let chatUid = null;
 let chatLoading = false;
-const pending = { file: null, base64: null, mime: null, previewUrl: null };
+const pending = { file: null, base64: null, mime: null, previewUrl: null, ready: null };
 const chatKey = (uid) => `jw_chat_history:${uid}`;
 
 // History is stored per user — previously the next person to sign in on a shared device saw your chat.
@@ -2989,18 +3094,25 @@ function pickAttachment(mode) {
   if (mode === "camera") input.setAttribute("capture", "environment"); else input.removeAttribute("capture");
   setTimeout(() => input.click(), 30);
 }
-async function setPendingFile(file) {
+// The file is read in the background; pending.ready lets sendChat wait for it instead of sending a
+// half-loaded attachment (which used to fail).
+function setPendingFile(file) {
   if (!file) return;
   if (file.size > MAX_UPLOAD_BYTES) { toast("File is larger than 10MB", "error"); return; }
   clearPendingFile();
   pending.file = file;
   pending.mime = file.type || "application/pdf";
-  pending.base64 = await fileToBase64(file);
+  const ready = fileToBase64(file).then(
+    (b64) => { if (pending.file === file) pending.base64 = b64; },
+    (err) => { console.error(err); if (pending.file === file) { clearPendingFile(); toast("Couldn't read that file", "error"); } }
+  ).finally(() => { if (pending.ready === ready) pending.ready = null; });
+  pending.ready = ready;
   renderAttachmentPreview();
+  return ready;
 }
 function clearPendingFile() {
   if (pending.previewUrl) URL.revokeObjectURL(pending.previewUrl);
-  Object.assign(pending, { file: null, base64: null, mime: null, previewUrl: null });
+  Object.assign(pending, { file: null, base64: null, mime: null, previewUrl: null, ready: null });
   renderAttachmentPreview();
 }
 function renderAttachmentPreview() {
@@ -3110,14 +3222,24 @@ async function sendChat(textArg) {
   if (chatLoading) return;
   if (!auth.currentUser) { openModal("signin-modal"); return; }
   const input = $("#chat-input");
-  const text = (textArg ?? input.value).trim();
-  const file = pending.file, base64 = pending.base64, mime = pending.mime;
+  const fromSuggestion = typeof textArg === "string";
+  // A suggestion chip sends its own text: leave whatever's half-typed in the box (and any attachment) alone.
+  const text = (fromSuggestion ? textArg : input.value).trim();
+  if (pending.ready && !fromSuggestion) {
+    chatLoading = true;
+    $("#chat-send").disabled = true;
+    try { await pending.ready; } finally { chatLoading = false; $("#chat-send").disabled = false; }
+  }
+  const file = fromSuggestion ? null : pending.file, base64 = pending.base64, mime = pending.mime;
+  if (file && !base64) return; // reading the file failed (already reported)
   if (!text && !file) return;
 
-  input.value = "";
-  input.style.height = "46px";
+  if (!fromSuggestion) {
+    input.value = "";
+    input.style.height = "46px";
+  }
   const attachment = file ? { name: file.name, type: mime } : null;
-  clearPendingFile();
+  if (file) clearPendingFile();
   addMessage("user", text, attachment);
   chatLoading = true;
   $("#chat-send").disabled = true;

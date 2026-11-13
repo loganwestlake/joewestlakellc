@@ -1,0 +1,11 @@
+name = "gemini-proxy"
+main = "gemini-proxy.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Comma-separated list of sites allowed to call the proxy. Add a custom domain here if you use one.
+ALLOWED_ORIGINS = "https://loganwestlake.github.io"
+# Set this to the Gemini model the old proxy used if it was different.
+GEMINI_MODEL = "gemini-2.5-flash"
+
+# The API key is a secret, not a var:  npx wrangler secret put GEMINI_API_KEY
