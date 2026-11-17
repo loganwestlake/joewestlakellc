@@ -726,7 +726,11 @@
               <button type="button" data-action="money-mode" data-mode="table">Table</button>
               <button type="button" data-action="money-mode" data-mode="chart">Chart</button>
             </div>
-            <select id="money-period" class="field field-sm" aria-label="Period"></select>
+            <div class="flex items-center gap-1">
+              <button type="button" data-action="period-step" data-dir="-1" class="btn-ghost !px-2.5 !py-2.5 btn-touch" aria-label="Previous month" title="Previous month"><span data-icon="chevLeft" data-sw="2"></span></button>
+              <select id="money-period" class="field field-sm" aria-label="Period"></select>
+              <button type="button" data-action="period-step" data-dir="1" class="btn-ghost !px-2.5 !py-2.5 btn-touch" aria-label="Next month" title="Next month"><span data-icon="chevRight" data-sw="2"></span></button>
+            </div>
             <label class="search-wrap"><span class="search-icon" data-icon="search" data-sw="2"></span>
               <input type="search" class="field search-field" data-search="money" placeholder="Search…" aria-label="Search transactions" /></label>
             <button type="button" data-action="export-csv" class="btn-ghost !py-2.5 btn-touch" title="Download as a spreadsheet for your accountant">
@@ -989,7 +993,7 @@
             <div class="text-sm text-white font-medium mb-1">Click to choose statements, or drop them here</div>
             <div class="text-xs text-slate-500">Pick several months at once · PDF, PNG, or JPG · up to 12 files, 10MB each</div>
           </label>
-          <div id="bank-error" role="alert" class="text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mt-4"></div>
+          <div id="bank-error" role="alert" class="whitespace-pre-line text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mt-4"></div>
         </div>
 
         <div id="bank-step-loading" class="hidden text-center py-12" aria-live="polite">
@@ -1007,7 +1011,7 @@
               <button type="button" id="bank-select-none" class="text-xs text-slate-400 hover:text-white">Select none</button>
             </div>
           </div>
-          <div id="bank-files-note" class="hidden text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-3"></div>
+          <div id="bank-files-note" class="hidden whitespace-pre-line text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-3"></div>
           <div id="bank-dup-note" class="hidden text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-4"></div>
           <div class="mb-5">
             <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Expenses · <span id="bank-debit-count">0</span></div>
@@ -1068,7 +1072,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.2";
+const APP_VERSION = "v2.3";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -1294,9 +1298,20 @@ const PERIODS = {
   "this-month": "This month", "last-month": "Last month", "last-3": "Last 3 months",
   "this-year": "This year", "last-year": "Last year", all: "All time"
 };
+// Besides the presets, a period can be one specific month: "m:2026-08".
+const MONTH_PERIOD_RE = /^m:(\d{4})-(\d{2})$/;
+const monthPeriod = (mk) => `m:${mk}`;
+const periodMonthKey = (key) => (MONTH_PERIOD_RE.test(key || "") ? key.slice(2) : null);
+const isValidPeriod = (key) => !!PERIODS[key] || !!periodMonthKey(key);
+const monthKeyLong = (mk) => { const [y, m] = mk.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" }); };
+const periodName = (key) => PERIODS[key] || (periodMonthKey(key) ? monthKeyLong(periodMonthKey(key)) : "All time");
+// For use mid-sentence: "for last month", but "for August 2026".
+const periodPhrase = (key) => (PERIODS[key] ? PERIODS[key].toLowerCase() : periodName(key));
 function periodRange(key) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
   const span = (a, b) => [isoOf(a), isoOf(b)];
+  const mk = periodMonthKey(key);
+  if (mk) { const [py, pm] = mk.split("-").map(Number); return span(new Date(py, pm - 1, 1), new Date(py, pm, 0)); }
   switch (key) {
     case "this-month": return span(new Date(y, m, 1), new Date(y, m + 1, 0));
     case "last-month": return span(new Date(y, m - 1, 1), new Date(y, m, 0));
@@ -2245,6 +2260,7 @@ function renderInvoices() {
 // VIEW — MONEY (income + expenses share period, search, chart, CSV)
 // ═════════════════════════════════════════════════════════════
 const moneyState = { sub: ls.get("jw_money_sub") || "expenses", mode: "table", period: ls.get("jw_money_period") || "this-month" };
+if (!isValidPeriod(moneyState.period)) moneyState.period = "this-month";
 let moneyChart = null;
 const INCOME_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#64748b"];
 
@@ -2284,7 +2300,8 @@ function renderMoney() {
   badge.textContent = n; badge.classList.toggle("hidden", !n);
   if (sub === "recurring") return;
 
-  const periodLabel = PERIODS[moneyState.period];
+  renderPeriodOptions();
+  const periodLabel = periodName(moneyState.period), periodText = periodPhrase(moneyState.period);
   const el = $("#money-table");
   const ready = loaded.has("expenses") && loaded.has("invoices") && loaded.has("income");
 
@@ -2293,14 +2310,14 @@ function renderMoney() {
     const total = sum(rows), deductible = sum(rows, deductibleAmount);
     const personal = rows.filter((e) => getDeductible(e) === 0);
     $("#money-stats").innerHTML = html`
-      ${statCard({ label: "Spent", value: money(total), sub: `${plural(rows.length, "expense")} · ${periodLabel.toLowerCase()}`, tone: "amber", iconName: "minus" })}
+      ${statCard({ label: "Spent", value: money(total), sub: `${plural(rows.length, "expense")} · ${periodText}`, tone: "amber", iconName: "minus" })}
       ${statCard({ label: "Deductible", value: money(deductible), sub: `${total > 0 ? Math.round(deductible / total * 100) : 0}% of what you spent`, tone: "emerald", iconName: "check" })}
       ${statCard({ label: "Personal (0%)", value: money(sum(personal)), sub: plural(personal.length, "entry", "entries"), tone: "slate", iconName: "users" })}
       ${statCard({ label: "Biggest category", value: topCategory(rows) || "—", sub: topCategory(rows) ? money(sum(rows.filter((e) => categoryLabel(normCategory(e.category)) === topCategory(rows)))) : "", tone: "white", iconName: "chart" })}`;
     if (!auth.currentUser) { el.innerHTML = emptyState("Signed out", "Sign in to see your expenses."); return; }
     if (!ready) { el.innerHTML = skeleton(); return; }
     if (!store.expenses.length) { el.innerHTML = emptyState("No expenses yet", "Add one, snap a receipt in Company AI, or import a bank statement.", newCta("expenses", "New expense")); return; }
-    if (!rows.length) { el.innerHTML = emptyState(`No expenses for ${periodLabel.toLowerCase()}`, "Try a different period or search."); return; }
+    if (!rows.length) { el.innerHTML = emptyState(`No expenses for ${periodText}`, "Try a different month or period, or clear the search."); return; }
     el.innerHTML = dataTable({
       rows,
       columns: [
@@ -2325,7 +2342,7 @@ function renderMoney() {
       ${statCard({ label: "Total in", value: money(sum(rows)), sub: periodLabel, tone: "white", iconName: "arrowUp" })}`;
     if (!auth.currentUser) { el.innerHTML = emptyState("Signed out", "Sign in to see your income."); return; }
     if (!ready) { el.innerHTML = skeleton(); return; }
-    if (!rows.length) { el.innerHTML = emptyState(range[0] ? `No income for ${periodLabel.toLowerCase()}` : "No income yet", "Mark invoices paid, add income, or import a bank statement.", newCta("income", "New income")); return; }
+    if (!rows.length) { el.innerHTML = emptyState(range[0] ? `No income for ${periodText}` : "No income yet", "Mark invoices paid, add income, or import a bank statement.", newCta("income", "New income")); return; }
     el.innerHTML = dataTable({
       rows,
       columns: [
@@ -2340,6 +2357,59 @@ function renderMoney() {
         : html`${editBtn("income", r.id)}${deleteBtn("income", r.id)}`
     });
   }
+}
+
+// Months that have any money activity, newest first (always including this month and the one being viewed).
+function moneyMonths() {
+  const keys = new Set([monthKey()]);
+  const add = (iso) => { if (validISO(iso)) keys.add(iso.slice(0, 7)); };
+  store.expenses.forEach((e) => add(e.date));
+  store.income.forEach((r) => add(r.date));
+  store.invoices.forEach((i) => { if (isPaid(i)) add(paidDateOf(i)); });
+  const viewing = periodMonthKey(moneyState.period);
+  if (viewing) keys.add(viewing);
+  return [...keys].sort().reverse();
+}
+let periodOptionsSig = "";
+function renderPeriodOptions() {
+  const sel = $("#money-period");
+  if (!sel) return;
+  const months = moneyMonths();
+  const sig = months.join() + "|" + moneyState.period;
+  // Only rebuild when something changed, so a live data update doesn't snap shut a dropdown someone has open.
+  if (sig !== periodOptionsSig) {
+    periodOptionsSig = sig;
+    const opt = (v, l) => html`<option value="${v}" ${v === moneyState.period ? "selected" : ""}>${l}</option>`;
+    sel.innerHTML = html`<optgroup label="Ranges">${Object.entries(PERIODS).map(([v, l]) => opt(v, l))}</optgroup>
+      <optgroup label="Month">${months.map((mk) => opt(monthPeriod(mk), monthKeyLong(mk)))}</optgroup>`;
+  }
+  sel.value = moneyState.period;
+  // The arrows step one month at a time; you can't step past this month.
+  const cur = stepBase();
+  $$('[data-action="period-step"]').forEach((b) => { b.disabled = b.dataset.dir === "1" && cur >= monthKey(); });
+}
+// The month the arrows step from: the month being viewed, or for a range, the month it ends in.
+function stepBase() {
+  const p = moneyState.period;
+  if (periodMonthKey(p)) return periodMonthKey(p);
+  if (p === "last-month") return addMonthsKey(monthKey(), -1);
+  if (p === "last-year") return `${new Date().getFullYear() - 1}-12`;
+  return monthKey();
+}
+function setMoneyPeriod(key) {
+  if (!isValidPeriod(key)) return;
+  moneyState.period = key;
+  ls.set("jw_money_period", key);
+  renderMoney();
+  renderMoneyChart();
+}
+function stepMoneyPeriod(dir) {
+  const p = moneyState.period;
+  // From a range, "back" opens the month the range ends in (or the one before this month); "forward" is capped at now.
+  const base = stepBase();
+  let target = (periodMonthKey(p) || p === "last-month" || p === "last-year") ? addMonthsKey(base, dir) : (dir < 0 ? addMonthsKey(monthKey(), -1) : monthKey());
+  if (target > monthKey()) target = monthKey();
+  setMoneyPeriod(monthPeriod(target));
 }
 
 function topCategory(rows) {
@@ -2406,7 +2476,7 @@ const csvCell = (v) => {
 const toCSV = (rows) => "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
 
 function exportCSV() {
-  const period = moneyState.period;
+  const period = periodMonthKey(moneyState.period) || moneyState.period;
   if (moneyState.sub === "income") {
     const rows = filteredIncome();
     if (!rows.length) return toast("Nothing to export for this period", "info");
@@ -2665,6 +2735,31 @@ const refreshCalendar = () => calInstance?.refetchEvents();
 // ═════════════════════════════════════════════════════════════
 // AI — shared client (timeouts, real error messages, JSON extraction)
 // ═════════════════════════════════════════════════════════════
+// "6h16m46.98s" → ms
+const parseRetryDelay = (s) => {
+  const m = String(s || "").match(/(?:(\d+)h)?(?:(\d+)m(?!s))?(?:([\d.]+)s)?/);
+  return m ? ((+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0)) * 1000 : 0;
+};
+const humanWait = (ms) => ms >= 90 * 60000 ? `about ${Math.round(ms / 3600000)} hours` : ms >= 60 * 60000 ? "about an hour"
+  : ms >= 90000 ? `about ${Math.round(ms / 60000)} minutes` : ms >= 45000 ? "about a minute" : "under a minute";
+
+// Turns Google's long quota errors into something readable, and tags them so callers can react:
+// err.quota = "day" (free-plan daily cap, nothing to do until it resets) or "minute" (wait briefly and retry).
+function aiError(status, msg) {
+  const m = String(msg || "");
+  if (status === 429 || /quota|rate.?limit|RESOURCE_EXHAUSTED|too many/i.test(m)) {
+    const daily = /per ?day|perday|daily/i.test(m);
+    const retryMs = parseRetryDelay(m.match(/retry in ([\dhms.]+)/i)?.[1]) || (daily ? 0 : 30000);
+    const err = new Error(daily
+      ? `The AI's daily limit is used up${retryMs ? `; it resets in ${humanWait(retryMs)}` : ""}. Turning on billing for the Gemini API key in Google AI Studio removes the free-plan limit.`
+      : "The AI is getting too many requests right now. Wait a minute and try again.");
+    err.quota = daily ? "day" : "minute";
+    err.retryMs = retryMs;
+    return err;
+  }
+  return new Error(m || `AI service returned HTTP ${status}`);
+}
+
 async function callAI({ contents, parts, json = false, timeoutMs = 90000 }) {
   const body = { contents: contents || [{ role: "user", parts }] };
   if (json) body.generationConfig = { responseMimeType: "application/json" };
@@ -2686,14 +2781,13 @@ async function callAI({ contents, parts, json = false, timeoutMs = 90000 }) {
     if (res.status === 401 || res.status === 403) throw new Error("The AI service only works for approved accounts. Ask the owner to add yours.");
     let data;
     try { data = await res.json(); } catch { throw new Error(`AI service returned an unreadable response (HTTP ${res.status})`); }
-    if (data.error) throw new Error(data.error.message || "AI service error");
-    if (!res.ok) throw new Error(`AI service returned HTTP ${res.status}`);
+    if (data.error || !res.ok) throw aiError(res.status, data.error?.message || (res.ok ? "AI service error" : ""));
     const cand = data.candidates?.[0];
     const text = (cand?.content?.parts || []).map((p) => p.text || "").join("").trim();
     if (!text) throw new Error(cand?.finishReason === "SAFETY" ? "The AI declined to answer that." : data.promptFeedback?.blockReason ? `Blocked: ${data.promptFeedback.blockReason}` : "The AI returned an empty response.");
     return text;
   } catch (err) {
-    if (err.name === "AbortError") throw new Error("The AI took too long to respond. Try again.");
+    if (err.name === "AbortError") throw Object.assign(new Error("The AI took too long to respond. Try again."), { timeout: true });
     if (err instanceof TypeError) throw new Error("Couldn't reach the AI service. Check your connection.");
     throw err;
   } finally {
@@ -2876,7 +2970,7 @@ const BANK_CONCURRENCY = 2; // two statements with the AI at a time: faster, but
 // Reads one statement with the AI and returns its raw debits/deposits.
 async function readStatement(file) {
   const base64 = await fileToBase64(file);
-  const text = await callAI({ parts: [{ text: BANK_PROMPT }, { inlineData: { mimeType: file.type || "application/pdf", data: base64 } }], json: true, timeoutMs: 120000 });
+  const text = await callAI({ parts: [{ text: BANK_PROMPT }, { inlineData: { mimeType: file.type || "application/pdf", data: base64 } }], json: true, timeoutMs: 180000 });
   const parsed = parseJSON(text);
   if (!parsed) throw new Error("couldn't understand the AI's response");
   return { debits: Array.isArray(parsed.debits) ? parsed.debits : [], deposits: Array.isArray(parsed.deposits) ? parsed.deposits : [] };
@@ -2901,6 +2995,15 @@ async function processBankFiles(fileList) {
     if (!/^(application\/pdf|image\/)/.test(f.type || "application/pdf")) { skipped.push(`${f.name} (not a PDF or image)`); return false; }
     return true;
   });
+  // The same statement downloaded twice ("May.pdf" and "May (1).pdf") would cost a second AI request for nothing.
+  const seen = new Map(), dupFiles = [], unique = [];
+  for (const f of files) {
+    let key = `${f.size}:${f.name}`;
+    try { key = [...new Uint8Array(await crypto.subtle.digest("SHA-256", await f.arrayBuffer()))].map((b) => b.toString(16).padStart(2, "0")).join(""); } catch {}
+    if (seen.has(key)) dupFiles.push(`${f.name} (same file as ${seen.get(key)})`);
+    else { seen.set(key, f.name); unique.push(f); }
+  }
+  files = unique;
   if (!files.length) { showBankError(`Couldn't use ${skipped.length === 1 ? "that file" : "those files"}: ${skipped.join(", ")}.`); $("#bank-file").value = ""; return; }
 
   // Each batch gets a ticket. If more files were picked (or the dialog was closed or reset) while this batch was
@@ -2918,12 +3021,29 @@ async function processBankFiles(fileList) {
   progress();
 
   const results = new Array(total);
-  let next = 0;
+  let next = 0, dailyLimit = null;
+  const read = async (file) => {
+    try { return await readStatement(file); }
+    catch (err) {
+      if (err.quota !== "minute" || stale()) throw err;
+      // Per-minute limit: wait it out once, then try again.
+      setText("#bank-loading-sub", "The AI asked us to slow down. Waiting a moment, then continuing…");
+      await new Promise((r) => setTimeout(r, Math.min(err.retryMs || 30000, 65000)));
+      if (stale()) throw err;
+      return await readStatement(file);
+    }
+  };
   const worker = async () => {
     while (next < total && !stale()) {
       const i = next++;
-      try { results[i] = { file: files[i], ...(await readStatement(files[i])) }; }
-      catch (err) { console.error(files[i].name, err); results[i] = { file: files[i], error: err.message }; }
+      // Once the daily cap is hit every further request fails too, so don't spend time sending them.
+      if (dailyLimit) { results[i] = { file: files[i], error: dailyLimit.message, quota: "day" }; done++; continue; }
+      try { results[i] = { file: files[i], ...(await read(files[i])) }; }
+      catch (err) {
+        console.error(files[i].name, err);
+        if (err.quota === "day") dailyLimit = err;
+        results[i] = { file: files[i], error: err.message, quota: err.quota, timeout: err.timeout };
+      }
       done++;
       if (!stale()) progress();
     }
@@ -2935,9 +3055,15 @@ async function processBankFiles(fileList) {
   }
   if (stale()) return;
 
-  const debits = [], deposits = [], summary = [], failed = [...skipped];
+  const debits = [], deposits = [], summary = [];
+  const problems = { daily: [], slow: [], other: [], skipped: [...dupFiles, ...skipped] };
   for (const r of results) {
-    if (r.error) { failed.push(`${r.file.name} (${r.error})`); continue; }
+    if (r.error) {
+      if (r.quota === "day") problems.daily.push(r.file.name);
+      else if (r.timeout) problems.slow.push(r.file.name);
+      else problems.other.push(`${r.file.name} (${r.error})`);
+      continue;
+    }
     const before = debits.length + deposits.length;
     for (const t of r.debits) {
       const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name };
@@ -2951,10 +3077,11 @@ async function processBankFiles(fileList) {
       row.include = !row.dup;
       deposits.push(row);
     }
-    summary.push(`${r.file.name} (${debits.length + deposits.length - before})`);
+    summary.push(`${r.file.name} (${plural(debits.length + deposits.length - before, "transaction")})`);
   }
+  const problemLines = bankProblemLines(problems, dailyLimit);
   if (!debits.length && !deposits.length) {
-    showBankError(failed.length ? `Couldn't read: ${failed.join(", ")}.` : "No transactions found. Try a clearer statement or a different page.");
+    showBankError(problemLines.length ? problemLines.join("\n") : "No transactions found. Try a clearer statement or a different page.");
     showBankStep("upload");
     return;
   }
@@ -2968,9 +3095,24 @@ async function processBankFiles(fileList) {
     if (inv) { row.invoiceId = inv; claimed.add(inv); }
   }
   bank.debits = debits; bank.deposits = deposits;
-  bank.summary = total > 1 || failed.length ? { read: summary, failed } : null;
+  bank.summary = total > 1 || problemLines.length ? { read: summary, problems: problemLines } : null;
   renderBankReview();
   showBankStep("review");
+}
+
+// One readable line per kind of problem, instead of Google's raw error for every file.
+function bankProblemLines(p, dailyLimit) {
+  const list = (a) => a.join(", ");
+  const them = (a) => (a.length === 1 ? "it" : "them");
+  const lines = [];
+  if (p.daily.length) {
+    const wait = dailyLimit?.retryMs ? ` It resets in ${humanWait(dailyLimit.retryMs)}; import ${them(p.daily)} then.` : " Import them again tomorrow.";
+    lines.push(`The AI's daily limit ran out, so ${p.daily.length === 1 ? "this wasn't" : "these weren't"} read: ${list(p.daily)}.${wait} Turning on billing for the Gemini API key in Google AI Studio removes the free-plan limit.`);
+  }
+  if (p.slow.length) lines.push(`Took too long: ${list(p.slow)}. Try ${them(p.slow)} again on ${p.slow.length === 1 ? "its" : "their"} own.`);
+  if (p.other.length) lines.push(`Couldn't read: ${list(p.other)}.`);
+  if (p.skipped.length) lines.push(`Skipped: ${list(p.skipped)}.`);
+  return lines;
 }
 
 const dupBadge = html`<span class="text-[10px] text-slate-400 bg-white/[0.05] border border-white/[0.1] rounded px-1.5 py-0.5 whitespace-nowrap">Already logged?</span>`;
@@ -2980,7 +3122,7 @@ function renderBankReview() {
   setText("#bank-deposit-count", bank.deposits.length);
   const sm = bank.summary;
   $("#bank-files-note").classList.toggle("hidden", !sm);
-  if (sm) setText("#bank-files-note", [sm.read.length ? `Read ${plural(sm.read.length, "statement")}: ${sm.read.join(", ")}.` : "", sm.failed.length ? `Couldn't read: ${sm.failed.join(", ")} — try ${sm.failed.length === 1 ? "it" : "them"} again on ${sm.failed.length === 1 ? "its" : "their"} own.` : ""].filter(Boolean).join(" "));
+  if (sm) setText("#bank-files-note", [sm.read.length ? `Read ${plural(sm.read.length, "statement")}: ${sm.read.join(", ")}.` : "", ...sm.problems].filter(Boolean).join("\n"));
   const dups = [...bank.debits, ...bank.deposits].filter((r) => r.dup).length;
   $("#bank-dup-note").classList.toggle("hidden", !dups);
   setText("#bank-dup-note", `${plural(dups, "transaction")} look${dups === 1 ? "s" : ""} like ${dups === 1 ? "it's" : "they're"} already in your books or in another statement, so ${dups === 1 ? "it was" : "they were"} left unchecked.`);
@@ -3469,6 +3611,7 @@ const ACTIONS = {
   "apply-recurring": requireAuth((d) => applyRecurring(d.id ? [byId("recurring", d.id)] : store.recurring)),
   "money-sub": (d) => setMoneySub(d.view),
   "money-mode": (d) => setMoneyMode(d.mode),
+  "period-step": (d) => stepMoneyPeriod(Number(d.dir) || -1),
   "export-csv": exportCSV,
   backup: requireAuth(downloadBackup),
   "import-bank": requireAuth(openBankModal),
@@ -3529,8 +3672,8 @@ function init() {
   $("#record-delete").onclick = () => { if (recordCtx?.id) { const { col, id } = recordCtx; closeModal("record-modal"); removeRecord(col, id); } };
 
   const period = $("#money-period");
-  period.innerHTML = html`${Object.entries(PERIODS).map(([v, l]) => html`<option value="${v}" ${v === moneyState.period ? "selected" : ""}>${l}</option>`)}`;
-  period.onchange = () => { moneyState.period = period.value; ls.set("jw_money_period", period.value); renderMoney(); renderMoneyChart(); };
+  renderPeriodOptions();
+  period.onchange = () => setMoneyPeriod(period.value);
 
   let searchTimer;
   $$("[data-search]").forEach((inp) => inp.addEventListener("input", () => {
