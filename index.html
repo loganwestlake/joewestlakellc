@@ -984,18 +984,18 @@
 
         <div id="bank-step-upload">
           <label class="import-drop" for="bank-file" id="bank-drop">
-            <input id="bank-file" type="file" accept="application/pdf,image/*" class="hidden" />
+            <input id="bank-file" type="file" accept="application/pdf,image/*" multiple class="hidden" />
             <span class="text-slate-500 inline-block mb-3" data-icon="cloud" data-cls="w-10 h-10" data-sw="1.5"></span>
-            <div class="text-sm text-white font-medium mb-1">Click to choose a file, or drop it here</div>
-            <div class="text-xs text-slate-500">PDF, PNG, or JPG · max 10MB</div>
+            <div class="text-sm text-white font-medium mb-1">Click to choose statements, or drop them here</div>
+            <div class="text-xs text-slate-500">Pick several months at once · PDF, PNG, or JPG · up to 12 files, 10MB each</div>
           </label>
           <div id="bank-error" role="alert" class="text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mt-4"></div>
         </div>
 
         <div id="bank-step-loading" class="hidden text-center py-12" aria-live="polite">
           <span class="text-amber-400 inline-block mb-4" id="bank-spinner"></span>
-          <div class="text-sm text-white font-medium">Reading your statement…</div>
-          <div class="text-xs text-slate-500 mt-1">This usually takes 10–30 seconds</div>
+          <div class="text-sm text-white font-medium" id="bank-loading-title">Reading your statement…</div>
+          <div class="text-xs text-slate-500 mt-1" id="bank-loading-sub">This usually takes 10–30 seconds</div>
         </div>
 
         <div id="bank-step-review" class="hidden">
@@ -1007,6 +1007,7 @@
               <button type="button" id="bank-select-none" class="text-xs text-slate-400 hover:text-white">Select none</button>
             </div>
           </div>
+          <div id="bank-files-note" class="hidden text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-3"></div>
           <div id="bank-dup-note" class="hidden text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-4"></div>
           <div class="mb-5">
             <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Expenses · <span id="bank-debit-count">0</span></div>
@@ -1018,7 +1019,7 @@
           </div>
           <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
             <button type="button" id="bank-import-btn" class="btn-primary flex-1 btn-touch"><span data-icon="check" data-sw="2.5"></span><span id="bank-import-label">Import selected</span></button>
-            <button type="button" id="bank-back-btn" class="btn-text">Choose different file</button>
+            <button type="button" id="bank-back-btn" class="btn-text">Choose different files</button>
           </div>
         </div>
       </div>
@@ -1067,7 +1068,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.1";
+const APP_VERSION = "v2.2";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -2808,7 +2809,7 @@ function createAIRecords(actions) {
 // ═════════════════════════════════════════════════════════════
 // BANK IMPORT
 // ═════════════════════════════════════════════════════════════
-const bank = { debits: [], deposits: [], req: 0 };
+const bank = { debits: [], deposits: [], req: 0, summary: null };
 const BANK_PROMPT = `You are parsing a bank statement for a painting business owner (Joe Westlake Painting LLC).
 
 Extract EVERY transaction and classify each as either a DEBIT (money going out) or a DEPOSIT (money coming in).
@@ -2846,7 +2847,7 @@ function showBankStep(step) {
   ["upload", "loading", "review"].forEach((s) => $(`#bank-step-${s}`).classList.toggle("hidden", s !== step));
 }
 function showBankError(msg) { const el = $("#bank-error"); el.textContent = msg || ""; el.classList.toggle("hidden", !msg); }
-function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
+function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.summary = null; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
 function openBankModal() { resetBank(); openModal("bank-modal", { focus: false }); }
 modalCloseHooks["bank-modal"] = resetBank;
 
@@ -2863,57 +2864,113 @@ function findDuplicateDeposit(t) {
   return store.income.find((r) => sameMoney(r.amount, t.amount) && near(r.date, t.date, 3))
     || store.invoices.find((i) => isPaid(i) && sameMoney(i.amount, t.amount) && near(paidDateOf(i), t.date, 3));
 }
-function suggestInvoiceForDeposit(amount, memo) {
-  const unpaid = store.invoices.filter((i) => !isPaid(i) && sameMoney(i.amount, amount));
+function suggestInvoiceForDeposit(amount, memo, claimed = new Set()) {
+  const unpaid = store.invoices.filter((i) => !isPaid(i) && !claimed.has(i.id) && sameMoney(i.amount, amount));
   const memoWords = tokens(memo);
   return (unpaid.find((i) => tokens(i.customer).some((w) => memoWords.includes(w))) || unpaid[0])?.id || "";
 }
 
-async function processBankFile(file) {
+const MAX_BANK_FILES = 12;
+const BANK_CONCURRENCY = 2; // two statements with the AI at a time: faster, but gentle on the proxy's rate limit
+
+// Reads one statement with the AI and returns its raw debits/deposits.
+async function readStatement(file) {
+  const base64 = await fileToBase64(file);
+  const text = await callAI({ parts: [{ text: BANK_PROMPT }, { inlineData: { mimeType: file.type || "application/pdf", data: base64 } }], json: true, timeoutMs: 120000 });
+  const parsed = parseJSON(text);
+  if (!parsed) throw new Error("couldn't understand the AI's response");
+  return { debits: Array.isArray(parsed.debits) ? parsed.debits : [], deposits: Array.isArray(parsed.deposits) ? parsed.deposits : [] };
+}
+
+// Statements often overlap (a PDF that runs Jan 28–Feb 27, then Feb 25–Mar 27), so a transaction can appear in two
+// files. The later copy is flagged and left unchecked, like something already in the books.
+const sameDebit = (a, b) => sameMoney(a.amount, b.amount) && a.date === b.date && (tokens(a.vendor).some((w) => tokens(b.vendor).includes(w)) || !tokens(a.vendor).length);
+const sameDeposit = (a, b) => sameMoney(a.amount, b.amount) && a.date === b.date;
+
+async function processBankFiles(fileList) {
   if (!auth.currentUser) { openModal("signin-modal"); return; }
-  if (file.size > MAX_UPLOAD_BYTES) { showBankError("That file is larger than 10MB. Try a smaller export or a single page."); return; }
-  if (!/^(application\/pdf|image\/)/.test(file.type || "application/pdf")) { showBankError("Please choose a PDF or an image."); return; }
-  // Each read gets a ticket. If another file was picked (or the dialog was closed or reset) while this one was
-  // still with the AI, its late answer is thrown away instead of replacing the newer one.
+  let files = [...(fileList || [])];
+  if (!files.length) return;
+  const skipped = [];
+  if (files.length > MAX_BANK_FILES) {
+    files.slice(MAX_BANK_FILES).forEach((f) => skipped.push(`${f.name} (only ${MAX_BANK_FILES} at a time)`));
+    files = files.slice(0, MAX_BANK_FILES);
+  }
+  files = files.filter((f) => {
+    if (f.size > MAX_UPLOAD_BYTES) { skipped.push(`${f.name} (larger than 10MB)`); return false; }
+    if (!/^(application\/pdf|image\/)/.test(f.type || "application/pdf")) { skipped.push(`${f.name} (not a PDF or image)`); return false; }
+    return true;
+  });
+  if (!files.length) { showBankError(`Couldn't use ${skipped.length === 1 ? "that file" : "those files"}: ${skipped.join(", ")}.`); $("#bank-file").value = ""; return; }
+
+  // Each batch gets a ticket. If more files were picked (or the dialog was closed or reset) while this batch was
+  // still with the AI, its late answers are thrown away instead of replacing the newer ones.
   const req = ++bank.req;
   const stale = () => req !== bank.req;
   showBankError("");
   showBankStep("loading");
+  const total = files.length;
+  let done = 0;
+  const progress = () => {
+    setText("#bank-loading-title", total === 1 ? "Reading your statement…" : `Reading statement ${Math.min(done + 1, total)} of ${total}…`);
+    setText("#bank-loading-sub", total === 1 ? "This usually takes 10–30 seconds" : `${done} done · about 10–30 seconds each, two at a time`);
+  };
+  progress();
+
+  const results = new Array(total);
+  let next = 0;
+  const worker = async () => {
+    while (next < total && !stale()) {
+      const i = next++;
+      try { results[i] = { file: files[i], ...(await readStatement(files[i])) }; }
+      catch (err) { console.error(files[i].name, err); results[i] = { file: files[i], error: err.message }; }
+      done++;
+      if (!stale()) progress();
+    }
+  };
   try {
-    const base64 = await fileToBase64(file);
-    if (stale()) return;
-    const text = await callAI({ parts: [{ text: BANK_PROMPT }, { inlineData: { mimeType: file.type || "application/pdf", data: base64 } }], json: true, timeoutMs: 120000 });
-    if (stale()) return;
-    const parsed = parseJSON(text);
-    if (!parsed) throw new Error("Couldn't understand the AI's response. Try a clearer statement or a different page.");
-
-    const claimed = new Set();
-    bank.debits = (parsed.debits || []).map((t) => {
-      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note) };
-      row.dup = !!findDuplicateExpense(row);
-      row.include = !row.dup;
-      return row;
-    });
-    bank.deposits = (parsed.deposits || []).map((t) => {
-      const row = { include: true, date: validISO(t.date) || todayISO(), source: str(t.memo || t.source, "Deposit"), amount: posAmount(t.amount), note: str(t.note), invoiceId: "" };
-      row.dup = !!findDuplicateDeposit(row);
-      row.include = !row.dup;
-      const inv = suggestInvoiceForDeposit(row.amount, row.source);
-      if (inv && !claimed.has(inv)) { row.invoiceId = inv; claimed.add(inv); }
-      return row;
-    });
-
-    if (!bank.debits.length && !bank.deposits.length) throw new Error("No transactions found. Try a clearer statement or a different page.");
-    renderBankReview();
-    showBankStep("review");
-  } catch (err) {
-    console.error(err);
-    if (stale()) return;
-    showBankError(err.message);
-    showBankStep("upload");
+    await Promise.all(Array.from({ length: Math.min(BANK_CONCURRENCY, total) }, worker));
   } finally {
     if (!stale()) $("#bank-file").value = "";
   }
+  if (stale()) return;
+
+  const debits = [], deposits = [], summary = [], failed = [...skipped];
+  for (const r of results) {
+    if (r.error) { failed.push(`${r.file.name} (${r.error})`); continue; }
+    const before = debits.length + deposits.length;
+    for (const t of r.debits) {
+      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name };
+      row.dup = !!findDuplicateExpense(row) || debits.some((d) => d.file !== row.file && sameDebit(d, row));
+      row.include = !row.dup;
+      debits.push(row);
+    }
+    for (const t of r.deposits) {
+      const row = { include: true, date: validISO(t.date) || todayISO(), source: str(t.memo || t.source, "Deposit"), amount: posAmount(t.amount), note: str(t.note), invoiceId: "", file: r.file.name };
+      row.dup = !!findDuplicateDeposit(row) || deposits.some((d) => d.file !== row.file && sameDeposit(d, row));
+      row.include = !row.dup;
+      deposits.push(row);
+    }
+    summary.push(`${r.file.name} (${debits.length + deposits.length - before})`);
+  }
+  if (!debits.length && !deposits.length) {
+    showBankError(failed.length ? `Couldn't read: ${failed.join(", ")}.` : "No transactions found. Try a clearer statement or a different page.");
+    showBankStep("upload");
+    return;
+  }
+  // Oldest first, so several months read naturally; invoice matching then pairs each deposit with the earliest fit.
+  const byDate = (a, b) => String(a.date).localeCompare(String(b.date));
+  debits.sort(byDate); deposits.sort(byDate);
+  const claimed = new Set();
+  for (const row of deposits) {
+    if (row.dup) continue;
+    const inv = suggestInvoiceForDeposit(row.amount, row.source, claimed);
+    if (inv) { row.invoiceId = inv; claimed.add(inv); }
+  }
+  bank.debits = debits; bank.deposits = deposits;
+  bank.summary = total > 1 || failed.length ? { read: summary, failed } : null;
+  renderBankReview();
+  showBankStep("review");
 }
 
 const dupBadge = html`<span class="text-[10px] text-slate-400 bg-white/[0.05] border border-white/[0.1] rounded px-1.5 py-0.5 whitespace-nowrap">Already logged?</span>`;
@@ -2921,15 +2978,18 @@ const dupBadge = html`<span class="text-[10px] text-slate-400 bg-white/[0.05] bo
 function renderBankReview() {
   setText("#bank-debit-count", bank.debits.length);
   setText("#bank-deposit-count", bank.deposits.length);
+  const sm = bank.summary;
+  $("#bank-files-note").classList.toggle("hidden", !sm);
+  if (sm) setText("#bank-files-note", [sm.read.length ? `Read ${plural(sm.read.length, "statement")}: ${sm.read.join(", ")}.` : "", sm.failed.length ? `Couldn't read: ${sm.failed.join(", ")} — try ${sm.failed.length === 1 ? "it" : "them"} again on ${sm.failed.length === 1 ? "its" : "their"} own.` : ""].filter(Boolean).join(" "));
   const dups = [...bank.debits, ...bank.deposits].filter((r) => r.dup).length;
   $("#bank-dup-note").classList.toggle("hidden", !dups);
-  setText("#bank-dup-note", `${plural(dups, "transaction")} look${dups === 1 ? "s" : ""} like ${dups === 1 ? "it's" : "they're"} already in your books, so ${dups === 1 ? "it was" : "they were"} left unchecked.`);
+  setText("#bank-dup-note", `${plural(dups, "transaction")} look${dups === 1 ? "s" : ""} like ${dups === 1 ? "it's" : "they're"} already in your books or in another statement, so ${dups === 1 ? "it was" : "they were"} left unchecked.`);
 
   $("#bank-debit-rows").innerHTML = bank.debits.length ? html`${bank.debits.map((t, i) => html`
     <div class="import-row ${t.dup ? "is-dup" : ""}">
       <input type="checkbox" ${t.include ? "checked" : ""} data-list="debits" data-idx="${i}" data-field="include" aria-label="Include ${t.vendor}" />
       <input type="date" value="${t.date}" data-list="debits" data-idx="${i}" data-field="date" aria-label="Date" />
-      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.vendor}" data-list="debits" data-idx="${i}" data-field="vendor" aria-label="Vendor" />${t.dup ? dupBadge : ""}</div>
+      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.vendor}" data-list="debits" data-idx="${i}" data-field="vendor" aria-label="Vendor" title="${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
       <input type="number" step="0.01" min="0" value="${t.amount}" data-list="debits" data-idx="${i}" data-field="amount" aria-label="Amount" />
       <select data-list="debits" data-idx="${i}" data-field="category" aria-label="Category">${CATEGORY_KEYS.map((c) => html`<option value="${c}" ${t.category === c ? "selected" : ""}>${categoryLabel(c)}</option>`)}</select>
       <select data-list="debits" data-idx="${i}" data-field="deductible" title="${t.note}" aria-label="Deductible">${DEDUCTIBLE_LEVELS.map((v) => html`<option value="${v}" ${t.deductible === v ? "selected" : ""}>${deductibleShort(v)}</option>`)}</select>
@@ -2942,7 +3002,7 @@ function renderBankReview() {
     return html`<div class="deposit-row ${t.dup ? "is-dup" : ""}">
       <input type="checkbox" ${t.include ? "checked" : ""} data-list="deposits" data-idx="${i}" data-field="include" aria-label="Include ${t.source}" />
       <input type="date" value="${t.date}" data-list="deposits" data-idx="${i}" data-field="date" aria-label="Date" />
-      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.source}" data-list="deposits" data-idx="${i}" data-field="source" aria-label="Source" />${t.dup ? dupBadge : ""}</div>
+      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.source}" data-list="deposits" data-idx="${i}" data-field="source" aria-label="Source" title="${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
       <input type="number" step="0.01" min="0" value="${t.amount}" data-list="deposits" data-idx="${i}" data-field="amount" aria-label="Amount" />
       <div class="flex items-center gap-2 min-w-0">
         <select data-list="deposits" data-idx="${i}" data-field="invoiceId" class="flex-1" aria-label="Match to invoice">
@@ -2998,11 +3058,11 @@ function importBank() {
 
 function initBank() {
   $("#bank-spinner").innerHTML = spinner("w-8 h-8");
-  $("#bank-file").onchange = (e) => { const f = e.target.files[0]; if (f) processBankFile(f); };
+  $("#bank-file").onchange = (e) => { if (e.target.files?.length) processBankFiles(e.target.files); };
   const drop = $("#bank-drop");
   ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("dragover"); }));
   ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("dragover"); }));
-  drop.addEventListener("drop", (e) => { const f = e.dataTransfer?.files?.[0]; if (f) processBankFile(f); });
+  drop.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) processBankFiles(e.dataTransfer.files); });
   $("#bank-back-btn").onclick = resetBank;
   $("#bank-import-btn").onclick = importBank;
   const setAll = (v) => { [...bank.debits, ...bank.deposits].forEach((t) => (t.include = v)); renderBankReview(); };
