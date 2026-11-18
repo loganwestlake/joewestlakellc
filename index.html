@@ -738,6 +738,7 @@
           </button>
           <!-- What came in, what went out, and what's left, for the period being viewed -->
           <section id="money-summary" class="relative rounded-2xl mb-4 profit-glow" aria-label="Net for this period"></section>
+          <section id="money-ai" class="hidden mb-4" aria-live="polite"></section>
           <section id="money-months" class="glass rounded-2xl p-4 sm:p-5 mb-6" aria-labelledby="money-months-title">
             <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
               <div>
@@ -1057,6 +1058,11 @@
           </div>
           <div id="bank-files-note" class="hidden whitespace-pre-line text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-3"></div>
           <div id="bank-dup-note" class="hidden text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-4"></div>
+          <div id="bank-recurring-wrap" class="mb-5 hidden">
+            <div class="text-[11px] font-medium text-violet-300/90 tracking-[0.2em] uppercase mb-1">Recurring bills found · <span id="bank-recurring-count">0</span></div>
+            <div class="text-[11px] text-slate-500 mb-2">Subscriptions and monthly bills on these statements. Checked ones are added under Money → Recurring, so you can see your fixed costs and log them each month.</div>
+            <div id="bank-recurring-rows" class="glass rounded-xl max-h-[30vh] overflow-y-auto"></div>
+          </div>
           <div class="mb-5">
             <div class="text-[11px] font-medium text-amber-400/80 tracking-[0.2em] uppercase mb-2">Expenses · <span id="bank-debit-count">0</span></div>
             <div id="bank-debit-rows" class="glass rounded-xl max-h-[35vh] overflow-y-auto"></div>
@@ -1116,7 +1122,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.6";
+const APP_VERSION = "v2.7";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -2114,8 +2120,8 @@ function applyRecurring(list) {
     if (!months.length || months.some((mk) => recurringInFlight.has(`${r.id}:${mk}`))) continue;
     bills.push({ r, mk: monthKey() });
     for (const mk of months) {
-      // Already logged by hand or on another device? Don't double it.
-      if (store.expenses.some((e) => e.recurringId === r.id && String(e.date || "").startsWith(mk))) continue;
+      // Already logged by hand, on another device, or imported from a bank statement? Don't double it.
+      if (store.expenses.some((e) => String(e.date || "").startsWith(mk) && (e.recurringId === r.id || (sameCompany(e.vendor, r.vendor || r.name) && closeAmount(e.amount, r.amount))))) continue;
       todo.push({ r, mk, key: `${r.id}:${mk}` });
     }
   }
@@ -2364,6 +2370,7 @@ function renderMoney() {
 
   renderPeriodOptions();
   renderMoneySummary();
+  renderMoneyAI();
   renderMoneyMonths();
   const periodLabel = periodName(moneyState.period), periodText = periodPhrase(moneyState.period);
   const el = $("#money-table");
@@ -2439,6 +2446,143 @@ function deltaHTML(cur, prev, prevName, moreIsGood = true) {
   return html`<span class="${good ? "text-emerald-400/90" : "text-red-400/90"}">${d > 0 ? "▲" : "▼"} ${money(Math.abs(d))}</span> <span class="text-slate-500">${d > 0 ? "more" : "less"} than ${prevName}</span>`;
 }
 
+// ── "Explain this month": the AI reads a summary of the period and says what happened and what to do ──
+const RESTAURANT_RE = /WENDY|MCDONALD|CHILI|BOB EVANS|TACO BELL|LITTLE CAESAR|HARDEE|BURGER|SUBWAY|PIZZA|LOCAL EATS|HOOTERS|RESTAURANT|\bREST\b|CAFE|GRILL|DOMINO|POPEYE|ARBY|CHICK-FIL|STARBUCKS|DUNKIN/i;
+const topN = (map, n) => [...map.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, n).map(([name, v]) => ({ name, total: round2(v.total), count: v.count }));
+function tally(list, keyOf) {
+  const m = new Map();
+  list.forEach((r) => { const k = keyOf(r); const v = m.get(k) || { total: 0, count: 0 }; v.total += num(r.amount); v.count++; m.set(k, v); });
+  return m;
+}
+function periodFacts(range) {
+  const t = periodTotals(range);
+  const exps = store.expenses.filter((e) => inRange(e.date, range));
+  const vendorKey = (e) => (e.vendor || "Unknown").replace(/\s*#?\d{3,}.*$/, "").trim();
+  const bucket = (re) => { const l = exps.filter((e) => re.test(`${e.vendor} ${e.note || ""}`)); return { total: round2(sum(l)), count: l.length }; };
+  const paid = store.invoices.filter((i) => isPaid(i) && inRange(paidDateOf(i), range));
+  const other = store.income.filter((r) => inRange(r.date, range));
+  return {
+    made: round2(t.made), spent: round2(t.spent), net: round2(t.net),
+    taxDeductibleSpending: round2(t.deductible), personalSpending0pct: round2(t.personal), businessProfitForTaxes: round2(t.businessProfit),
+    spendingByCategory: topN(tally(exps, (e) => categoryLabel(normCategory(e.category))), 12),
+    topVendors: topN(tally(exps, vendorKey), 15),
+    watchList: {
+      cashWithdrawals: bucket(/ATM|CASH WITHDRAWAL/i),
+      bankAndAtmFees: bucket(/\bFEE\b|SERVICE CHARGE/i),
+      eatingOut: (() => { const l = exps.filter((e) => RESTAURANT_RE.test(e.vendor || "")); return { total: round2(sum(l)), count: l.length }; })(),
+      checksWritten: bucket(/^CHECK\b/i),
+      ownerDrawsOrPersonal: (() => { const l = exps.filter((e) => getDeductible(e) === 0 || /OWNER DRAW/i.test(`${e.vendor} ${e.note || ""}`)); return { total: round2(sum(l)), count: l.length }; })(),
+      subscriptionsAndInsurance: (() => { const l = exps.filter((e) => ["subscription", "insurance"].includes(e.category)); return { total: round2(sum(l)), count: l.length }; })()
+    },
+    moneyIn: { invoicesPaid: { total: round2(sum(paid)), count: paid.length }, otherDeposits: topN(tally(other, (r) => r.source || "Deposit"), 8) },
+    expenseCount: t.expCount
+  };
+}
+function reviewContext(key) {
+  const range = periodRange(key), mk = periodSingleMonth(key);
+  const ctx = { period: periodName(key), dates: range[0] ? `${range[0]} to ${range[1]}` : "all time", today: todayISO(), facts: periodFacts(range) };
+  if (mk) {
+    const prev = addMonthsKey(mk, -1);
+    ctx.previousMonth = { name: monthKeyLong(prev), ...periodTotals(monthRange(prev)) };
+    ["made", "spent", "net", "deductible", "personal", "businessProfit"].forEach((k) => (ctx.previousMonth[k] = round2(ctx.previousMonth[k])));
+    ctx.previousMonth.spendingByCategory = topN(tally(store.expenses.filter((e) => inRange(e.date, monthRange(prev))), (e) => categoryLabel(normCategory(e.category))), 8);
+    const last3 = [1, 2, 3].map((n) => periodTotals(monthRange(addMonthsKey(mk, -n))));
+    ctx.average3MonthsBefore = { made: round2(last3.reduce((s, x) => s + x.made, 0) / 3), spent: round2(last3.reduce((s, x) => s + x.spent, 0) / 3), net: round2(last3.reduce((s, x) => s + x.net, 0) / 3) };
+    if (mk === monthKey()) ctx.note = `This month is still in progress (day ${new Date().getDate()} of ${daysInMonth(new Date().getFullYear(), new Date().getMonth())}).`;
+  }
+  const unpaid = store.invoices.filter((i) => !isPaid(i));
+  ctx.unpaidInvoices = { total: round2(sum(unpaid)), count: unpaid.length, overdue: unpaid.filter((i) => invoiceStatus(i) === "overdue").map((i) => ({ customer: i.customer, amount: num(i.amount), due: i.dueDate || "" })).slice(0, 10) };
+  ctx.recurringBillsPerMonth = { total: round2(sum(store.recurring.filter(isRecurringActive))), bills: store.recurring.filter(isRecurringActive).map((r) => ({ name: r.name, amount: num(r.amount) })).slice(0, 25) };
+  const jobs = store.jobs.filter((j) => inRange(j.date, range));
+  ctx.jobs = { count: jobs.length, list: jobs.slice(0, 15).map((j) => { const m = jobMetrics(j.id); return { customer: j.customer, status: j.status, contract: num(j.amount), invoiced: m.invoiced, collected: m.collected, expenses: m.expenses }; }) };
+  const dups = findDuplicates(range);
+  if (dups.length) ctx.dataWarning = `${dups.length} charges (${money(sum(dups.map((d) => d.rec)))}) look like duplicates, so spending may be overstated.`;
+  if (!store.income.some((r) => inRange(r.date, range)) && !store.invoices.some((i) => isPaid(i) && inRange(paidDateOf(i), range)) && periodTotals(range).spent > 0)
+    ctx.dataWarning = (ctx.dataWarning ? ctx.dataWarning + " " : "") + "No income is recorded for this period. The statement's deposits may not have been imported yet.";
+  return ctx;
+}
+const REVIEW_PROMPT = (ctx) => `You are a straight-talking, supportive small-business advisor for Joe Westlake Painting LLC, a small painting company. The owner is stressed and worried the business is failing. Look at this period's money and explain it plainly.
+
+Rules:
+- Use ONLY the numbers below. Never invent figures, customers or causes. If something can't be known from the data, say what to check.
+- If "dataWarning" is present, say it first in one sentence, because the numbers may be off.
+- Be honest but constructive: no shaming, no fluff, no generic advice. Every point should cite a dollar amount from the data.
+- Personal spending, owner draws and cash withdrawals from the business account aren't business losses, but they do drain cash. Say how much of "spent" they are.
+- Plain text only. Use exactly these headings on their own lines, followed by short "•" bullets:
+THE BOTTOM LINE (2-3 sentences: made, spent, net, and whether the business itself made money once personal/owner money is separated)
+WHAT CHANGED (vs the previous month and the 3-month average, with the biggest drivers)
+WHERE THE MONEY WENT (top categories and vendors, and anything that looks like a leak)
+MONEY COMING IN (who paid, how concentrated it is, unpaid invoices to chase)
+DO THIS NEXT (3-5 specific actions, each with the dollars it would save or bring in)
+- Keep it under 300 words.
+
+Data (JSON):
+${JSON.stringify(ctx)}`;
+
+const reviewCache = (() => { try { return JSON.parse(ls.get("jw_reviews") || "{}") || {}; } catch { return {}; } })();
+const reviewSig = (key) => { const t = periodTotals(periodRange(key)); return [t.made, t.spent, t.expCount, t.paidCount, t.otherCount].map((v) => round2(v)).join("|"); };
+const aiReview = { key: null, loading: false, error: "" };
+
+async function runMoneyReview(force = false) {
+  const key = moneyState.period, sig = reviewSig(key);
+  const cached = reviewCache[key];
+  if (!force && cached && cached.sig === sig) { aiReview.key = key; aiReview.error = ""; renderMoneyAI(); return; }
+  if (aiReview.loading) return;
+  Object.assign(aiReview, { key, loading: true, error: "" });
+  renderMoneyAI();
+  try {
+    const text = await callAI({ parts: [{ text: REVIEW_PROMPT(reviewContext(key)) }], timeoutMs: 120000 });
+    reviewCache[key] = { sig, text: text.replace(/\*\*/g, "").trim(), at: Date.now() };
+    // Keep the last dozen reviews so reopening a month doesn't spend another AI request.
+    const keys = Object.keys(reviewCache).sort((a, b) => reviewCache[b].at - reviewCache[a].at);
+    keys.slice(12).forEach((k) => delete reviewCache[k]);
+    ls.set("jw_reviews", JSON.stringify(reviewCache));
+  } catch (err) {
+    aiReview.error = err.message;
+  } finally {
+    aiReview.loading = false;
+    if (moneyState.period === key) renderMoneyAI();
+  }
+}
+
+function renderMoneyAI() {
+  const box = $("#money-ai");
+  if (!box) return;
+  const key = moneyState.period;
+  const cached = aiReview.key === key || reviewCache[key] ? reviewCache[key] : null;
+  const showing = aiReview.key === key && (aiReview.loading || aiReview.error || cached);
+  box.classList.toggle("hidden", !showing);
+  if (!showing) return;
+  const stale = cached && cached.sig !== reviewSig(key);
+  let body;
+  if (aiReview.loading) body = html`<div class="flex items-center gap-3 text-sm text-slate-300 py-2">${spinner("w-5 h-5")}Reading ${periodName(key)}'s money…</div>`;
+  else if (aiReview.error && !cached) body = html`<div class="text-sm text-red-300">${aiReview.error}</div>`;
+  else {
+    // Headings in CAPS become small section titles; everything else is shown as written.
+    const blocks = cached.text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    body = html`<div class="space-y-1.5 text-[13.5px] leading-relaxed text-slate-200">${blocks.map((l) => /^[A-Z][A-Z &'’/-]{6,}:?$/.test(l)
+      ? html`<div class="text-[10px] font-semibold text-violet-300/90 tracking-[0.15em] uppercase pt-3 first:pt-0">${l.replace(/:$/, "")}</div>`
+      : html`<div class="${l.startsWith("•") ? "pl-3 -indent-3" : ""}">${l}</div>`)}</div>
+      ${aiReview.error ? html`<div class="text-xs text-red-300 mt-3">${aiReview.error}</div>` : ""}`;
+  }
+  box.innerHTML = html`<div class="rounded-2xl border border-violet-500/25 bg-gradient-to-br from-violet-500/[0.07] to-amber-500/[0.03] p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-3 mb-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-violet-500 flex items-center justify-center text-white shrink-0">${icon("sparkle", "w-4 h-4", 2)}</div>
+        <div class="min-w-0"><div class="text-white font-medium truncate">What happened in ${periodName(key)}</div>
+          <div class="text-[11px] text-slate-500">${cached && !aiReview.loading ? html`AI review · ${new Date(cached.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${stale ? " · your numbers changed since" : ""}` : "AI review"}</div></div>
+      </div>
+      <button type="button" data-action="ai-review-close" class="text-slate-500 hover:text-white p-1 rounded-lg shrink-0" aria-label="Hide review">${icon("x", "w-4 h-4", 2)}</button>
+    </div>
+    ${body}
+    ${cached && !aiReview.loading ? html`<div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+      <button type="button" data-action="ai-review-discuss" class="btn-ghost !py-2 !text-xs">${icon("send", "w-3.5 h-3.5", 2)}Ask follow-up questions</button>
+      <button type="button" data-action="ai-review-copy" class="btn-ghost !py-2 !text-xs">${icon("copy", "w-3.5 h-3.5", 2)}Copy</button>
+      <button type="button" data-action="ai-review-refresh" class="btn-ghost !py-2 !text-xs ${stale ? "!border-amber-500/40 !text-amber-200" : ""}">${icon("refresh", "w-3.5 h-3.5", 2)}${stale ? "Update with new numbers" : "Redo"}</button>
+    </div>` : ""}
+  </div>`;
+}
+
 function renderMoneySummary() {
   const el = $("#money-summary");
   if (!el) return;
@@ -2472,7 +2616,10 @@ function renderMoneySummary() {
         <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-1">${mk ? (isCurrent ? "This month so far" : "Month") : "Period"}</div>
         <div class="font-serif text-xl sm:text-2xl text-white truncate">${periodName(key)}</div>
       </div>
-      <div class="text-right text-[11px] text-slate-500 shrink-0 pt-1">${range[0] ? html`${fmtDate(range[0])} – ${fmtDate(range[1])}` : "Everything recorded"}</div>
+      <div class="flex flex-col items-end gap-2 shrink-0">
+        <div class="text-right text-[11px] text-slate-500 pt-1">${range[0] ? html`${fmtDate(range[0])} – ${fmtDate(range[1])}` : "Everything recorded"}</div>
+        ${ready && (t.made || t.spent) ? html`<button type="button" data-action="ai-review" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-violet-500/80 to-amber-500/80 hover:from-violet-500 hover:to-amber-500 shadow-lg shadow-violet-500/10">${icon("sparkle", "w-3.5 h-3.5", 2)}${mk ? `Explain ${monthKeyLong(mk).split(" ")[0]}` : "Explain this"}</button>` : ""}
+      </div>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5">
       <div class="col-span-2 sm:col-span-1 sm:order-last">
@@ -3311,7 +3458,7 @@ function createAIRecords(actions) {
 // ═════════════════════════════════════════════════════════════
 // BANK IMPORT
 // ═════════════════════════════════════════════════════════════
-const bank = { debits: [], deposits: [], req: 0, summary: null };
+const bank = { debits: [], deposits: [], recurring: [], req: 0, summary: null };
 const BANK_PROMPT = `You are parsing a bank statement for a painting business owner (Joe Westlake Painting LLC).
 
 Extract EVERY transaction and classify each as either a DEBIT (money going out) or a DEPOSIT (money coming in).
@@ -3319,7 +3466,7 @@ For DEBITS, also guess the tax deductibility — the owner sometimes uses the bu
 
 Return ONLY valid JSON, exactly this shape:
 {
-  "debits":   [ { "date": "YYYY-MM-DD", "vendor": "Vendor name", "amount": 123.45, "category": "paint", "deductible": 100, "note": "" } ],
+  "debits":   [ { "date": "YYYY-MM-DD", "vendor": "Vendor name", "amount": 123.45, "category": "paint", "deductible": 100, "note": "", "recurring": false } ],
   "deposits": [ { "date": "YYYY-MM-DD", "memo": "Payer name or memo", "amount": 3000.00, "note": "" } ]
 }
 
@@ -3340,6 +3487,8 @@ DEBITS:
 - Unclear → other, 50
 - Vendor = cleaned-up merchant name. Amounts positive. In "note", give a short reason when deductible is not 100.
 
+- "recurring": true for subscriptions and bills that come every month (streaming, software, payroll service, insurance, phone, internet, utilities, rent, loan payments). Not for gas, stores, restaurants or cash.
+
 DEPOSITS:
 - memo = payer or memo, cleaned up but recognizable. Skip transfers between the owner's own accounts. Amounts positive.
 
@@ -3351,7 +3500,7 @@ function showBankStep(step) {
   ["upload", "loading", "review"].forEach((s) => $(`#bank-step-${s}`).classList.toggle("hidden", s !== step));
 }
 function showBankError(msg) { const el = $("#bank-error"); el.textContent = msg || ""; el.classList.toggle("hidden", !msg); }
-function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.summary = null; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
+function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.recurring = []; bank.summary = null; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
 function openBankModal() { resetBank(); openModal("bank-modal", { focus: false }); }
 modalCloseHooks["bank-modal"] = resetBank;
 
@@ -3576,6 +3725,50 @@ async function readStatementDirect(file) {
   }
 }
 
+// ── Recurring bills hiding in a statement ──
+// A charge is a recurring bill when the bank marks it as one ("RECURRING PYMT", an ACH bill), when it's a known
+// subscription/insurance/utility company, or when the same amount from the same company shows up in two different months.
+const SUBSCRIPTION_RE = /PEACOCK|NETFLIX|HULU|SPOTIFY|DISNEY|PARAMOUNT|MAX\.COM|HBO|YOUTUBE|APPLE\.COM|ICLOUD|GOOGLE ?(STORAGE|ONE|WORKSPACE|\*)|AMAZON PRIME|PRIME VIDEO|AUDIBLE|SIRIUS|ADOBE|MICROSOFT|MSFT|QUICKBOOKS|INTUIT|PAYCHEX|GUSTO|VERIZON|AT&T|\bATT\b|T-MOBILE|TMOBILE|CRICKET|SPECTRUM|COMCAST|XFINITY|FRONTIER|HUGHESNET|STARLINK|STATE FARM|GEICO|ALLSTATE|PROGRESSIVE|FLBLUE|FLORIDA ?BLUE|DUKE ENERGY|TECO|WITHLACOOCHEE|PLANET FITNESS|ANYTIME FITNESS|DROPBOX|CANVA|GODADDY|SQUARESPACE|\bWIX\b|ZOOM\.US|OPENAI|CHATGPT|NORTON|MCAFEE|LIFELOCK|RING\.COM|SIMPLISAFE|ADT\b/i;
+const NOT_RECURRING_RE = /ATM|CASH|CHECK #|SERVICE CHARGE|\bFEE\b|TRANSFER|ZELLE|CASH APP|VENMO|REFUND/i;
+const RECURRING_CATS = new Set(["subscription", "insurance", "utilities", "rent", "other"]);
+// Stricter than the duplicate matcher: names must share a real word.
+const sameCompany = (a, b) => { const wa = tokens(a), wb = tokens(b); return wa.length && wb.length ? wa.some((w) => wb.includes(w)) : String(a).toUpperCase() === String(b).toUpperCase(); };
+const closeAmount = (a, b) => Math.abs(num(a) - num(b)) <= Math.max(1, num(b) * 0.15);
+const isExistingRecurring = (name, amount) => store.recurring.some((r) => sameCompany(r.vendor || r.name, name) && closeAmount(r.amount, amount));
+
+function findRecurringCandidates(debits) {
+  const groups = [];
+  for (const t of debits) {
+    if (NOT_RECURRING_RE.test(t.vendor)) continue;
+    let g = groups.find((x) => sameCompany(x.rows[0].vendor, t.vendor));
+    if (!g) groups.push((g = { rows: [] }));
+    g.rows.push(t);
+  }
+  const out = [];
+  for (const g of groups) {
+    const rows = g.rows.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const latest = rows[rows.length - 1];
+    const hay = rows.map((r) => `${r.vendor} ${r.raw || ""}`).join(" ");
+    const marked = rows.some((r) => r.recurring === true) || /RECURRING PYMT|RECURRING PAYMENT|AUTOPAY|AUTO PAY|ACH CORP DEBIT|ACH DEBIT/i.test(hay);
+    const known = SUBSCRIPTION_RE.test(hay);
+    // Same amount in two different months (this batch plus what's already in the books)?
+    const months = new Set([
+      ...rows.filter((r) => sameMoney(r.amount, latest.amount)).map((r) => String(r.date).slice(0, 7)),
+      ...store.expenses.filter((e) => sameCompany(e.vendor, latest.vendor) && sameMoney(e.amount, latest.amount)).map((e) => String(e.date).slice(0, 7))
+    ]);
+    const repeats = months.size >= 2 && RECURRING_CATS.has(latest.category) && latest.deductible !== 25; // 25% = restaurants
+    if (!marked && !known && !repeats) continue;
+    if (isExistingRecurring(latest.vendor, latest.amount)) continue;
+    const category = latest.category === "other" && (known || marked) ? "subscription" : latest.category;
+    out.push({
+      include: true, name: latest.vendor, amount: posAmount(latest.amount), dayOfMonth: Number(String(latest.date).slice(8, 10)) || 1,
+      category, deductible: latest.deductible, lastMonth: String(latest.date).slice(0, 7),
+      why: marked ? "Bank marks it as a recurring payment" : known ? "Known subscription or monthly bill" : `Same amount in ${plural(months.size, "month")}`
+    });
+  }
+  return out.sort((a, b) => a.dayOfMonth - b.dayOfMonth);
+}
+
 const MAX_BANK_FILES = 12;
 const BANK_CONCURRENCY = 2; // two statements with the AI at a time: faster, but gentle on the proxy's rate limit
 
@@ -3737,6 +3930,7 @@ async function processBankFiles(fileList) {
     if (inv) { row.invoiceId = inv; claimed.add(inv); }
   }
   bank.debits = debits; bank.deposits = deposits;
+  bank.recurring = findRecurringCandidates(debits);
   bank.summary = { read: summary, problems: [...warnings, ...problemLines] };
   renderBankReview();
   showBankStep("review");
@@ -3768,6 +3962,18 @@ function renderBankReview() {
   const dups = [...bank.debits, ...bank.deposits].filter((r) => r.dup).length;
   $("#bank-dup-note").classList.toggle("hidden", !dups);
   setText("#bank-dup-note", `${plural(dups, "transaction")} look${dups === 1 ? "s" : ""} like ${dups === 1 ? "it's" : "they're"} already in your books or in another statement, so ${dups === 1 ? "it was" : "they were"} left unchecked.`);
+
+  $("#bank-recurring-wrap").classList.toggle("hidden", !bank.recurring.length);
+  setText("#bank-recurring-count", bank.recurring.length);
+  $("#bank-recurring-rows").innerHTML = html`${bank.recurring.map((t, i) => html`
+    <div class="import-row" title="${t.why}">
+      <input type="checkbox" ${t.include ? "checked" : ""} data-list="recurring" data-idx="${i}" data-field="include" aria-label="Add ${t.name} as a recurring bill" />
+      <label class="flex items-center gap-1.5 text-[11px] text-slate-500">Day<input type="number" min="1" max="31" value="${t.dayOfMonth}" data-list="recurring" data-idx="${i}" data-field="dayOfMonth" aria-label="Day of month" class="!w-14" /></label>
+      <div class="min-w-0"><input type="text" value="${t.name}" data-list="recurring" data-idx="${i}" data-field="name" aria-label="Name" /><div class="text-[10px] text-slate-500 mt-0.5 truncate">${t.why}</div></div>
+      <input type="number" step="0.01" min="0" value="${t.amount}" data-list="recurring" data-idx="${i}" data-field="amount" aria-label="Amount per month" />
+      <select data-list="recurring" data-idx="${i}" data-field="category" aria-label="Category">${CATEGORY_KEYS.map((c) => html`<option value="${c}" ${t.category === c ? "selected" : ""}>${categoryLabel(c)}</option>`)}</select>
+      <select data-list="recurring" data-idx="${i}" data-field="deductible" aria-label="Deductible">${DEDUCTIBLE_LEVELS.map((v) => html`<option value="${v}" ${t.deductible === v ? "selected" : ""}>${deductibleShort(v)}</option>`)}</select>
+    </div>`)}`;
 
   $("#bank-debit-rows").innerHTML = bank.debits.length ? html`${bank.debits.map((t, i) => html`
     <div class="import-row ${t.dup ? "is-dup" : ""}">
@@ -3803,20 +4009,36 @@ function renderBankReview() {
 
 function updateBankImportButton() {
   const n = bank.debits.filter((t) => t.include).length + bank.deposits.filter((t) => t.include).length;
-  setText("#bank-import-label", n ? `Import ${plural(n, "transaction")}` : "Nothing selected");
-  $("#bank-import-btn").disabled = !n;
+  const r = bank.recurring.filter((t) => t.include).length;
+  setText("#bank-import-label", [n && `Import ${plural(n, "transaction")}`, r && `${n ? "add" : "Add"} ${plural(r, "recurring bill")}`].filter(Boolean).join(" · ") || "Nothing selected");
+  $("#bank-import-btn").disabled = !n && !r;
 }
 
 function importBank() {
   const debits = bank.debits.filter((t) => t.include && t.vendor && t.amount > 0);
   const deposits = bank.deposits.filter((t) => t.include && t.amount > 0);
-  if (!debits.length && !deposits.length) { showBankError("Nothing selected to import."); return; }
+  const recurring = bank.recurring.filter((t) => t.include && String(t.name || "").trim() && t.amount > 0);
+  if (!debits.length && !deposits.length && !recurring.length) { showBankError("Nothing selected to import."); return; }
 
   const used = new Set(), ops = [], undo = [];
   let paidCount = 0, incomeCount = 0;
+  // New recurring bills first, so this statement's charges can be linked to them (and "Apply" won't log them again).
+  const newBills = recurring.map((t) => ({ t, ref: doc(collection(db, "recurring")) }));
+  for (const { t, ref } of newBills) {
+    const charges = debits.filter((d) => sameCompany(d.vendor, t.name) && closeAmount(d.amount, t.amount));
+    const imported = charges.map((d) => String(d.date).slice(0, 7)).sort().pop();
+    ops.push((b) => b.set(ref, {
+      name: String(t.name).trim(), vendor: String(t.name).trim(), amount: round2(t.amount), category: normCategory(t.category),
+      dayOfMonth: clamp(Math.round(num(t.dayOfMonth)) || 1, 1, 31), deductible: normDeductible(t.deductible), active: true,
+      note: "Found on a bank statement", lastAppliedMonth: imported || t.lastMonth || "", createdAt: serverTimestamp()
+    }));
+    undo.push((b) => b.delete(ref));
+    charges.forEach((d) => (d.recurringId = ref.id));
+  }
   for (const t of debits) {
     const ref = doc(collection(db, "expenses"));
-    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, createdAt: serverTimestamp() }));
+    const linked = t.recurringId || store.recurring.find((r) => sameCompany(r.vendor || r.name, t.vendor) && closeAmount(r.amount, t.amount))?.id;
+    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, ...(linked ? { recurringId: linked } : {}), createdAt: serverTimestamp() }));
     undo.push((b) => b.delete(ref));
   }
   for (const d of deposits) {
@@ -3835,7 +4057,7 @@ function importBank() {
     }
   }
   persist(runBatched(ops), "Import failed");
-  const parts = [debits.length && plural(debits.length, "expense"), paidCount && `${plural(paidCount, "invoice")} paid`, incomeCount && plural(incomeCount, "income entry", "income entries")].filter(Boolean);
+  const parts = [debits.length && plural(debits.length, "expense"), recurring.length && plural(recurring.length, "recurring bill"), paidCount && `${plural(paidCount, "invoice")} paid`, incomeCount && plural(incomeCount, "income entry", "income entries")].filter(Boolean);
   toast(`Imported ${parts.join(" · ")}`, { action: { label: "Undo", run: () => { persist(runBatched(undo), "Couldn't undo import"); toast("Import undone"); } } });
   closeModal("bank-modal");
 }
@@ -3861,6 +4083,7 @@ function initBank() {
     if (f === "include") row.include = t.checked;
     else if (f === "amount") row.amount = posAmount(t.value);
     else if (f === "deductible") row.deductible = Number(t.value);
+    else if (f === "dayOfMonth") row.dayOfMonth = clamp(Math.round(num(t.value)) || 1, 1, 31);
     else if (f === "date") { row.date = validISO(t.value) || row.date || todayISO(); t.value = row.date; }
     else row[f] = t.value;
     if (f === "invoiceId") renderBankReview(); else updateBankImportButton();
@@ -4259,6 +4482,16 @@ const ACTIONS = {
   "pick-month": (d) => { setMoneyPeriod(monthPeriod(d.month)); $("#money-summary")?.scrollIntoView({ behavior: "smooth", block: "start" }); },
   "export-monthly": () => exportMonthlyCSV(),
   "cleanup-open": () => openCleanup(),
+  "ai-review": requireAuth(() => runMoneyReview(false)),
+  "ai-review-refresh": requireAuth(() => runMoneyReview(true)),
+  "ai-review-close": () => { aiReview.key = null; aiReview.error = ""; renderMoneyAI(); },
+  "ai-review-copy": async () => { const c = reviewCache[moneyState.period]; if (c && await copyText(c.text)) toast("Copied"); },
+  "ai-review-discuss": () => {
+    const c = reviewCache[moneyState.period];
+    if (!c) return;
+    addMessage("model", `${periodName(moneyState.period)} review\n\n${c.text}\n\nAsk me anything about it, like "why did gas go up?" or "which jobs lost money?"`);
+    switchTab("ai");
+  },
   "cleanup-dups": () => openCleanup("dups"),
   "cleanup-step": (d) => { cleanup.step = d.step; if (d.step !== "confirm") cleanup.mode = d.step === "clear" ? "clear" : null; renderCleanup(); $("#cleanup-modal .modal-panel").scrollTop = 0; },
   "cleanup-all": (d) => { cleanup.dups.forEach((x) => (x.include = d.on === "1")); renderCleanup(); },
