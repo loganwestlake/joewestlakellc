@@ -13,9 +13,12 @@
 //   GEMINI_API_KEY   secret, required
 //   ALLOWED_ORIGINS  comma-separated, e.g. "https://loganwestlake.github.io"
 //   GEMINI_MODEL     optional, defaults to DEFAULT_MODEL below
+//   GEMINI_FALLBACK_MODEL optional backup model for when the main one is overloaded
 
 const PROJECT_ID = "joe-westlake-llc";
 const DEFAULT_MODEL = "gemini-3.8-flash";
+// Used only when the main model is overloaded. Set GEMINI_FALLBACK_MODEL to "" to turn this off.
+const DEFAULT_FALLBACK_MODEL = "gemini-3.6-flash";
 const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const MAX_BODY_BYTES = 20 * 1024 * 1024; // a 10MB file is ~13.4MB once base64-encoded
 const RATE_LIMIT = { windowMs: 60_000, max: 30 };
@@ -72,15 +75,23 @@ export default {
     const payload = { contents: body.contents };
     if (body.generationConfig && typeof body.generationConfig === "object") payload.generationConfig = body.generationConfig;
 
-    const model = env.GEMINI_MODEL || DEFAULT_MODEL;
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    const callModel = (model) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
       body: JSON.stringify(payload)
     });
-    const text = await upstream.text();
+    const model = env.GEMINI_MODEL || DEFAULT_MODEL;
+    let upstream = await callModel(model);
+    let text = await upstream.text();
+    // Main model overloaded ("high demand")? Try the backup model once before giving up.
+    const fallback = env.GEMINI_FALLBACK_MODEL ?? DEFAULT_FALLBACK_MODEL;
+    if (fallback && fallback !== model && (upstream.status === 503 || /high demand|overloaded|UNAVAILABLE/i.test(upstream.ok ? "" : text))) {
+      const second = await callModel(fallback);
+      const secondText = await second.text();
+      if (second.ok) { upstream = second; text = secondText; }
+    }
     // Upstream auth/quota errors must not look like "you're not approved" to the app.
-    const status = upstream.ok ? 200 : upstream.status === 429 ? 429 : 502;
+    const status = upstream.ok ? 200 : upstream.status === 429 ? 429 : upstream.status === 503 ? 503 : 502;
     return new Response(text, { status, headers: { ...cors, "Content-Type": "application/json" } });
   }
 };

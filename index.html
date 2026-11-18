@@ -1122,7 +1122,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.7.1";
+const APP_VERSION = "v2.7.2";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -3302,6 +3302,10 @@ const humanWait = (ms) => ms >= 90 * 60000 ? `about ${Math.round(ms / 3600000)} 
 // err.quota = "day" (free-plan daily cap, nothing to do until it resets) or "minute" (wait briefly and retry).
 function aiError(status, msg) {
   const m = String(msg || "");
+  // Google's model is overloaded: temporary, nothing wrong with the setup. callAI retries these on its own.
+  if (status === 503 || /high demand|overloaded|UNAVAILABLE|try again later/i.test(m)) {
+    return Object.assign(new Error("Google's AI is very busy right now. That's on Google's side, not your setup. Try again in a few minutes."), { overloaded: true });
+  }
   if (status === 429 || /quota|rate.?limit|RESOURCE_EXHAUSTED|too many/i.test(m)) {
     const daily = /per ?day|perday|daily/i.test(m);
     const retryMs = parseRetryDelay(m.match(/retry in ([\dhms.]+)/i)?.[1]) || (daily ? 0 : 30000);
@@ -3319,7 +3323,19 @@ function aiError(status, msg) {
 const PROXY_NO_TOKEN_KEY = "jw_proxy_no_token";
 const proxyTakesToken = () => { const t = Number(ls.get(PROXY_NO_TOKEN_KEY) || 0); return !t || Date.now() - t > 24 * 3600 * 1000; };
 
-async function callAI({ contents, parts, json = false, timeoutMs = 90000 }) {
+// When Google says its model is busy, wait a moment and try again (twice) before giving up.
+async function callAI(opts) {
+  const waits = [3000, 8000];
+  for (let i = 0; ; i++) {
+    try { return await callAIOnce(opts); }
+    catch (err) {
+      if (!err.overloaded || i >= waits.length) throw err;
+      await new Promise((r) => setTimeout(r, waits[i]));
+    }
+  }
+}
+
+async function callAIOnce({ contents, parts, json = false, timeoutMs = 90000 }) {
   const body = { contents: contents || [{ role: "user", parts }] };
   if (json) body.generationConfig = { responseMimeType: "application/json" };
   const ctrl = new AbortController();
