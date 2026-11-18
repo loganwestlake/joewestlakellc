@@ -1122,7 +1122,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.7";
+const APP_VERSION = "v2.7.1";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -3315,6 +3315,10 @@ function aiError(status, msg) {
   return new Error(m || `AI service returned HTTP ${status}`);
 }
 
+// Until the locked-down proxy (worker/gemini-proxy.js) is deployed, the old one rejects the sign-in token header.
+const PROXY_NO_TOKEN_KEY = "jw_proxy_no_token";
+const proxyTakesToken = () => { const t = Number(ls.get(PROXY_NO_TOKEN_KEY) || 0); return !t || Date.now() - t > 24 * 3600 * 1000; };
+
 async function callAI({ contents, parts, json = false, timeoutMs = 90000 }) {
   const body = { contents: contents || [{ role: "user", parts }] };
   if (json) body.generationConfig = { responseMimeType: "application/json" };
@@ -3323,15 +3327,22 @@ async function callAI({ contents, parts, json = false, timeoutMs = 90000 }) {
   try {
     // The proxy only serves signed-in members: it checks this Firebase ID token.
     const token = await auth.currentUser?.getIdToken().catch(() => null);
-    const post = (headers) => fetch(WORKER_URL, { method: "POST", headers, body: JSON.stringify(body), signal: ctrl.signal });
+    const post = (withToken) => fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json", ...(withToken ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body), signal: ctrl.signal });
     let res;
-    try {
-      res = await post({ "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) });
-    } catch (err) {
-      // An older proxy that doesn't allow the Authorization header fails the CORS preflight (TypeError).
-      // Retry once without it so the AI keeps working until the locked-down proxy is deployed.
-      if (!(err instanceof TypeError) || !token) throw err;
-      res = await post({ "Content-Type": "application/json" });
+    if (token && proxyTakesToken()) {
+      try {
+        res = await post(true);
+      } catch (err) {
+        // The old proxy doesn't allow the Authorization header, so the browser blocks the request (CORS, TypeError).
+        // Remember that for a day so every AI request doesn't fail once first, and send without the token.
+        if (!(err instanceof TypeError)) throw err;
+        ls.set(PROXY_NO_TOKEN_KEY, String(Date.now()));
+        res = await post(false);
+      }
+    } else {
+      res = await post(false);
+      // The locked-down proxy is live (it wants the token): start sending it again right away.
+      if (token && res.status === 401) { ls.del(PROXY_NO_TOKEN_KEY); res = await post(true); }
     }
     if (res.status === 401 || res.status === 403) throw new Error("The AI service only works for approved accounts. Ask the owner to add yours.");
     let data;
