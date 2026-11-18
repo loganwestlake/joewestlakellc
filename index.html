@@ -2467,7 +2467,7 @@ function periodFacts(range) {
     spendingByCategory: topN(tally(exps, (e) => categoryLabel(normCategory(e.category))), 12),
     topVendors: topN(tally(exps, vendorKey), 15),
     watchList: {
-      cashWithdrawals: bucket(/ATM|CASH WITHDRAWAL/i),
+      cashWithdrawals: bucket(/CASH WITHDRAWAL/i),
       bankAndAtmFees: bucket(/\bFEE\b|SERVICE CHARGE/i),
       eatingOut: (() => { const l = exps.filter((e) => RESTAURANT_RE.test(e.vendor || "")); return { total: round2(sum(l)), count: l.length }; })(),
       checksWritten: bucket(/^CHECK\b/i),
