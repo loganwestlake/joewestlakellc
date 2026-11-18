@@ -46,6 +46,7 @@
     .btn-light   { @apply inline-flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-xl text-sm font-medium shadow-lg shadow-white/5; }
     .btn-ghost   { @apply inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-4 py-3 rounded-xl text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed; }
     .btn-text    { @apply text-slate-400 hover:text-white px-4 py-3 text-sm font-medium; }
+    .btn-danger  { @apply inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white rounded-xl px-4 py-3 text-sm font-medium shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed; }
     .icon-btn        { @apply inline-flex text-slate-500 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10; }
     .icon-btn-ok     { @apply inline-flex text-slate-500 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10; }
     .icon-btn-danger { @apply inline-flex text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10; }
@@ -311,6 +312,9 @@
     border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
   }
   .import-row  { grid-template-columns: 28px 130px 1fr 96px 120px 110px; }
+  .dup-row { display: grid; grid-template-columns: 24px 92px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
+  .dup-row:last-child { border-bottom: none; }
+  .dup-row.off { opacity: .45; }
   .deposit-row { grid-template-columns: 28px 130px 1fr 100px 1fr; }
   .import-row:last-child, .deposit-row:last-child { border-bottom: none; }
   .import-row.is-dup, .deposit-row.is-dup { background: rgba(148,163,184,0.04); }
@@ -727,7 +731,11 @@
             <button type="button" data-action="period-step" data-dir="-1" class="btn-ghost !px-2.5 !py-2.5 btn-touch" aria-label="Previous month" title="Previous month"><span data-icon="chevLeft" data-sw="2"></span></button>
             <select id="money-period" class="field field-sm flex-1 sm:flex-none sm:min-w-[13rem]" aria-label="Month or period"></select>
             <button type="button" data-action="period-step" data-dir="1" class="btn-ghost !px-2.5 !py-2.5 btn-touch" aria-label="Next month" title="Next month"><span data-icon="chevRight" data-sw="2"></span></button>
+            <button type="button" data-action="cleanup-open" class="btn-ghost !px-3 !py-2.5 btn-touch ml-auto" title="Remove duplicates or clear this month"><span data-icon="trash" data-sw="2"></span><span class="hidden sm:inline">Clean up</span></button>
           </div>
+          <button type="button" id="dup-hint" data-action="cleanup-dups" class="hidden w-full mb-3 text-left rounded-xl border border-amber-500/30 bg-amber-500/[0.07] hover:bg-amber-500/[0.12] px-4 py-3 text-sm text-amber-200 flex items-center gap-3">
+            <span data-icon="alert" data-sw="2"></span><span id="dup-hint-text" class="flex-1"></span><span data-icon="arrowRight" data-sw="2"></span>
+          </button>
           <!-- What came in, what went out, and what's left, for the period being viewed -->
           <section id="money-summary" class="relative rounded-2xl mb-4 profit-glow" aria-label="Net for this period"></section>
           <section id="money-months" class="glass rounded-2xl p-4 sm:p-5 mb-6" aria-labelledby="money-months-title">
@@ -911,6 +919,21 @@
 
 <button type="button" id="mobile-fab" class="fab" data-action="fab" aria-label="Quick add"><span data-icon="plus" data-cls="w-6 h-6" data-sw="2.5"></span></button>
 
+<!-- CLEAN UP MODAL (remove duplicates / clear a month) -->
+<div id="cleanup-modal" class="modal-root fixed inset-0 z-50 hidden modal-shell" role="dialog" aria-modal="true" aria-labelledby="cleanup-title">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in" data-close></div>
+  <div class="relative modal-inner wide">
+    <div class="modal-panel max-h-[92vh]">
+      <button type="button" class="modal-x" data-close aria-label="Close"><span data-icon="x" data-sw="2"></span></button>
+      <div class="mb-5 pr-8">
+        <div class="eyebrow">Clean up</div>
+        <h2 id="cleanup-title" class="font-serif text-3xl text-white tracking-tight">—</h2>
+      </div>
+      <div id="cleanup-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- SIGN-IN MODAL -->
 <div id="signin-modal" class="modal-root fixed inset-0 z-50 hidden modal-shell" role="dialog" aria-modal="true" aria-labelledby="signin-title">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in" data-close></div>
@@ -1027,7 +1050,7 @@
           <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div class="text-sm text-white font-medium">Review before importing</div>
             <div class="flex gap-2 items-center">
-              <button type="button" id="bank-select-all" class="text-xs text-slate-400 hover:text-white">Select all</button>
+              <button type="button" id="bank-select-all" class="text-xs text-slate-400 hover:text-white" title="Selects every transaction not already in your books">Select all new</button>
               <span class="text-slate-600">·</span>
               <button type="button" id="bank-select-none" class="text-xs text-slate-400 hover:text-white">Select none</button>
             </div>
@@ -1093,7 +1116,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.4";
+const APP_VERSION = "v2.6";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -2419,6 +2442,10 @@ function deltaHTML(cur, prev, prevName, moreIsGood = true) {
 function renderMoneySummary() {
   const el = $("#money-summary");
   if (!el) return;
+  const ready0 = auth.currentUser && loaded.has("expenses") && loaded.has("income");
+  const dups = ready0 ? findDuplicates(periodRange(moneyState.period)) : [];
+  $("#dup-hint")?.classList.toggle("hidden", !dups.length);
+  if (dups.length) setText("#dup-hint-text", `${plural(dups.length, "charge")} in ${periodName(moneyState.period)} look like ${dups.length === 1 ? "it was" : "they were"} logged twice (${money(sum(dups.map((d) => d.rec)))}). Review and remove the extra copies.`);
   const key = moneyState.period, range = periodRange(key), t = periodTotals(range);
   const mk = periodSingleMonth(key);
   const prevMk = mk ? addMonthsKey(mk, -1) : null;
@@ -2564,6 +2591,180 @@ function exportMonthlyCSV() {
     ["Total", ...["made", "spent", "net", "deductible", "personal", "businessProfit"].map((k) => round2(rows.reduce((s, r) => s + r[k], 0))), ...["paidCount", "otherCount", "expCount"].map((k) => rows.reduce((s, r) => s + r[k], 0))]
   ]), "text/csv");
   toast("Monthly summary downloaded");
+}
+
+// ═════════════════════════════════════════════════════════════
+// CLEAN UP — remove duplicate charges, or clear a whole month
+// ═════════════════════════════════════════════════════════════
+// A statement imported twice gives every charge a twin on the same day for the same amount, usually with a slightly
+// different name ("Sherwin-Williams #72" / "Sherwin-Williams"). Within each group of lookalikes we keep half (rounded
+// up) and list the rest as extras — so two real $3 ATM fees imported twice (4 rows) keep 2. Everything is reviewable.
+const nameOfRecord = (col, r) => (col === "expenses" ? r.vendor : r.source) || "";
+const similarNames = (a, b) => { const wa = tokens(a), wb = tokens(b); return !wa.length || !wb.length || wa.some((w) => wb.includes(w)); };
+function findDuplicates(range) {
+  const out = [];
+  for (const col of ["expenses", "income"]) {
+    const groups = new Map();
+    store[col].forEach((r) => {
+      if (!validISO(r.date) || !inRange(r.date, range)) return;
+      const k = `${r.date}|${round2(r.amount)}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(r);
+    });
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      const clusters = [];
+      for (const r of list) {
+        const c = clusters.find((cl) => cl.some((o) => similarNames(nameOfRecord(col, o), nameOfRecord(col, r))));
+        if (c) c.push(r); else clusters.push([r]);
+      }
+      for (const c of clusters) {
+        if (c.length < 2) continue;
+        // Keep the copies someone has put work into (linked to a job), then the oldest.
+        const ranked = c.slice().sort((a, b) => (b.jobId ? 1 : 0) - (a.jobId ? 1 : 0) || (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0) || String(a.id).localeCompare(String(b.id)));
+        const keep = Math.ceil(c.length / 2);
+        ranked.slice(keep).forEach((r) => out.push({ col, rec: r, twin: ranked[0], include: true }));
+      }
+    }
+  }
+  return out.sort((a, b) => String(a.rec.date).localeCompare(String(b.rec.date)) || nameOfRecord(a.col, a.rec).localeCompare(nameOfRecord(b.col, b.rec)));
+}
+
+const cleanup = { step: "choose", period: null, dups: [], kinds: { expenses: true, income: true }, mode: null };
+const cleanupMonth = () => periodSingleMonth(cleanup.period);
+const monthRecords = (col) => { const mk = cleanupMonth(); return mk ? store[col].filter((r) => inRange(r.date, monthRange(mk))) : []; };
+
+function openCleanup(step = "choose") {
+  if (!auth.currentUser) { openModal("signin-modal"); return; }
+  cleanup.period = moneyState.period;
+  cleanup.dups = findDuplicates(periodRange(cleanup.period));
+  cleanup.kinds = { expenses: true, income: true };
+  cleanup.step = step === "dups" && !cleanup.dups.length ? "choose" : step;
+  setText("#cleanup-title", periodName(cleanup.period));
+  renderCleanup();
+  openModal("cleanup-modal", { focus: false });
+}
+modalCloseHooks["cleanup-modal"] = () => { cleanup.dups = []; cleanup.step = "choose"; };
+
+function cleanupTargets() {
+  if (cleanup.mode === "dups") return cleanup.dups.filter((d) => d.include).map((d) => ({ col: d.col, rec: d.rec }));
+  return ["expenses", "income"].filter((c) => cleanup.kinds[c]).flatMap((col) => monthRecords(col).map((rec) => ({ col, rec })));
+}
+const describeTargets = (t) => {
+  const e = t.filter((x) => x.col === "expenses"), i = t.filter((x) => x.col === "income");
+  return [e.length && `${plural(e.length, "expense")} (${money(sum(e.map((x) => x.rec)))})`, i.length && `${plural(i.length, "income entry", "income entries")} (${money(sum(i.map((x) => x.rec)))})`].filter(Boolean).join(" and ");
+};
+
+function renderCleanup() {
+  const body = $("#cleanup-body");
+  const name = periodName(cleanup.period), mk = cleanupMonth();
+  const dupTotal = sum(cleanup.dups.map((d) => d.rec));
+  const back = html`<button type="button" data-action="cleanup-step" data-step="${cleanup.mode === "dups" ? "dups" : "choose"}" class="btn-text">Back</button>`;
+
+  if (cleanup.step === "choose") {
+    const exps = monthRecords("expenses"), inc = monthRecords("income");
+    body.innerHTML = html`<div class="space-y-3">
+      <div class="glass rounded-2xl p-4 sm:p-5">
+        <div class="flex items-start gap-3">
+          <div class="stat-icon bg-amber-500/10 border-amber-500/20 text-amber-400 shrink-0">${icon("copy", "w-3.5 h-3.5", 2)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-white font-medium">Remove duplicates <span class="text-[11px] text-emerald-400 font-normal ml-1">Recommended</span></div>
+            <div class="text-sm text-slate-400 mt-1">${cleanup.dups.length
+              ? `Found ${plural(cleanup.dups.length, "charge")} that look like they were logged twice (${money(dupTotal)}). Keeps one of each and removes the extra copies. You'll review them first.`
+              : `No duplicates found in ${name}.`}</div>
+            ${cleanup.dups.length ? html`<button type="button" data-action="cleanup-step" data-step="dups" class="btn-primary mt-3 btn-touch">${icon("eye", "w-4 h-4", 2)}Review ${plural(cleanup.dups.length, "duplicate")}</button>` : ""}
+          </div>
+        </div>
+      </div>
+      <div class="glass rounded-2xl p-4 sm:p-5">
+        <div class="flex items-start gap-3">
+          <div class="stat-icon bg-red-500/10 border-red-500/20 text-red-400 shrink-0">${icon("trash", "w-3.5 h-3.5", 2)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-white font-medium">Clear ${mk ? "the whole month" : "a month"}</div>
+            <div class="text-sm text-slate-400 mt-1">${mk
+              ? (exps.length || inc.length ? `Delete all ${[exps.length && plural(exps.length, "expense"), inc.length && plural(inc.length, "income entry", "income entries")].filter(Boolean).join(" and ")} in ${name}, so you can import the statement again cleanly. Invoices aren't touched.` : `There's nothing to clear in ${name}.`)
+              : "Pick a single month with the ‹ › arrows to clear it. Ranges can't be cleared all at once."}</div>
+            ${mk && (exps.length || inc.length) ? html`<button type="button" data-action="cleanup-step" data-step="clear" class="btn-ghost mt-3 btn-touch !text-red-300 !border-red-500/30 hover:!bg-red-500/10">${icon("trash", "w-4 h-4", 2)}Clear ${name}…</button>` : ""}
+          </div>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  if (cleanup.step === "dups") {
+    const on = cleanup.dups.filter((d) => d.include);
+    body.innerHTML = html`
+      <p class="text-sm text-slate-400 mb-3">Each line is an <span class="text-white">extra copy</span> of a charge on the same day for the same amount. The original stays. Uncheck anything that really happened twice.</p>
+      <div class="flex items-center justify-between mb-2 text-xs">
+        <span class="text-slate-400">${plural(on.length, "selected")} · <span class="text-white">${money(sum(on.map((d) => d.rec)))}</span></span>
+        <span class="flex gap-2"><button type="button" data-action="cleanup-all" data-on="1" class="text-slate-400 hover:text-white">Select all</button><span class="text-slate-600">·</span><button type="button" data-action="cleanup-all" data-on="0" class="text-slate-400 hover:text-white">Select none</button></span>
+      </div>
+      <div class="glass rounded-xl max-h-[45vh] overflow-y-auto mb-4">${cleanup.dups.map((d, i) => html`
+        <label class="dup-row ${d.include ? "" : "off"} cursor-pointer hover:bg-white/[0.02]">
+          <input type="checkbox" data-dup="${i}" ${d.include ? "checked" : ""} class="w-4 h-4 accent-amber-500" aria-label="Remove ${nameOfRecord(d.col, d.rec)}" />
+          <span class="text-slate-400 whitespace-nowrap">${fmtDate(d.rec.date).replace(/, \d{4}$/, "")}</span>
+          <span class="min-w-0"><span class="block text-white truncate">${nameOfRecord(d.col, d.rec) || "—"}${d.col === "income" ? html` <span class="text-[10px] text-emerald-400">income</span>` : ""}</span>
+            <span class="block text-[11px] text-slate-500 truncate">copy of “${nameOfRecord(d.col, d.twin) || "—"}”</span></span>
+          <span class="${d.col === "income" ? "text-emerald-400" : "text-amber-400"} tabular-nums">${money(d.rec.amount)}</span>
+        </label>`)}</div>
+      <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
+        <button type="button" data-action="cleanup-confirm" data-mode="dups" class="btn-danger flex-1 btn-touch" ${on.length ? "" : raw("disabled")}>${icon("trash", "w-4 h-4", 2)}Remove ${plural(on.length, "duplicate")}…</button>
+        <button type="button" data-action="cleanup-step" data-step="choose" class="btn-text">Back</button>
+      </div>`;
+    return;
+  }
+
+  // "clear" options and the final "Are you sure?" share one screen layout.
+  if (cleanup.step === "clear") cleanup.mode = "clear";
+  const targets = cleanupTargets();
+  const kindRow = (col, label) => { const recs = monthRecords(col); return recs.length ? html`<label class="flex items-center gap-3 p-3 rounded-xl border border-white/[0.06] hover:bg-white/[0.02] cursor-pointer">
+      <input type="checkbox" data-kind="${col}" ${cleanup.kinds[col] ? "checked" : ""} class="w-4 h-4 accent-red-500" />
+      <span class="flex-1 text-sm text-white">${label}</span><span class="text-sm text-slate-400 tabular-nums">${plural(recs.length, col === "income" ? "entry" : "expense", col === "income" ? "entries" : "expenses")} · ${money(sum(recs))}</span></label>` : ""; };
+  body.innerHTML = html`
+    <div class="rounded-2xl border border-red-500/30 bg-red-500/[0.06] p-5 mb-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">${icon("alert", "w-5 h-5", 2)}</div>
+        <div class="min-w-0">
+          <div class="text-white text-lg font-medium">Are you sure?</div>
+          <div class="text-sm text-slate-300 mt-1" id="cleanup-sure-text">${targets.length
+            ? `This deletes ${describeTargets(targets)} from ${name}.`
+            : "Nothing selected to delete."}</div>
+          <div class="text-xs text-slate-400 mt-2">You'll have 30 seconds to undo. Invoices aren't changed. <button type="button" data-action="backup" class="text-amber-300 hover:text-amber-200 underline underline-offset-2">Download a backup first</button></div>
+        </div>
+      </div>
+    </div>
+    ${cleanup.mode === "clear" ? html`<div class="space-y-2 mb-4">${kindRow("expenses", "Expenses")}${kindRow("income", "Other income (deposits)")}</div>` : ""}
+    <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
+      <button type="button" data-action="cleanup-go" class="btn-danger flex-1 btn-touch" ${targets.length ? "" : raw("disabled")}>${icon("trash", "w-4 h-4", 2)}Yes, delete ${plural(targets.length, "record")}</button>
+      ${back}
+    </div>`;
+}
+
+function runCleanup() {
+  const targets = cleanupTargets();
+  if (!targets.length) return;
+  const saved = targets.map(({ col, rec }) => { const { id, ...data } = rec; return { col, id, data }; });
+  persist(runBatched(saved.map(({ col, id }) => (b) => b.delete(doc(db, col, id)))), "Couldn't delete");
+  const what = cleanup.mode === "dups" ? `Removed ${plural(saved.length, "duplicate")}` : `Cleared ${plural(saved.length, "record")} from ${periodName(cleanup.period)}`;
+  closeModal("cleanup-modal");
+  toast(`${what} · ${money(sum(saved.map((x) => x.data)))}`, { type: "info", duration: 30000, action: { label: "Undo", run: () => {
+    persist(runBatched(saved.map(({ col, id, data }) => (b) => b.set(doc(db, col, id), data))), "Couldn't restore");
+    toast(`Restored ${plural(saved.length, "record")}`);
+  } } });
+}
+
+function initCleanup() {
+  $("#cleanup-body").addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.dataset.dup !== undefined) { const d = cleanup.dups[Number(t.dataset.dup)]; if (d) d.include = t.checked; }
+    else if (t.dataset.kind) cleanup.kinds[t.dataset.kind] = t.checked;
+    else return;
+    const top = $("#cleanup-body .overflow-y-auto")?.scrollTop;
+    renderCleanup();
+    const list = $("#cleanup-body .overflow-y-auto");
+    if (list && top != null) list.scrollTop = top;
+  });
 }
 
 // Months that have any money activity, newest first (always including this month and the one being viewed).
@@ -3142,7 +3343,9 @@ DEBITS:
 DEPOSITS:
 - memo = payer or memo, cleaned up but recognizable. Skip transfers between the owner's own accounts. Amounts positive.
 
-Both: dates YYYY-MM-DD. At most 200 of each. If unreadable, return { "debits": [], "deposits": [] }.`;
+Both: dates YYYY-MM-DD. Use the POSTING date in the statement's date column, not the purchase date inside the description. At most 200 of each.
+Also add "statement": { "periodStart": "YYYY-MM-DD", "periodEnd": "YYYY-MM-DD", "totalWithdrawals": 0, "totalDeposits": 0 } copied from the statement's summary (withdrawals include checks).
+If unreadable, return { "debits": [], "deposits": [] }.`;
 
 function showBankStep(step) {
   ["upload", "loading", "review"].forEach((s) => $(`#bank-step-${s}`).classList.toggle("hidden", s !== step));
@@ -3159,7 +3362,7 @@ const near = (a, b, days) => a && b && Math.abs(daysBetween(a, b)) <= days;
 // Re-importing a statement used to double every expense. Now we flag lookalikes and leave them unchecked.
 function findDuplicateExpense(t) {
   const words = tokens(t.vendor);
-  return store.expenses.find((e) => sameMoney(e.amount, t.amount) && (e.date === t.date || (near(e.date, t.date, 3) && tokens(e.vendor).some((w) => words.includes(w)))));
+  return store.expenses.find((e) => sameMoney(e.amount, t.amount) && (e.date === t.date || (near(e.date, t.date, 3) && (tokens(e.vendor).some((w) => words.includes(w)) || normCategory(e.category) === t.category))));
 }
 function findDuplicateDeposit(t) {
   return store.income.find((r) => sameMoney(r.amount, t.amount) && near(r.date, t.date, 3))
@@ -3171,16 +3374,229 @@ function suggestInvoiceForDeposit(amount, memo, claimed = new Set()) {
   return (unpaid.find((i) => tokens(i.customer).some((w) => memoWords.includes(w))) || unpaid[0])?.id || "";
 }
 
+// ═════════════════════════════════════════════════════════════
+// STATEMENT READER — reads text-based bank statements (Truist) directly, no AI
+// ═════════════════════════════════════════════════════════════
+// Same file in → same transactions out, every time, with no daily AI limit. The statement's own printed totals are
+// used to check the result to the penny. Anything it can't read (scans, photos, other banks) goes to the AI instead.
+
+const STMT_MONEY = /^-?[\d,]+\.\d\d$/;
+const toCents = (s) => Math.round(Number(String(s).replace(/[$,\s]/g, "")) * 100);
+const titleCase = (s) => String(s).toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\bLlc\b/g, "LLC").replace(/\bAch\b/g, "ACH").replace(/\bAtm\b/g, "ATM").replace(/\bInc\b/g, "Inc");
+
+// Known merchants: [pattern, display name, category, deductible %, note when not 100%]
+const MERCHANTS = [
+  [/SHERWIN|BENJAMIN MOORE|\bPPG\b|\bBEHR\b/, null, "paint", 100],
+  [/WM SUPERCENTER|WAL-?MART|WALMART/, "Walmart", "supplies", 50, "General store, could be personal"],
+  [/SAMS CLUB|SAM'S CLUB/, "Sam's Club", "supplies", 50, "Wholesale club, could be personal"],
+  [/DOLLAR[- ]GENERAL/, "Dollar General", "supplies", 50, "General store, could be personal"],
+  [/HOME DEPOT/, "The Home Depot", "supplies", 100],
+  [/LOWE'?S/, "Lowe's", "supplies", 100],
+  [/\bACE HARDWARE|MENARDS/, null, "supplies", 100],
+  [/TRACTOR[- ]SUPPLY/, "Tractor Supply", "supplies", 100],
+  [/RURAL KING|\bRURAL\b/, "Rural King", "supplies", 100],
+  [/EBAY/, "eBay", "supplies", 50, "Online order, check if business"],
+  [/ALIEXPRESS/, "AliExpress", "supplies", 50, "Online order, check if business"],
+  [/AMAZON|AMZN/, "Amazon", "supplies", 50, "Online order, check if business"],
+  [/7-?ELEVEN/, "7-Eleven", "gas", 75],
+  [/MARATHON/, "Marathon", "gas", 75],
+  [/RACETRAC/, "RaceTrac", "gas", 75],
+  [/\bWAWA\b/, "Wawa", "gas", 75],
+  [/\bBP ?#|\bBP\b/, "BP", "gas", 75],
+  [/SHELL/, "Shell", "gas", 75],
+  [/CIRCLE K/, "Circle K", "gas", 75],
+  [/SPEEDWAY/, "Speedway", "gas", 75],
+  [/GULF OIL/, "Gulf", "gas", 75],
+  [/LOVE'?S/, "Love's", "gas", 75],
+  [/CHEVRON|EXXON|MOBIL|SUNOCO|MURPHY|CITGO|AUTOMATED PETRO/, null, "gas", 75],
+  [/AUTOZONE/, "AutoZone", "vehicle", 100],
+  [/ADVANCE AUTO/, "Advance Auto Parts", "vehicle", 100],
+  [/O'?REILLY/, "O'Reilly Auto Parts", "vehicle", 100],
+  [/SUNPASS/, "SunPass", "vehicle", 100],
+  [/SPOTHERO/, "SpotHero", "vehicle", 75, "Parking"],
+  [/PARKING/, null, "vehicle", 75, "Parking"],
+  [/FLBLUE|FLORIDA ?BLUE/, "Florida Blue", "insurance", 100],
+  [/STATE FARM|GEICO|ALLSTATE|PROGRESSIVE/, null, "insurance", 100],
+  [/PAYCHEX/, "Paychex", "subscription", 100],
+  [/ADOBE|MICROSOFT|QUICKBOOKS|INTUIT/, null, "subscription", 100],
+  [/NETFLIX|HULU|SPOTIFY|DISNEY|PARAMOUNT|MAX\.COM/, null, "subscription", 0, "Streaming, personal"],
+  [/WENDY/, "Wendy's", "other", 25, "Restaurant, mostly personal"],
+  [/MCDONALD/, "McDonald's", "other", 25, "Restaurant, mostly personal"],
+  [/CHILI'?S/, "Chili's", "other", 25, "Restaurant, mostly personal"],
+  [/HARDEE/, "Hardee's", "other", 25, "Restaurant, mostly personal"],
+  [/BOB EVANS/, "Bob Evans", "other", 25, "Restaurant, mostly personal"],
+  [/TACO BELL/, "Taco Bell", "other", 25, "Restaurant, mostly personal"],
+  [/LITTLE CAESAR/, "Little Caesars", "other", 25, "Restaurant, mostly personal"],
+  [/WALGREENS/, "Walgreens", "other", 25, "Pharmacy, mostly personal"],
+  [/PEACOCK/, "Peacock", "subscription", 0, "Streaming, personal"],
+  [/WENDY|MCDONALD|CHILI|BOB EVANS|TACO BELL|LITTLE CAESAR|HARDEE|BURGER|SUBWAY|PIZZA|LOCAL EATS|HOOTERS|RESTAURANT|\bREST\b|CAFE|GRILL|DOMINO|POPEYE|ARBY|CHICK-FIL/, null, "other", 25, "Restaurant, mostly personal"],
+  [/WALGREENS|CVS|PHARMACY/, null, "other", 25, "Pharmacy, mostly personal"],
+  [/SHOE|CLOTHING|ROSS |TJ ?MAXX|MARSHALLS|OLD NAVY/, null, "other", 0, "Clothing, personal"]
+];
+
+// Turns "DEBIT CARD PURCHASE-PIN 07-31-26 BROOKSVILLE   0235 WM SUPERCENTER #1213" into "Walmart" + category, etc.
+function describeStatementLine(desc, kind) {
+  const d = desc.replace(/\s{2,}/g, "   ").trim();
+  const flat = d.replace(/\s+/g, " ");
+  const up = flat.toUpperCase();
+  let merchant = null, fixed = null;
+
+  if (kind === "deposit") {
+    let m;
+    if ((m = up.match(/ZELLE (?:BUSINESS )?PAYMENT FROM (.+?)(?: PAYMENT ID.*)?$/))) return { name: `Zelle from ${titleCase(m[1])}` };
+    if (/ATM CHECK DEPOSIT|MOBILE DEPOSIT|REMOTE DEPOSIT|CHECK DEPOSIT/.test(up)) return { name: up.includes("MOBILE") ? "Mobile check deposit" : "Check deposit (ATM)" };
+    if ((m = up.match(/DEBIT CARD RETURN (.+?) \d\d-\d\d\b/))) { const n = describeStatementLine(`DEBIT CARD PURCHASE ${m[1]} 01-01`, "debit").name; return { name: `Refund: ${n}` }; }
+    if (/INTEREST/.test(up)) return { name: "Interest" };
+    if (/^DEPOSIT\b/.test(up)) return { name: "Deposit" };
+    return { name: titleCase(flat.split("   ")[0].replace(/\b(ACH|CORP|CREDIT)\b/gi, "").trim()) || "Deposit" };
+  }
+
+  if (/NON-TRUIST ATM FEE/.test(up)) fixed = { name: "Non-Truist ATM fee", category: "other", deductible: 100 };
+  else if (/ATM (NETWORK )?CASH WITHDRAWAL/.test(up)) fixed = { name: up.startsWith("TRUIST") ? "Truist ATM cash withdrawal" : "ATM cash withdrawal", category: "other", deductible: 50, note: "Cash, check what it was for" };
+  else if (/CREDIT CARD PMT|CREDIT CARD PAYMENT/.test(up)) fixed = { name: "Truist credit card payment", category: "credit_card", deductible: 100 };
+  else if (/SERVICE CHARGE|MAINTENANCE FEE|OVERDRAFT/.test(up)) fixed = { name: "Truist service charges", category: "other", deductible: 100 };
+  if (fixed) return fixed;
+
+  let m;
+  if ((m = flat.match(/PURCHASE-PIN \d\d-\d\d-\d\d .*?\b\d{4} (.+)$/i))) merchant = m[1];               // …0235 WM SUPERCENTER #1213
+  else if ((m = flat.match(/(?:PURCHASE|RECURRING PYMT) (.+?) \d\d-\d\d\b/i))) merchant = m[1];          // PURCHASE CHILIS BROOKSVILLE 08-01 …
+  else if ((m = d.match(/^ACH [A-Z ]+?\s{3}(.+)$/i))) merchant = m[1].replace(/\s+(JOE WESTLAKE|CUSTOMER ID|ID:? ?X?\d).*$/i, "");
+  else merchant = flat;
+  merchant = merchant.replace(/\s+/g, " ").trim();
+
+  for (const [re, name, category, deductible, note] of MERCHANTS) {
+    if (re.test(merchant.toUpperCase())) return { name: name || cleanMerchant(merchant), category, deductible, note: deductible < 100 ? (note || "") : "" };
+  }
+  return { name: cleanMerchant(merchant), category: "other", deductible: 50, note: "Not sure what this is" };
+}
+// "SHERWIN-WILLIAMS70" → "Sherwin-Williams", "BOB EVANS REST # 12966 CO" → "Bob Evans Rest"
+const cleanMerchant = (s) => titleCase(s.replace(/\*.*$/, "").replace(/\s*#\s*\d+.*$/, "").replace(/(\D)\d{2,}\b.*$/, "$1").replace(/\s+(FL|CO|HE|SHO|S BR|COMM|CORT)$/i, "").trim()) || "Unknown";
+
+// lines: the statement's text, one printed line per entry (columns separated by 3+ spaces).
+function parseTruistStatement(lines) {
+  const text = lines.join("\n");
+  if (!/TRUIST/i.test(text) || !/Your account statement|Account summary/i.test(text)) return null;
+  const endM = text.match(/For (\d\d)\/(\d\d)\/(\d{4})/) || text.match(/new balance as of (\d\d)\/(\d\d)\/(\d{4})/i);
+  if (!endM) return null;
+  const endY = Number(endM[3]), endMo = Number(endM[1]);
+  const startM = text.match(/previous balance as of (\d\d)\/(\d\d)\/(\d{4})/i);
+  const summaryAmt = (re) => { const m = text.match(re); return m ? toCents(m[1]) : null; };
+  const summary = {
+    checks: summaryAmt(/^\s*Checks\s+-\s*([\d,]+\.\d\d)/m) ?? 0,
+    withdrawals: summaryAmt(/^\s*Other withdrawals, debits and service charges\s+-\s*([\d,]+\.\d\d)/m) ?? 0,
+    deposits: summaryAmt(/^\s*Deposits, credits and interest\s+\+\s*([\d,]+\.\d\d)/m) ?? 0
+  };
+  const iso = (mo, da) => { const y = Number(mo) > endMo ? endY - 1 : endY; return `${y}-${mo}-${da}`; }; // a December line on a January statement
+
+  const debits = [], deposits = [];
+  let section = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/^Checks$/i.test(line)) { section = "checks"; continue; }
+    if (/^Other withdrawals, debits and service charges$/i.test(line)) { section = "debits"; continue; }
+    if (/^Deposits, credits and interest$/i.test(line)) { section = "deposits"; continue; }
+    if (/^Total (checks|other withdrawals|deposits)|^\* indicates a skip/i.test(line)) { if (/^Total/i.test(line)) section = null; continue; }
+    if (/Total checks/i.test(line)) section = null;
+    if (!section) continue;
+    if (section === "checks") {
+      for (const m of line.matchAll(/(\d\d)\/(\d\d)\s+\*?\s*(\d+)\s+([\d,]+\.\d\d)/g)) {
+        debits.push({ date: iso(m[1], m[2]), vendor: `Check #${m[3]}`, amount: toCents(m[4]) / 100, category: "other", deductible: 50, note: "Check: add who it was paid to", check: m[3] });
+      }
+      continue;
+    }
+    const m = line.match(/^(\d\d)\/(\d\d)\s+(.*\S)\s+([\d,]+\.\d\d)$/);
+    if (!m) continue;
+    const info = describeStatementLine(m[3], section === "deposits" ? "deposit" : "debit");
+    const amount = toCents(m[4]) / 100;
+    if (section === "deposits") deposits.push({ date: iso(m[1], m[2]), memo: info.name, amount, note: "", raw: m[3] });
+    else debits.push({ date: iso(m[1], m[2]), vendor: info.name, amount, category: info.category, deductible: info.deductible, note: info.note || "", raw: m[3] });
+  }
+
+  const got = { debits: debits.reduce((s, t) => s + Math.round(t.amount * 100), 0), deposits: deposits.reduce((s, t) => s + Math.round(t.amount * 100), 0) };
+  const want = { debits: summary.checks + summary.withdrawals, deposits: summary.deposits };
+  return {
+    bank: "Truist",
+    periodStart: startM ? `${startM[3]}-${startM[1]}-${startM[2]}` : null,
+    periodEnd: `${endM[3]}-${endM[1]}-${endM[2]}`,
+    debits, deposits,
+    check: { ok: got.debits === want.debits && got.deposits === want.deposits, got, want }
+  };
+}
+
+// pdf.js is only downloaded the first time someone imports a PDF.
+const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+let pdfjsPromise = null;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  pdfjsPromise ||= new Promise((resolve, reject) => {
+    const sc = document.createElement("script");
+    sc.src = PDFJS_URL;
+    sc.onload = () => { if (!window.pdfjsLib) return reject(new Error("pdf.js didn't load")); window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL; resolve(window.pdfjsLib); };
+    sc.onerror = () => { pdfjsPromise = null; reject(new Error("pdf.js didn't load")); };
+    document.head.appendChild(sc);
+  });
+  return pdfjsPromise;
+}
+// The PDF's text, rebuilt into printed lines (columns joined with three spaces). Empty for scans/photos.
+async function pdfLines(file) {
+  const pdfjs = await loadPdfJs();
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const out = [];
+  for (let p = 1; p <= Math.min(pdf.numPages, 40); p++) {
+    const { items } = await (await pdf.getPage(p)).getTextContent();
+    const rows = [];
+    for (const it of items) {
+      if (!it.str || !it.str.trim()) continue;
+      const x = it.transform[4], y = it.transform[5];
+      let r = rows.find((row) => Math.abs(row.y - y) < 2.5);
+      if (!r) rows.push((r = { y, items: [] }));
+      r.items.push({ x, w: it.width, s: it.str });
+    }
+    rows.sort((a, b) => b.y - a.y);
+    for (const r of rows) {
+      r.items.sort((a, b) => a.x - b.x);
+      let line = "", end = null;
+      for (const it of r.items) { if (end !== null) line += it.x - end > 6 ? "   " : it.x - end > 0.5 ? " " : ""; line += it.s; end = it.x + it.w; }
+      out.push(line);
+    }
+  }
+  pdf.destroy?.();
+  return out;
+}
+// Reads the statement directly when we recognize it; null means "let the AI do it".
+async function readStatementDirect(file) {
+  if (!/pdf/i.test(file.type || "application/pdf") && !/\.pdf$/i.test(file.name)) return null;
+  try {
+    const parsed = parseTruistStatement(await pdfLines(file));
+    return parsed && (parsed.debits.length || parsed.deposits.length) ? parsed : null;
+  } catch (err) {
+    console.warn("Direct read failed, using the AI:", err);
+    return null;
+  }
+}
+
 const MAX_BANK_FILES = 12;
 const BANK_CONCURRENCY = 2; // two statements with the AI at a time: faster, but gentle on the proxy's rate limit
 
 // Reads one statement with the AI and returns its raw debits/deposits.
 async function readStatement(file) {
+  const direct = await readStatementDirect(file);
+  if (direct) return { ...direct, via: "direct" };
   const base64 = await fileToBase64(file);
   const text = await callAI({ parts: [{ text: BANK_PROMPT }, { inlineData: { mimeType: file.type || "application/pdf", data: base64 } }], json: true, timeoutMs: 180000 });
   const parsed = parseJSON(text);
   if (!parsed) throw new Error("couldn't understand the AI's response");
-  return { debits: Array.isArray(parsed.debits) ? parsed.debits : [], deposits: Array.isArray(parsed.deposits) ? parsed.deposits : [] };
+  const debits = Array.isArray(parsed.debits) ? parsed.debits : [], deposits = Array.isArray(parsed.deposits) ? parsed.deposits : [];
+  const st = parsed.statement || {};
+  const cents = (list) => list.reduce((s, t) => s + Math.round(posAmount(t.amount) * 100), 0);
+  const want = { debits: Math.round(num(st.totalWithdrawals) * 100), deposits: Math.round(num(st.totalDeposits) * 100) };
+  const got = { debits: cents(debits), deposits: cents(deposits) };
+  return {
+    debits, deposits, via: "ai",
+    periodStart: validISO(st.periodStart) || null, periodEnd: validISO(st.periodEnd) || null,
+    check: want.debits || want.deposits ? { ok: got.debits === want.debits && got.deposits === want.deposits, got, want } : null
+  };
 }
 
 // Statements often overlap (a PDF that runs Jan 28–Feb 27, then Feb 25–Mar 27), so a transaction can appear in two
@@ -3223,7 +3639,7 @@ async function processBankFiles(fileList) {
   let done = 0;
   const progress = () => {
     setText("#bank-loading-title", total === 1 ? "Reading your statement…" : `Reading statement ${Math.min(done + 1, total)} of ${total}…`);
-    setText("#bank-loading-sub", total === 1 ? "This usually takes 10–30 seconds" : `${done} done · about 10–30 seconds each, two at a time`);
+    setText("#bank-loading-sub", total === 1 ? "Usually a few seconds. Scanned statements take 10–30 seconds" : `${done} done · usually a few seconds each, scans 10–30 seconds`);
   };
   progress();
 
@@ -3262,9 +3678,16 @@ async function processBankFiles(fileList) {
   }
   if (stale()) return;
 
-  const debits = [], deposits = [], summary = [];
+  const debits = [], deposits = [], summary = [], warnings = [];
   const problems = { daily: [], slow: [], other: [], skipped: [...dupFiles, ...skipped] };
+  const statementsSeen = new Map(); // period end → file name
   for (const r of results) {
+    // Two different files can be the same statement (downloaded twice, or named for different months).
+    if (!r.error && r.periodEnd) {
+      const k = `${r.periodStart || ""}→${r.periodEnd}`;
+      if (statementsSeen.has(k)) { problems.skipped.push(`${r.file.name} (same statement as ${statementsSeen.get(k)})`); continue; }
+      statementsSeen.set(k, r.file.name);
+    }
     if (r.error) {
       if (r.quota === "day") problems.daily.push(r.file.name);
       else if (r.timeout) problems.slow.push(r.file.name);
@@ -3273,7 +3696,7 @@ async function processBankFiles(fileList) {
     }
     const before = debits.length + deposits.length;
     for (const t of r.debits) {
-      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name };
+      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name, raw: str(t.raw) };
       row.dup = !!findDuplicateExpense(row) || debits.some((d) => d.file !== row.file && sameDebit(d, row));
       row.include = !row.dup;
       debits.push(row);
@@ -3284,7 +3707,19 @@ async function processBankFiles(fileList) {
       row.include = !row.dup;
       deposits.push(row);
     }
-    summary.push(`${r.file.name} (${plural(debits.length + deposits.length - before, "transaction")})`);
+    const mine = [...debits, ...deposits].filter((x) => x.file === r.file.name);
+    const already = mine.filter((x) => x.dup).length;
+    const period = r.periodEnd ? `${monthKeyLong(r.periodEnd.slice(0, 7))} statement` : "";
+    let line = `${r.file.name}${period ? ` → ${period}` : ""}: ${plural(mine.length, "transaction")}`;
+    if (r.check) line += r.check.ok ? " ✓ matches the statement's totals" : ` ⚠ doesn't match the statement's totals`;
+    if (r.via === "direct") line += " · read directly, no AI";
+    if (already) line += ` · ${already} already in your books`;
+    summary.push(line);
+    if (r.check && !r.check.ok) {
+      const d = (a, b) => `found ${money(a / 100)}, statement says ${money(b / 100)}`;
+      warnings.push(`${r.file.name}: withdrawals ${d(r.check.got.debits, r.check.want.debits)}; deposits ${d(r.check.got.deposits, r.check.want.deposits)}. Some transactions may be missing or doubled, so check before importing.`);
+    }
+    if (mine.length >= 5 && already / mine.length >= 0.6) warnings.push(`Most of ${period ? `the ${period}` : r.file.name} is already in your books. It was probably imported before, so those rows are left unchecked.`);
   }
   const problemLines = bankProblemLines(problems, dailyLimit);
   if (!debits.length && !deposits.length) {
@@ -3302,7 +3737,7 @@ async function processBankFiles(fileList) {
     if (inv) { row.invoiceId = inv; claimed.add(inv); }
   }
   bank.debits = debits; bank.deposits = deposits;
-  bank.summary = total > 1 || problemLines.length ? { read: summary, problems: problemLines } : null;
+  bank.summary = { read: summary, problems: [...warnings, ...problemLines] };
   renderBankReview();
   showBankStep("review");
 }
@@ -3329,7 +3764,7 @@ function renderBankReview() {
   setText("#bank-deposit-count", bank.deposits.length);
   const sm = bank.summary;
   $("#bank-files-note").classList.toggle("hidden", !sm);
-  if (sm) setText("#bank-files-note", [sm.read.length ? `Read ${plural(sm.read.length, "statement")}: ${sm.read.join(", ")}.` : "", ...sm.problems].filter(Boolean).join("\n"));
+  if (sm) setText("#bank-files-note", [...sm.read, ...sm.problems].filter(Boolean).join("\n"));
   const dups = [...bank.debits, ...bank.deposits].filter((r) => r.dup).length;
   $("#bank-dup-note").classList.toggle("hidden", !dups);
   setText("#bank-dup-note", `${plural(dups, "transaction")} look${dups === 1 ? "s" : ""} like ${dups === 1 ? "it's" : "they're"} already in your books or in another statement, so ${dups === 1 ? "it was" : "they were"} left unchecked.`);
@@ -3338,7 +3773,7 @@ function renderBankReview() {
     <div class="import-row ${t.dup ? "is-dup" : ""}">
       <input type="checkbox" ${t.include ? "checked" : ""} data-list="debits" data-idx="${i}" data-field="include" aria-label="Include ${t.vendor}" />
       <input type="date" value="${t.date}" data-list="debits" data-idx="${i}" data-field="date" aria-label="Date" />
-      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.vendor}" data-list="debits" data-idx="${i}" data-field="vendor" aria-label="Vendor" title="${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
+      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.vendor}" data-list="debits" data-idx="${i}" data-field="vendor" aria-label="Vendor" title="${t.raw ? `${t.raw} · ` : ""}${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
       <input type="number" step="0.01" min="0" value="${t.amount}" data-list="debits" data-idx="${i}" data-field="amount" aria-label="Amount" />
       <select data-list="debits" data-idx="${i}" data-field="category" aria-label="Category">${CATEGORY_KEYS.map((c) => html`<option value="${c}" ${t.category === c ? "selected" : ""}>${categoryLabel(c)}</option>`)}</select>
       <select data-list="debits" data-idx="${i}" data-field="deductible" title="${t.note}" aria-label="Deductible">${DEDUCTIBLE_LEVELS.map((v) => html`<option value="${v}" ${t.deductible === v ? "selected" : ""}>${deductibleShort(v)}</option>`)}</select>
@@ -3414,7 +3849,9 @@ function initBank() {
   drop.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) processBankFiles(e.dataTransfer.files); });
   $("#bank-back-btn").onclick = resetBank;
   $("#bank-import-btn").onclick = importBank;
-  const setAll = (v) => { [...bank.debits, ...bank.deposits].forEach((t) => (t.include = v)); renderBankReview(); };
+  // "Select all" picks every NEW transaction; rows flagged "Already logged?" stay unchecked (tick them one by one if
+  // they really are new). Re-checking them all is how a statement could get imported twice.
+  const setAll = (v) => { [...bank.debits, ...bank.deposits].forEach((t) => (t.include = v && !t.dup)); renderBankReview(); };
   $("#bank-select-all").onclick = () => setAll(true);
   $("#bank-select-none").onclick = () => setAll(false);
   $("#bank-step-review").addEventListener("change", (e) => {
@@ -3821,6 +4258,12 @@ const ACTIONS = {
   "period-step": (d) => stepMoneyPeriod(Number(d.dir) || -1),
   "pick-month": (d) => { setMoneyPeriod(monthPeriod(d.month)); $("#money-summary")?.scrollIntoView({ behavior: "smooth", block: "start" }); },
   "export-monthly": () => exportMonthlyCSV(),
+  "cleanup-open": () => openCleanup(),
+  "cleanup-dups": () => openCleanup("dups"),
+  "cleanup-step": (d) => { cleanup.step = d.step; if (d.step !== "confirm") cleanup.mode = d.step === "clear" ? "clear" : null; renderCleanup(); $("#cleanup-modal .modal-panel").scrollTop = 0; },
+  "cleanup-all": (d) => { cleanup.dups.forEach((x) => (x.include = d.on === "1")); renderCleanup(); },
+  "cleanup-confirm": (d) => { cleanup.mode = d.mode; cleanup.step = "confirm"; renderCleanup(); $("#cleanup-modal .modal-panel").scrollTop = 0; },
+  "cleanup-go": requireAuth(() => runCleanup()),
   "goto-money-month": () => { switchTab("money"); if (moneyState.sub === "recurring") setMoneySub("expenses"); setMoneyPeriod("this-month"); },
   "export-csv": exportCSV,
   backup: requireAuth(downloadBackup),
@@ -3876,6 +4319,7 @@ function init() {
   initBank();
   initChat();
   initSend();
+  initCleanup();
 
   $("#today-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   $("#record-form").addEventListener("submit", saveRecord);
