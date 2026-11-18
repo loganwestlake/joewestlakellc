@@ -15,7 +15,7 @@
 //   GEMINI_MODEL     optional, defaults to DEFAULT_MODEL below
 
 const PROJECT_ID = "joe-westlake-llc";
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.8-flash";
 const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const MAX_BODY_BYTES = 20 * 1024 * 1024; // a 10MB file is ~13.4MB once base64-encoded
 const RATE_LIMIT = { windowMs: 60_000, max: 30 };

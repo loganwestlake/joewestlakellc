@@ -43,7 +43,7 @@ Using the Cloudflare dashboard (Workers & Pages → `gemini-proxy`):
 2. **Settings → Variables and Secrets**:
    - `GEMINI_API_KEY` — type **Secret** — your Gemini API key (it may already exist; keep it).
    - `ALLOWED_ORIGINS` — `https://loganwestlake.github.io` (add a custom domain, comma-separated, if you use one).
-   - `GEMINI_MODEL` — the model the old proxy used (defaults to `gemini-2.5-flash`).
+   - `GEMINI_MODEL` — the model the old proxy used (defaults to `gemini-3.8-flash`, the model Google currently recommends).
 
 Or with Wrangler from the `worker/` folder:
 
