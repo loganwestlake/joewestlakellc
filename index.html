@@ -2670,7 +2670,7 @@ function renderCleanup() {
           <div class="flex-1 min-w-0">
             <div class="text-white font-medium">Remove duplicates <span class="text-[11px] text-emerald-400 font-normal ml-1">Recommended</span></div>
             <div class="text-sm text-slate-400 mt-1">${cleanup.dups.length
-              ? `Found ${plural(cleanup.dups.length, "charge")} that look like they were logged twice (${money(dupTotal)}). Keeps one of each and removes the extra copies. You'll review them first.`
+              ? `Found ${plural(cleanup.dups.length, "charge")} that ${cleanup.dups.length === 1 ? "looks like it was" : "look like they were"} logged twice (${money(dupTotal)}). Keeps one of each and removes the extra copies. You'll review them first.`
               : `No duplicates found in ${name}.`}</div>
             ${cleanup.dups.length ? html`<button type="button" data-action="cleanup-step" data-step="dups" class="btn-primary mt-3 btn-touch">${icon("eye", "w-4 h-4", 2)}Review ${plural(cleanup.dups.length, "duplicate")}</button>` : ""}
           </div>
