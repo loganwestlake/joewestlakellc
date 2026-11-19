@@ -722,6 +722,8 @@
           <button type="button" role="tab" data-action="money-sub" data-view="income"><span data-icon="plus" data-sw="2"></span>Income</button>
           <button type="button" role="tab" data-action="money-sub" data-view="expenses"><span data-icon="minus" data-sw="2"></span>Expenses</button>
           <button type="button" role="tab" data-action="money-sub" data-view="recurring"><span data-icon="refresh" data-sw="2"></span>Recurring <span id="recurring-badge" class="subtab-badge hidden">0</span></button>
+          <button type="button" role="tab" data-action="money-sub" data-view="payroll"><span data-icon="users" data-sw="2"></span>Payroll <span id="payroll-badge" class="subtab-badge hidden">0</span></button>
+          <button type="button" role="tab" data-action="money-sub" data-view="checks"><span data-icon="edit" data-sw="2"></span>Checks <span id="checks-badge" class="subtab-badge hidden">0</span></button>
         </div>
 
         <!-- INCOME + EXPENSES share one toolbar, period, search, and chart -->
@@ -793,6 +795,46 @@
           </div>
           <div id="recurring-stats" class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6"></div>
           <div id="recurring-list" class="mobile-cards"></div>
+        </div>
+
+        <!-- PAYROLL: what each worker was paid, and who needs a 1099 -->
+        <div id="money-payroll" class="hidden">
+          <div class="flex items-start justify-between gap-3 flex-wrap mb-5">
+            <div class="min-w-0">
+              <div class="stat-label mb-1">Payroll</div>
+              <p class="text-sm text-slate-500 max-w-xl">Every payment to someone who works for you, with what it was for. Keeps the records you need at tax time, including who needs a 1099.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div id="payroll-years" class="seg"></div>
+              <button type="button" data-action="export-payroll" class="btn-ghost !py-2.5 btn-touch" title="Download for your tax preparer"><span data-icon="download" data-sw="2"></span><span class="hidden sm:inline">Export</span></button>
+            </div>
+          </div>
+          <div id="payroll-stats" class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-5"></div>
+          <div id="payroll-people" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5"></div>
+          <div id="payroll-suggest" class="mb-5"></div>
+          <div class="flex items-center justify-between mb-3"><div class="stat-label">Payments</div>
+            <button type="button" data-action="new" data-col="payroll" class="btn-primary !py-2 !text-xs btn-touch"><span data-icon="plus" data-sw="2.5"></span>Record payment</button></div>
+          <div id="payroll-list" class="mobile-cards"></div>
+          <p class="text-[11px] text-slate-500 mt-4">Joe, as the owner of a single-member LLC, doesn't go on payroll. Money he takes out or personal things on the business card are an <span class="text-slate-300">owner draw</span>, not a business expense. Mark them with the "Owner draw / personal" category. This page keeps records; it isn't tax advice, so confirm with your tax preparer.</p>
+        </div>
+
+        <!-- CHECK REGISTER -->
+        <div id="money-checks" class="hidden">
+          <div class="flex items-start justify-between gap-3 flex-wrap mb-5">
+            <div class="min-w-0">
+              <div class="stat-label mb-1">Check register</div>
+              <p class="text-sm text-slate-500 max-w-xl">Every check: number, date, who it was to, memo and amount. Checks from imported bank statements show up here too, and you fill in who they were for.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" data-action="export-checks" class="btn-ghost !py-2.5 btn-touch"><span data-icon="download" data-sw="2"></span><span class="hidden sm:inline">Export</span></button>
+              <button type="button" data-action="new" data-col="checks" class="btn-primary !py-2.5 btn-touch"><span data-icon="plus" data-sw="2.5"></span>Write a check</button>
+            </div>
+          </div>
+          <div id="checks-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"></div>
+          <div id="checks-alerts" class="space-y-2 mb-5"></div>
+          <label class="search-wrap block mb-4"><span class="search-icon" data-icon="search" data-sw="2"></span>
+            <input type="search" class="field search-field" data-search="checks" placeholder="Search check #, name, memo…" aria-label="Search checks" /></label>
+          <div id="checks-list" class="mobile-cards"></div>
         </div>
       </section>
 
@@ -1122,7 +1164,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.7.2";
+const APP_VERSION = "v2.8";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -1296,6 +1338,8 @@ const CATEGORIES = {
   rent:         { label: "Rent",         color: "#f97316" },
   utilities:    { label: "Utilities",    color: "#84cc16" },
   subscription: { label: "Subscription", color: "#a855f7" },
+  labor:        { label: "Payroll / labor", color: "#14b8a6" },
+  owner_draw:   { label: "Owner draw / personal", color: "#94a3b8" },
   other:        { label: "Other",        color: "#64748b" }
 };
 const CATEGORY_KEYS = Object.keys(CATEGORIES);
@@ -1928,6 +1972,32 @@ const optionsOf = (obj, labelKey = "label") => Object.entries(obj).map(([value, 
 const CATEGORY_OPTIONS = optionsOf(CATEGORIES);
 const DEDUCTIBLE_OPTIONS = DEDUCTIBLE_LEVELS.map((v) => ({ value: String(v), label: DEDUCTIBLE_LABELS[v] }));
 
+// ── Payments to people + checks ──
+const PAY_METHODS = { check: "Check", cash: "Cash", zelle: "Zelle", cashapp: "Cash App", venmo: "Venmo", ach: "Bank transfer", card: "Card", other: "Other" };
+const PAY_METHOD_OPTIONS = optionsOf(PAY_METHODS);
+const WORKER_KINDS = { contractor: "Contractor (1099)", employee: "Employee (W-2)", other: "Not paid (accountant, family, etc.)" };
+// Older records keep the check number inside the name: "Check 2177 - Rebecca", "Home Depot (Check 5454)".
+const CHECK_IN_NAME_RE = /\(?\bcheck\s*#?\s*(\d{3,})\b\)?/i;
+const checkNumberOf = (e) => String(e?.checkNumber || "").trim() || (String(e?.vendor || "").match(CHECK_IN_NAME_RE) || [])[1] || "";
+const isCheck = (e) => e?.method === "check" || !!checkNumberOf(e);
+const payeeOf = (e) => String(e?.vendor || "").replace(CHECK_IN_NAME_RE, "").replace(/^[\s\-–:()]+|[\s\-–:()]+$/g, "").trim();
+const isLabor = (e) => e?.category === "labor";
+const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+const workerOf = (e) => (e?.workerId && byId("team", e.workerId)) || store.team.find((t) => sameName(t.name, payeeOf(e))) || null;
+function nextCheckNumber() {
+  const nums = store.expenses.map((e) => Number(checkNumberOf(e))).filter((n) => n > 0 && n < 1e7).sort((a, b) => a - b);
+  if (!nums.length) return "";
+  // Several checkbooks can be in use (2175… and 7489…): continue the one used most recently.
+  const latest = store.expenses.filter((e) => checkNumberOf(e)).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+  const base = Number(checkNumberOf(latest)) || nums[nums.length - 1];
+  const sameBook = nums.filter((n) => Math.abs(n - base) < 500);
+  return String(Math.max(...sameBook) + 1);
+}
+// 1099-NEC: needed when a contractor is paid this much in a year (by check, cash, Zelle or bank transfer; card and
+// PayPal-style business payments are reported by the payment company instead). $600 through 2025, $2,000 from 2026.
+const threshold1099 = (year) => (Number(year) >= 2026 ? 2000 : 600);
+const countsFor1099 = (e) => !["card", "venmo"].includes(e.method);
+
 const SCHEMAS = {
   jobs: { label: "Job", fields: [
     { name: "customer", label: "Customer", type: "text", required: true, placeholder: "e.g. Smith Family" },
@@ -1983,13 +2053,43 @@ const SCHEMAS = {
   ]},
   team: { label: "Team member", fields: [
     { name: "name",  label: "Name",  type: "text", required: true, placeholder: "e.g. Jane Smith" },
+    { name: "kind",  label: "Type",  type: "select", options: optionsOf(WORKER_KINDS), default: "other", hint: "Someone you pay for work is usually a contractor" },
     { name: "email", label: "Email", type: "email", placeholder: "jane@example.com" },
     { name: "phone", label: "Phone", type: "tel", placeholder: "555-123-4567" },
-    { name: "role",  label: "Role",  type: "text", placeholder: "e.g. Accountant" }
+    { name: "role",  label: "Role",  type: "text", placeholder: "e.g. Painter, Accountant" },
+    { name: "w9",    label: "W-9 on file", type: "bool", options: [{ value: "false", label: "No: get one before year end" }, { value: "true", label: "Yes: I have their W-9" }], default: false, from: (r) => String(r.w9 === true || r.w9 === "true"), hint: "Contractors fill out a W-9 (name, address, SSN) so you can send their 1099" },
+    { name: "tinLast4", label: "Last 4 of SSN/EIN", type: "text", placeholder: "1234", hint: "Only the last 4. Keep the full number on the paper W-9, not in here" },
+    { name: "address", label: "Mailing address", type: "textarea", full: true, placeholder: "For their 1099" }
+  ]},
+  // Payroll payments and checks are expenses with extra details, so they count in Spent / Net like everything else.
+  payroll: { label: "Payment", collection: "expenses", fixed: { category: "labor", deductible: 100 }, fields: [
+    { name: "workerId", label: "Who did you pay?", type: "worker", full: true, from: (r) => workerOf(r)?.id || "" },
+    { name: "vendor", label: "Name", type: "text", placeholder: "Only if they're not in the list above", from: (r) => (workerOf(r) ? "" : payeeOf(r)) },
+    { name: "amount", label: "Amount paid", type: "money", required: true },
+    { name: "date", label: "Date paid", type: "date", required: true, default: todayISO },
+    { name: "method", label: "Paid by", type: "select", options: PAY_METHOD_OPTIONS, default: "check", from: (r) => r.method || (checkNumberOf(r) ? "check" : "other") },
+    { name: "checkNumber", label: "Check #", type: "text", placeholder: "If paid by check", default: () => nextCheckNumber(), from: checkNumberOf },
+    { name: "hours", label: "Time worked", type: "text", placeholder: "e.g. 3 days, 24 hours" },
+    { name: "jobId", label: "Job (optional)", type: "job" },
+    { name: "note", label: "What for / memo", type: "textarea", full: true, placeholder: "e.g. Helped paint the Smith house" }
+  ]},
+  checks: { label: "Check", collection: "expenses", fixed: { method: "check" }, fields: [
+    { name: "checkNumber", label: "Check #", type: "text", required: true, default: () => nextCheckNumber(), from: checkNumberOf },
+    { name: "date", label: "Date", type: "date", required: true, default: todayISO },
+    { name: "vendor", label: "Pay to the order of", type: "text", required: true, full: true, placeholder: "e.g. Craig Westlake", from: payeeOf },
+    { name: "amount", label: "Amount", type: "money", required: true },
+    { name: "note", label: "Memo", type: "text", placeholder: "e.g. Labor, Smith job" },
+    { name: "category", label: "What it was for", type: "select", options: CATEGORY_OPTIONS, default: "other", from: (r) => r.category || "other" },
+    { name: "deductible", label: "Tax deductible", type: "select", numeric: true, options: DEDUCTIBLE_OPTIONS, default: "100" },
+    { name: "workerId", label: "Paying a worker? (counts toward their payroll)", type: "worker", full: true, from: (r) => (isLabor(r) ? workerOf(r)?.id || "" : r.workerId || "") },
+    { name: "jobId", label: "Job (optional)", type: "job" }
   ]}
 };
+// Which form an existing expense opens in.
+const expenseFormFor = (r) => (isLabor(r) ? "payroll" : isCheck(r) ? "checks" : "expenses");
 
 function fieldValue(f, existing, prefill) {
+  if (existing && f.from) return f.from(existing) ?? "";
   if (existing) {
     if (f.name === "deductible") return String(getDeductible(existing));
     if (f.type === "bool") return String(isRecurringActive(existing));
@@ -2008,12 +2108,14 @@ function fieldHTML(f, value) {
   const id = `rf-${f.name}`;
   const req = f.required ? raw("required") : "";
   let control;
-  if (f.type === "select" || f.type === "bool" || f.type === "job") {
+  if (f.type === "select" || f.type === "bool" || f.type === "job" || f.type === "worker") {
     let opts = f.type === "job"
       ? [{ value: "", label: "— Overhead (no job) —" }, ...store.jobs.map((j) => ({ value: j.id, label: `${j.customer}${j.address ? " — " + j.address : ""} (${fmtDate(j.date)})` }))]
+      : f.type === "worker"
+      ? [{ value: "", label: "— Not in the list —" }, ...store.team.slice().sort((a, b) => (a.kind === "other") - (b.kind === "other")).map((t) => ({ value: t.id, label: `${t.name}${t.kind && t.kind !== "other" ? ` · ${WORKER_KINDS[t.kind]?.split(" (")[0]}` : ""}` }))]
       : f.options;
     // Keep legacy/unknown values visible instead of silently overwriting them on save.
-    if (value !== "" && !opts.some((o) => String(o.value) === String(value))) opts = [{ value, label: f.type === "job" ? "(deleted job)" : String(value) }, ...opts];
+    if (value !== "" && !opts.some((o) => String(o.value) === String(value))) opts = [{ value, label: f.type === "job" ? "(deleted job)" : f.type === "worker" ? "(removed person)" : String(value) }, ...opts];
     control = html`<select id="${id}" name="${f.name}" class="field">${opts.map((o) => html`<option value="${o.value}" ${String(o.value) === String(value) ? "selected" : ""}>${o.label}</option>`)}</select>`;
   } else if (f.type === "textarea") {
     control = html`<textarea id="${id}" name="${f.name}" rows="2" class="field resize-y" placeholder="${f.placeholder || ""}" ${req}>${value}</textarea>`;
@@ -2050,10 +2152,10 @@ function readFields(schema, form) {
 }
 
 let recordCtx = null;
-function openRecordForm(col, existing = null, prefill = {}) {
-  const schema = SCHEMAS[col];
+function openRecordForm(key, existing = null, prefill = {}) {
+  const schema = SCHEMAS[key];
   if (!schema) return;
-  recordCtx = { col, id: existing?.id || null };
+  recordCtx = { col: schema.collection || key, key, id: existing?.id || null };
   $("#record-eyebrow").textContent = existing ? "Editing" : "New";
   $("#record-title").textContent = `${existing ? "Edit" : "New"} ${schema.label.toLowerCase()}`;
   $("#record-submit").textContent = existing ? "Save changes" : `Add ${schema.label.toLowerCase()}`;
@@ -2067,10 +2169,27 @@ function saveRecord(e) {
   e.preventDefault();
   if (!recordCtx) return;
   if (!auth.currentUser) { openModal("signin-modal"); return; }
-  const { col, id } = recordCtx;
-  const schema = SCHEMAS[col];
-  const data = readFields(schema, e.target);
+  const { col, key, id } = recordCtx;
+  const schema = SCHEMAS[key];
+  const data = { ...readFields(schema, e.target), ...(schema.fixed || {}) };
   const existing = id ? byId(col, id) : null;
+
+  if (key === "payroll" || key === "checks") {
+    const worker = data.workerId ? byId("team", data.workerId) : null;
+    if (key === "payroll") {
+      if (worker) data.vendor = worker.name;
+      if (!String(data.vendor || "").trim()) { toast("Pick who you paid, or type their name", "error"); return; }
+      if (data.method !== "check") data.checkNumber = "";
+    } else if (worker) {
+      data.category = "labor"; // a check to a worker is payroll
+    } else if (existing && isLabor(existing) && data.category === "labor") {
+      data.workerId = "";
+    }
+    if (!data.workerId) data.workerId = existing?.workerId && !worker ? deleteField() : "";
+    if (!existing && !data.workerId) delete data.workerId;
+  }
+  // Owner draws are never tax-deductible.
+  if (col === "expenses" && data.category === "owner_draw") data.deductible = 0;
 
   if (col === "invoices") {
     // Newly paid → today. Already paid but never had a paid date → keep the income in the month it always
@@ -2261,7 +2380,7 @@ function renderUpcoming(today) {
 // ═════════════════════════════════════════════════════════════
 // VIEW — JOBS
 // ═════════════════════════════════════════════════════════════
-const ui = { search: { jobs: "", invoices: "", money: "" }, jobStatus: "all", invoiceStatus: "all" };
+const ui = { search: { jobs: "", invoices: "", money: "", checks: "" }, jobStatus: "all", invoiceStatus: "all" };
 
 function renderJobs() {
   const el = $("#jobs-list");
@@ -2348,7 +2467,7 @@ const filteredIncome = () => {
 };
 
 function setMoneySub(sub) {
-  moneyState.sub = ["income", "expenses", "recurring"].includes(sub) ? sub : "expenses";
+  moneyState.sub = ["income", "expenses", "recurring", "payroll", "checks"].includes(sub) ? sub : "expenses";
   ls.set("jw_money_sub", moneyState.sub);
   renderMoney();
   if (moneyState.mode === "chart") renderMoneyChart();
@@ -2359,14 +2478,23 @@ function renderMoney() {
   const { sub, mode } = moneyState;
   $$('[data-action="money-sub"]').forEach((b) => { const on = b.dataset.view === sub; b.classList.toggle("active", on); b.setAttribute("aria-selected", on); });
   $$('[data-action="money-mode"]').forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
-  $("#money-flow").classList.toggle("hidden", sub === "recurring");
+  const flow = sub === "income" || sub === "expenses";
+  $("#money-flow").classList.toggle("hidden", !flow);
   $("#money-recurring").classList.toggle("hidden", sub !== "recurring");
+  $("#money-payroll").classList.toggle("hidden", sub !== "payroll");
+  $("#money-checks").classList.toggle("hidden", sub !== "checks");
   $("#money-table").classList.toggle("hidden", mode !== "table");
   $("#money-chart-wrap").classList.toggle("hidden", mode !== "chart");
-  setText("#money-new-label", sub === "income" ? "New income" : sub === "recurring" ? "New recurring" : "New expense");
+  setText("#money-new-label", { income: "New income", recurring: "New recurring", payroll: "Record payment", checks: "Write a check" }[sub] || "New expense");
   const badge = $("#recurring-badge"), n = unappliedRecurring().length;
   badge.textContent = n; badge.classList.toggle("hidden", !n);
-  if (sub === "recurring") return;
+  const needPayee = store.expenses.filter((e) => isCheck(e) && !payeeOf(e)).length;
+  const cb = $("#checks-badge"); cb.textContent = needPayee; cb.classList.toggle("hidden", !needPayee);
+  const pb = $("#payroll-badge"), p1099 = payrollPeople(new Date().getFullYear()).filter((x) => x.alert).length;
+  pb.textContent = p1099; pb.classList.toggle("hidden", !p1099);
+  if (sub === "payroll") { renderPayroll(); return; }
+  if (sub === "checks") { renderChecks(); return; }
+  if (!flow) return;
 
   renderPeriodOptions();
   renderMoneySummary();
@@ -3054,6 +3182,168 @@ function downloadBackup() {
 }
 
 // ═════════════════════════════════════════════════════════════
+// VIEW — PAYROLL
+// ═════════════════════════════════════════════════════════════
+let payrollYear = Number(ls.get("jw_payroll_year")) || new Date().getFullYear();
+const yearOf = (e) => Number(String(e.date || "").slice(0, 4));
+// One entry per person paid in a year: totals, how much counts toward a 1099, and what still needs doing.
+function payrollPeople(year) {
+  const pay = store.expenses.filter((e) => isLabor(e) && yearOf(e) === year);
+  const people = new Map();
+  for (const e of pay) {
+    const w = workerOf(e);
+    const k = w ? `id:${w.id}` : `name:${payeeOf(e).toLowerCase() || "unknown"}`;
+    if (!people.has(k)) people.set(k, { key: k, worker: w, name: w?.name || payeeOf(e) || "Unknown", payments: [] });
+    people.get(k).payments.push(e);
+  }
+  const th = threshold1099(year);
+  return [...people.values()].map((p) => {
+    const total = sum(p.payments), toward = sum(p.payments.filter(countsFor1099));
+    const kind = p.worker?.kind || "contractor";
+    const needs1099 = kind !== "employee" && toward >= th;
+    const needW9 = kind !== "employee" && !(p.worker?.w9 === true || p.worker?.w9 === "true");
+    const last = p.payments.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    return { ...p, kind, total, toward, needs1099, needW9, last, alert: needs1099 && needW9 };
+  }).sort((a, b) => b.total - a.total);
+}
+
+function renderPayroll() {
+  const now = new Date().getFullYear();
+  const years = [...new Set([now, payrollYear, ...store.expenses.filter(isLabor).map(yearOf).filter(Boolean)])].sort((a, b) => b - a).slice(0, 5);
+  $("#payroll-years").innerHTML = html`${years.map((y) => html`<button type="button" data-action="payroll-year" data-year="${y}" class="${y === payrollYear ? "active" : ""}">${y}</button>`)}`;
+  const people = payrollPeople(payrollYear), th = threshold1099(payrollYear);
+  const pay = store.expenses.filter((e) => isLabor(e) && yearOf(e) === payrollYear).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  $("#payroll-stats").innerHTML = html`
+    ${statCard({ label: `Paid in ${payrollYear}`, value: money(sum(pay)), sub: plural(pay.length, "payment"), tone: "emerald", iconName: "users" })}
+    ${statCard({ label: "People paid", value: people.length, sub: people.length ? people.map((p) => p.name).slice(0, 3).join(", ") : "Nobody yet", tone: "white", iconName: "users" })}
+    ${statCard({ label: "1099s to send", value: people.filter((p) => p.needs1099).length, sub: `Paid $${th.toLocaleString()}+ in ${payrollYear}`, tone: people.some((p) => p.needs1099) ? "amber" : "slate", iconName: "invoice", cls: "col-span-2 lg:col-span-1" })}`;
+
+  $("#payroll-people").innerHTML = html`${people.map((p) => {
+    const pct = Math.min(100, (p.toward / th) * 100);
+    const status = p.kind === "employee"
+      ? html`<span class="text-slate-300">Employee: their pay and tax withholding should go through a payroll service (W-2).</span>`
+      : p.needs1099
+      ? html`<span class="text-amber-300">Needs a 1099-NEC for ${payrollYear}: ${money(p.toward)} paid (over $${th.toLocaleString()}). Send it to them and the IRS by Jan 31, ${payrollYear + 1}.</span>`
+      : html`<span class="text-slate-400">No 1099 yet: ${money(p.toward)} of $${th.toLocaleString()} for ${payrollYear}.</span>`;
+    return html`<div class="glass rounded-2xl p-4 sm:p-5">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0"><div class="text-white font-medium truncate">${p.name}</div>
+          <div class="text-[11px] text-slate-500">${p.worker ? WORKER_KINDS[p.kind] || "" : "Not in your team list"} · ${plural(p.payments.length, "payment")} · last ${fmtDate(p.last?.date)}</div></div>
+        <div class="font-serif text-2xl text-emerald-400 shrink-0">${money(p.total)}</div>
+      </div>
+      ${p.kind !== "employee" ? html`<div class="h-1.5 rounded-full bg-white/[0.06] mt-3 overflow-hidden"><div class="h-full ${p.needs1099 ? "bg-amber-500/80" : "bg-emerald-500/60"}" style="width:${pct.toFixed(1)}%"></div></div>` : ""}
+      <div class="text-[12px] mt-2">${status}</div>
+      ${p.needW9 ? html`<div class="text-[12px] mt-1 ${p.needs1099 ? "text-amber-300" : "text-slate-400"}">${p.worker ? "No W-9 on file yet. Ask them to fill one out (name, address, SSN)." : "Add them to your team to keep their W-9 and address for the 1099."}</div>` : html`<div class="text-[12px] mt-1 text-emerald-400/90">W-9 on file ✓</div>`}
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button type="button" data-action="new" data-col="payroll" ${p.worker ? raw(`data-worker="${escapeHtml(p.worker.id)}"`) : ""} class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("plus", "w-3.5 h-3.5", 2.5)}Record payment</button>
+        ${p.worker ? html`<button type="button" data-action="edit" data-col="team" data-id="${p.worker.id}" class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("edit", "w-3.5 h-3.5", 2)}${p.needW9 ? "Add W-9 info" : "Edit details"}</button>`
+          : html`<button type="button" data-action="new" data-col="team" data-name="${p.name}" data-kind="contractor" class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("plus", "w-3.5 h-3.5", 2.5)}Add to team</button>`}
+      </div>
+    </div>`;
+  })}`;
+
+  // Checks or payments to people on your team that aren't counted as pay yet (e.g. a statement check to Craig).
+  const workers = store.team.filter((t) => t.kind === "contractor" || t.kind === "employee");
+  const maybe = store.expenses.filter((e) => !isLabor(e) && e.category !== "owner_draw" && yearOf(e) === payrollYear)
+    .map((e) => ({ e, w: workers.find((t) => sameName(t.name, payeeOf(e)) || e.workerId === t.id) })).filter((x) => x.w).slice(0, 10);
+  $("#payroll-suggest").innerHTML = maybe.length ? html`<div class="rounded-2xl border border-teal-500/25 bg-teal-500/[0.05] p-4">
+      <div class="text-sm text-white font-medium mb-1">Was this pay?</div>
+      <div class="text-[12px] text-slate-400 mb-3">These went to people on your team but aren't counted as payroll yet.</div>
+      <div class="space-y-2">${maybe.map(({ e, w }) => html`<div class="flex items-center justify-between gap-3 text-sm">
+        <span class="min-w-0 truncate text-slate-300">${fmtDate(e.date)} · ${checkNumberOf(e) ? `Check #${checkNumberOf(e)} · ` : ""}${w.name} · <span class="text-white">${money(e.amount)}</span></span>
+        <button type="button" data-action="count-as-payroll" data-id="${e.id}" data-worker="${w.id}" class="btn-ghost !py-1.5 !px-3 !text-xs shrink-0">${icon("check", "w-3.5 h-3.5", 2.5)}Count as pay</button></div>`)}</div></div>` : "";
+
+  const el = $("#payroll-list");
+  if (!auth.currentUser) { el.innerHTML = emptyState("Signed out", "Sign in to see payroll."); return; }
+  if (!loaded.has("expenses") || !loaded.has("team")) { el.innerHTML = skeleton(3); return; }
+  if (!pay.length) { el.innerHTML = emptyState(`No payments recorded in ${payrollYear}`, "Record each time you pay someone: who, how much, when, how and what for.", newCta("payroll", "Record payment")); return; }
+  el.innerHTML = dataTable({
+    rows: pay,
+    columns: [
+      { label: "Date", render: (e) => fmtDate(e.date), cls: "whitespace-nowrap" },
+      { label: "Paid to", render: (e) => html`<span class="text-white">${workerOf(e)?.name || payeeOf(e) || "—"}</span>${e.hours ? html`<span class="block text-[11px] text-slate-500">${e.hours}</span>` : ""}` },
+      { label: "Amount", render: (e) => html`<span class="text-emerald-300">${money(e.amount)}</span>`, cls: "whitespace-nowrap" },
+      { label: "How", render: (e) => `${PAY_METHODS[e.method] || (checkNumberOf(e) ? "Check" : "—")}${checkNumberOf(e) ? ` #${checkNumberOf(e)}` : ""}`, cls: "whitespace-nowrap" },
+      { label: "For", render: (e) => html`${e.note || "—"}${e.jobId ? html`<span class="block text-[11px] text-slate-500">${jobLabel(e.jobId)}</span>` : ""}`, hide: "hidden md:table-cell" }
+    ],
+    actions: (e) => html`${editBtn("expenses", e.id)}${deleteBtn("expenses", e.id)}`
+  });
+}
+
+function exportPayrollCSV() {
+  const pay = store.expenses.filter((e) => isLabor(e) && yearOf(e) === payrollYear).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  if (!pay.length) return toast(`No payments in ${payrollYear}`, "info");
+  const people = payrollPeople(payrollYear);
+  downloadFile(`payroll-${payrollYear}-${todayISO()}.csv`, toCSV([
+    [`Payroll ${payrollYear}`], [],
+    ["Person", "Type", "Total paid", "Counts toward 1099", "Needs 1099-NEC", "W-9 on file", "Last 4 of SSN/EIN", "Address"],
+    ...people.map((p) => [p.name, WORKER_KINDS[p.kind] || "", round2(p.total), round2(p.toward), p.needs1099 ? "Yes" : "No", p.needW9 ? "No" : "Yes", p.worker?.tinLast4 || "", p.worker?.address || ""]),
+    [], ["Date", "Paid to", "Amount", "Paid by", "Check #", "Time worked", "What for", "Job"],
+    ...pay.map((e) => [e.date, workerOf(e)?.name || payeeOf(e), round2(e.amount), PAY_METHODS[e.method] || "", checkNumberOf(e), e.hours || "", e.note || "", e.jobId ? jobLabel(e.jobId) : ""])
+  ]), "text/csv");
+  toast("Payroll downloaded");
+}
+
+// ═════════════════════════════════════════════════════════════
+// VIEW — CHECK REGISTER
+// ═════════════════════════════════════════════════════════════
+function checkGaps(nums) {
+  // Missing numbers between checks in the same checkbook (small jumps only, so two checkbooks don't create a huge list).
+  const sorted = [...new Set(nums)].sort((a, b) => a - b), gaps = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const d = sorted[i] - sorted[i - 1];
+    if (d > 1 && d <= 15) for (let n = sorted[i - 1] + 1; n < sorted[i]; n++) gaps.push(n);
+  }
+  return gaps;
+}
+function renderChecks() {
+  const all = store.expenses.filter(isCheck);
+  const term = ui.search.checks;
+  const rows = all.filter((e) => matches(term, checkNumberOf(e), payeeOf(e), e.note, e.amount, categoryLabel(e.category), workerOf(e)?.name))
+    .sort((a, b) => (Number(checkNumberOf(b)) || 0) - (Number(checkNumberOf(a)) || 0) || String(b.date).localeCompare(String(a.date)));
+  const year = new Date().getFullYear();
+  const thisYear = all.filter((e) => yearOf(e) === year);
+  const needPayee = all.filter((e) => !payeeOf(e));
+  const gaps = checkGaps(all.map((e) => Number(checkNumberOf(e))).filter((n) => n > 0));
+  $("#checks-stats").innerHTML = html`
+    ${statCard({ label: `Checks in ${year}`, value: thisYear.length, sub: money(sum(thisYear)), tone: "white", iconName: "edit" })}
+    ${statCard({ label: "Total, all checks", value: money(sum(all)), sub: plural(all.length, "check"), tone: "amber", iconName: "minus" })}
+    ${statCard({ label: "Need details", value: needPayee.length, sub: needPayee.length ? "Missing who it was to" : "All filled in", tone: needPayee.length ? "amber" : "emerald", iconName: "alert" })}
+    ${statCard({ label: "Next check #", value: nextCheckNumber() || "—", sub: "Based on the last one written", tone: "slate", iconName: "clock" })}`;
+  $("#checks-alerts").innerHTML = html`
+    ${needPayee.length ? html`<div class="rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-4 py-3 text-sm text-amber-200">${plural(needPayee.length, "check")} from bank statements ${needPayee.length === 1 ? "doesn't" : "don't"} say who ${needPayee.length === 1 ? "it was" : "they were"} to. Tap one below to fill in "Pay to the order of", the memo and what it was for. Look at the check image in your bank app if you don't remember.</div>` : ""}
+    ${gaps.length ? html`<div class="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-slate-300">Not recorded: ${gaps.slice(0, 12).map((n) => `#${n}`).join(", ")}${gaps.length > 12 ? "…" : ""}. These may be voided, not cashed yet, or not logged. <button type="button" data-action="new" data-col="checks" class="text-amber-300 hover:text-amber-200 underline underline-offset-2">Record one</button></div>` : ""}`;
+
+  const el = $("#checks-list");
+  if (!auth.currentUser) { el.innerHTML = emptyState("Signed out", "Sign in to see your checks."); return; }
+  if (!loaded.has("expenses")) { el.innerHTML = skeleton(3); return; }
+  if (!all.length) { el.innerHTML = emptyState("No checks yet", "Write one here, or import a bank statement and its checks will show up for you to fill in.", newCta("checks", "Write a check")); return; }
+  if (!rows.length) { el.innerHTML = emptyState("No matching checks", "Try a different search."); return; }
+  el.innerHTML = dataTable({
+    rows,
+    rowAction: (e) => ({ action: "edit", col: "expenses", id: e.id }),
+    columns: [
+      { label: "Check #", render: (e) => html`<span class="font-mono text-white">${checkNumberOf(e) || "—"}</span>`, cls: "whitespace-nowrap" },
+      { label: "Date", render: (e) => fmtDate(e.date), cls: "whitespace-nowrap" },
+      { label: "Pay to the order of", render: (e) => payeeOf(e) ? html`<span class="text-white">${payeeOf(e)}</span>` : html`<span class="text-amber-300">Add who it was to</span>` },
+      { label: "Memo", render: (e) => e.note && !/^Check: add who/.test(e.note) ? e.note : "—", hide: "hidden md:table-cell" },
+      { label: "Amount", render: (e) => money(e.amount), cls: "whitespace-nowrap" },
+      { label: "For", render: (e) => isLabor(e) ? html`<span class="text-teal-300">Payroll${workerOf(e) ? ` · ${workerOf(e).name}` : ""}</span>` : categoryLabel(e.category), hide: "hidden sm:table-cell" }
+    ],
+    actions: (e) => html`${editBtn("expenses", e.id)}${deleteBtn("expenses", e.id)}`
+  });
+}
+function exportChecksCSV() {
+  const all = store.expenses.filter(isCheck).sort((a, b) => (Number(checkNumberOf(a)) || 0) - (Number(checkNumberOf(b)) || 0));
+  if (!all.length) return toast("No checks to export", "info");
+  downloadFile(`checks-${todayISO()}.csv`, toCSV([
+    ["Check #", "Date", "Pay to the order of", "Memo", "Amount", "Category", "Tax deductible %", "Worker", "Job"],
+    ...all.map((e) => [checkNumberOf(e), e.date, payeeOf(e), e.note || "", round2(e.amount), categoryLabel(e.category), getDeductible(e), isLabor(e) ? workerOf(e)?.name || "" : "", e.jobId ? jobLabel(e.jobId) : ""])
+  ]), "text/csv");
+  toast("Check register downloaded");
+}
+
+// ═════════════════════════════════════════════════════════════
 // VIEW — RECURRING
 // ═════════════════════════════════════════════════════════════
 function renderRecurring() {
@@ -3133,7 +3423,8 @@ function renderTeam() {
       { label: "Name", render: (t) => html`<span class="text-white">${t.name || "—"}</span>` },
       { label: "Email", render: (t) => (t.email ? html`<a class="hover:text-amber-400" href="mailto:${t.email}">${t.email}</a>` : "—") },
       { label: "Phone", render: (t) => (t.phone ? html`<a class="hover:text-amber-400" href="tel:${t.phone}">${t.phone}</a>` : "—") },
-      { label: "Role", render: (t) => t.role || "—" }
+      { label: "Role", render: (t) => t.role || "—" },
+      { label: "Type", render: (t) => (WORKER_KINDS[t.kind] || "—").split(" (")[0] + (t.kind === "contractor" ? (t.w9 === true || t.w9 === "true" ? " · W-9 ✓" : " · no W-9") : ""), hide: "hidden md:table-cell" }
     ],
     actions: (t) => html`${editBtn("team", t.id)}${deleteBtn("team", t.id)}`
   });
@@ -3498,7 +3789,8 @@ Return ONLY valid JSON, exactly this shape:
 }
 
 DEBITS:
-- category MUST be one of: paint, gas, supplies, tools, vehicle, insurance, credit_card, rent, utilities, subscription, other.
+- category MUST be one of: paint, gas, supplies, tools, vehicle, insurance, credit_card, rent, utilities, subscription, labor, owner_draw, other.
+- labor = paying a worker or helper. owner_draw = the owner taking money or buying personal things (deductible 0).
 - deductible MUST be one of 100, 75, 50, 25, 0 (the % that is a business expense):
   100 = clearly business (paint stores, hardware, tools, business insurance) · 75 = almost certainly business
   50 = ambiguous / mixed use · 25 = mostly personal (restaurants, general groceries) · 0 = clearly personal (groceries, clothing, entertainment, gym, medical, Netflix)
@@ -3537,6 +3829,8 @@ const near = (a, b, days) => a && b && Math.abs(daysBetween(a, b)) <= days;
 
 // Re-importing a statement used to double every expense. Now we flag lookalikes and leave them unchecked.
 function findDuplicateExpense(t) {
+  // A check you already wrote in the register is the same check when the statement shows its number.
+  if (t.checkNumber) { const hit = store.expenses.find((e) => checkNumberOf(e) === String(t.checkNumber)); if (hit) return hit; }
   const words = tokens(t.vendor);
   return store.expenses.find((e) => sameMoney(e.amount, t.amount) && (e.date === t.date || (near(e.date, t.date, 3) && (tokens(e.vendor).some((w) => words.includes(w)) || normCategory(e.category) === t.category))));
 }
@@ -3916,7 +4210,7 @@ async function processBankFiles(fileList) {
     }
     const before = debits.length + deposits.length;
     for (const t of r.debits) {
-      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name, raw: str(t.raw) };
+      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name, raw: str(t.raw), checkNumber: String(t.check || checkNumberOf({ vendor: t.vendor }) || "") };
       row.dup = !!findDuplicateExpense(row) || debits.some((d) => d.file !== row.file && sameDebit(d, row));
       row.include = !row.dup;
       debits.push(row);
@@ -4065,7 +4359,7 @@ function importBank() {
   for (const t of debits) {
     const ref = doc(collection(db, "expenses"));
     const linked = t.recurringId || store.recurring.find((r) => sameCompany(r.vendor || r.name, t.vendor) && closeAmount(r.amount, t.amount))?.id;
-    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, ...(linked ? { recurringId: linked } : {}), createdAt: serverTimestamp() }));
+    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, ...(linked ? { recurringId: linked } : {}), ...(t.checkNumber ? { checkNumber: String(t.checkNumber), method: "check" } : {}), createdAt: serverTimestamp() }));
     undo.push((b) => b.delete(ref));
   }
   for (const d of deposits) {
@@ -4475,7 +4769,7 @@ function initSend() {
 // ═════════════════════════════════════════════════════════════
 function newForCurrentTab() {
   const map = { jobs: "jobs", invoices: "invoices", vehicles: "vehicles", settings: "team" };
-  if (currentTab === "money") return moneyState.sub === "income" ? "income" : moneyState.sub === "recurring" ? "recurring" : "expenses";
+  if (currentTab === "money") return { income: "income", recurring: "recurring", payroll: "payroll", checks: "checks" }[moneyState.sub] || "expenses";
   return map[currentTab] || "jobs";
 }
 
@@ -4485,6 +4779,9 @@ const ACTIONS = {
   "goto-recurring": () => { switchTab("money"); setMoneySub("recurring"); },
   new: requireAuth((d) => {
     const prefill = {};
+    if (d.worker) prefill.workerId = d.worker;
+    if (d.name) prefill.name = d.name;
+    if (d.kind) prefill.kind = d.kind;
     if (d.job) {
       prefill.jobId = d.job;
       const j = byId("jobs", d.job);
@@ -4498,7 +4795,17 @@ const ACTIONS = {
   }),
   "new-money": requireAuth(() => openRecordForm(newForCurrentTab())),
   fab: requireAuth(() => openRecordForm(newForCurrentTab())),
-  edit: requireAuth((d) => { const r = byId(d.col, d.id); if (r) openRecordForm(d.col, r); }),
+  edit: requireAuth((d) => { const r = byId(d.col, d.id); if (r) openRecordForm(d.col === "expenses" ? expenseFormFor(r) : d.col, r); }),
+  "payroll-year": (d) => { payrollYear = Number(d.year) || new Date().getFullYear(); ls.set("jw_payroll_year", String(payrollYear)); renderPayroll(); },
+  "count-as-payroll": requireAuth((d) => {
+    const e = byId("expenses", d.id), w = byId("team", d.worker);
+    if (!e || !w) return;
+    const prev = { category: e.category ?? deleteField(), workerId: e.workerId ?? deleteField(), deductible: e.deductible ?? deleteField() };
+    persist(updateDoc(doc(db, "expenses", e.id), { category: "labor", workerId: w.id, deductible: 100 }), "Couldn't update");
+    toast(`Counted as pay to ${w.name}`, { action: { label: "Undo", run: () => persist(updateDoc(doc(db, "expenses", e.id), prev), "Couldn't undo") } });
+  }),
+  "export-payroll": () => exportPayrollCSV(),
+  "export-checks": () => exportChecksCSV(),
   delete: requireAuth((d) => removeRecord(d.col, d.id)),
   "view-job": (d) => openJobModal(d.id),
   "mark-paid": requireAuth((d) => markPaid(d.id)),
@@ -4594,7 +4901,7 @@ function init() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       ui.search[inp.dataset.search] = inp.value.trim().toLowerCase();
-      ({ jobs: renderJobs, invoices: renderInvoices, money: () => { renderMoney(); renderMoneyChart(); } })[inp.dataset.search]();
+      ({ jobs: renderJobs, invoices: renderInvoices, money: () => { renderMoney(); renderMoneyChart(); }, checks: renderChecks })[inp.dataset.search]();
     }, 120);
   }));
   $$("[data-filter]").forEach((sel) => sel.addEventListener("change", () => {
