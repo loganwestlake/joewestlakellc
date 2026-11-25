@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
-import { FirestoreStore, firebase } from "./data/firestore";
+import type { User } from "firebase/auth";
 import { seedDemoCompany } from "./data/seed";
 import { emptySnapshot, MemoryStore, type Snapshot, type Store } from "./data/store";
 import type { Organization } from "./data/types";
@@ -45,8 +44,12 @@ export function App() {
 
   useEffect(() => {
     if (new URLSearchParams(location.search).has("demo")) { openDemo(); return; }
-    const auth = getAuth(firebase().app);
-    return onAuthStateChanged(auth, async (u) => {
+    // Firebase is only downloaded when it's needed (not for the demo company).
+    let unsub = () => {};
+    let cancelled = false;
+    Promise.all([import("firebase/auth"), import("./data/firestore")]).then(([{ getAuth, onAuthStateChanged }, { firebase, FirestoreStore }]) => {
+      if (cancelled) return;
+      unsub = onAuthStateChanged(getAuth(firebase().app), async (u) => {
       setUser(u);
       if (!u) { setMode("signin"); return; }
       const s = new FirestoreStore(u.uid, u.email || "");
@@ -59,7 +62,9 @@ export function App() {
         toast(`Couldn't load your companies: ${(err as Error).message}`, "error");
         setMode("pickOrg");
       }
-    });
+      });
+    }).catch(() => { toast("Couldn't load sign-in. Check your connection.", "error"); setMode("signin"); });
+    return () => { cancelled = true; unsub(); };
   }, [openDemo, toast]);
 
   useEffect(() => {
@@ -69,6 +74,7 @@ export function App() {
 
   const signOutAll = async () => {
     if (isDemo) { setIsDemo(false); setStore(null); setOrgId(null); setMode("signin"); history.replaceState(null, "", location.pathname); return; }
+    const [{ getAuth, signOut }, { firebase }] = await Promise.all([import("firebase/auth"), import("./data/firestore")]);
     await signOut(getAuth(firebase().app));
   };
 
@@ -110,7 +116,10 @@ function SignIn({ onDemo }: { onDemo: () => void }) {
         <p className="text-sm text-ink-2 mb-5">Use the same account as the dashboard.</p>
         <form className="space-y-3" onSubmit={async (e) => {
           e.preventDefault(); setErr(""); setBusy(true);
-          try { await signInWithEmailAndPassword(getAuth(firebase().app), email, pass); }
+          try {
+            const [{ getAuth, signInWithEmailAndPassword }, { firebase }] = await Promise.all([import("firebase/auth"), import("./data/firestore")]);
+            await signInWithEmailAndPassword(getAuth(firebase().app), email, pass);
+          }
           catch { setErr("That email and password didn't work."); } finally { setBusy(false); }
         }}>
           <div><label className="label" htmlFor="em">Email</label><input id="em" type="email" autoComplete="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>

@@ -114,6 +114,9 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
   const { snap, go, openDrawer, accountById } = useBooks();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  // Focus explicitly: Preact doesn't do React's autoFocus-on-mount.
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
   const results = useMemo(() => {
     const term = q.trim().toLowerCase();
     const out: { group: string; label: string; sub?: string; run: () => void }[] = [];
@@ -145,7 +148,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       <div className="relative mx-auto mt-[10vh] w-[min(640px,calc(100%-24px))] card shadow-pop overflow-hidden">
         <div className="flex items-center gap-2 px-4 border-b border-line">
           <Icon name="search" className="w-4 h-4 text-ink-3" />
-          <input autoFocus className="flex-1 h-12 outline-none text-sm placeholder:text-ink-3" placeholder="Search transactions, amounts, check numbers, customers, vendors, accounts, pages…" value={q}
+          <input ref={inputRef} className="flex-1 h-12 outline-none text-sm placeholder:text-ink-3" placeholder="Search transactions, amounts, check numbers, customers, vendors, accounts, pages…" value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") { e.preventDefault(); setSel((s) => Math.min(s + 1, results.length - 1)); }

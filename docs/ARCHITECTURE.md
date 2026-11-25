@@ -8,12 +8,12 @@ new app can do everything it does and the records have been brought over.
 
 | Area | Before | After Milestone 1 |
 |---|---|---|
-| App | One 5,900-line `index.html`, plain JS, Tailwind + Firebase from CDNs, no build | `app/`: Vite + React 18 + TypeScript + Tailwind, built to `books/` |
+| App | One 5,900-line `index.html`, plain JS, Tailwind + Firebase from CDNs, no build | `app/`: Vite + TypeScript + Tailwind, React APIs on Preact, built to `books/`. First load 37 KB gzipped; Firebase (~146 KB) loads only after sign-in |
 | Config | No `firebase.json` / `firestore.indexes.json` | Both added; rules deployable with `firebase deploy --only firestore` |
 | Data | Flat collections: `jobs, expenses, invoices, income, recurring, vehicles, team, files, fileChunks, settings` | Organization-scoped schema below; the old collections are untouched |
 | Accounting | Single-entry lists of money in / out | Double-entry ledger, chart of accounts, journal, trial balance, P&L, balance sheet |
 | Access | `members/{uid}` exists = full access | Per-company roles + 123 activity permissions, enforced in rules by area |
-| Server | Cloudflare Worker (AI + Plaid). No Cloud Functions, no Storage | Same for now; see decision 1 |
+| Server | Cloudflare Worker (AI + Plaid). No Cloud Functions, no Storage | **No servers for the books app**: Firebase (Auth + Firestore) and GitHub Pages only |
 | Tests | Browser tests kept outside the repo | `npm run check` in `app/`: unit, rules (emulator), browser tests |
 
 ## 2. Firestore schema
@@ -35,9 +35,9 @@ Everything for a company lives under `organizations/{orgId}`.
 ### Where this differs from the original outline, and why
 
 - **Journal lines are an array inside the entry, not a `lines` subcollection.** Security rules can
-  only look at one document at a time. With the lines inside, the rules check the totals, the entry is
-  written in one atomic step, and nobody can alter it afterwards. With a subcollection, a half-written
-  or edited entry could slip through. (Max 500 lines per entry.)
+  only look at one document at a time. With the lines inside, the rules add the lines up themselves,
+  the entry is written in one atomic step, and nobody can alter it afterwards. With a subcollection, a
+  half-written or edited entry could slip through. **Max 30 lines per entry** (see §3).
 - **Account balances are computed from the ledger, not stored on the account.** A stored running
   balance updated from the browser can drift if two people post at once. Computing from entries is
   exact. When there's a server (decision 1), it can keep cached balances for speed.
@@ -67,14 +67,17 @@ the result is balanced by construction. The old collections are left untouched a
 2. **Atomic posting** (`app/src/data/firestore.ts`): a Firestore transaction re-reads the closing
    date, builds and validates the entry, and writes the document, the entry and the audit line
    together, or nothing.
-3. **Security rules** (`firestore.rules`, 41 emulator tests): balanced whole-cent totals, 2–500 lines,
-   `createdBy` = you, open period only, entries never edited or deleted, documents never deleted,
-   audit log append-only, writes only in your areas.
+3. **Security rules** (`firestore.rules`, 45 emulator tests): the rules **add up every line
+   themselves** and require debits = credits = the stated whole-cent totals, 2–30 lines, `createdBy` =
+   you, open period only, entries never edited or deleted, documents never deleted, audit log
+   append-only, writes only in your areas.
 
-**Known gap:** rules can check the totals but can't add up the lines themselves (the rules language
-has no loops). A tampered client could write lines that don't sum to the stated totals. Closing that
-gap needs a trusted server to do the posting (decision 1). Until then the risk is limited to people
-you've approved.
+So **the database itself guarantees every journal entry balances**, with no server. The rules language
+has no loops, so the rules add the lines up one at a time, and Firestore allows 1,000 expressions per
+request. That works out to a **30-line cap** per entry (the engine merges lines on the same account, so
+real entries are far smaller). Per-line tidiness (whole cents on each line, one side per line) is
+enforced by the app's ledger engine. Adding it to the rules too would cut the cap to about 9 lines.
+It doesn't affect whether entries balance.
 
 ## 4. Roles and permissions
 
@@ -83,25 +86,24 @@ Time tracking only) over **123 activity permissions** in 11 areas (sales, purcha
 inventory, projects, time, payroll, taxes, reports, settings). The app checks activities; the rules
 check areas.
 
-## 5. Decisions only you can make
+## 5. Decisions (made)
 
-1. **Server for posting and scheduled jobs** (recurring invoices, depreciation, PDF generation, the
-   "known gap" above).
-   - *Firebase Cloud Functions* (what you asked for) requires the **Blaze (pay-as-you-go) plan**. A
-     small business usually stays inside the free allowance, but a card is required.
-   - *Alternative:* reuse your **Cloudflare Worker** with a Firebase service-account key as a secret.
-     It's free and already deployed, but it's one more thing living outside Firebase.
-2. **File storage.** Firebase Storage on new projects also requires Blaze. Without it, receipts and
-   attachments keep using the Firestore pieces the dashboard uses today (10 MB per file).
-3. **Payroll.** The pay-run calculator can compute gross-to-net and post balanced entries, but real
-   withholding tables, filings and deposits should go through a payroll provider. The plan is to
-   calculate and record, and leave filing and paying the government to the provider.
+1. **No servers.** Firebase (Auth + Firestore) and GitHub Pages only: no Cloud Functions, no Blaze plan,
+   nothing new on Cloudflare. Integrity is enforced by the security rules (§3). Things that would
+   normally run on a schedule (recurring invoices, monthly depreciation) run when someone opens the app:
+   "3 recurring invoices are due, post them?" PDFs are generated in the browser.
+2. **Files stay in Firestore**, stored in pieces like the dashboard does today (10 MB per file), not
+   Firebase Storage (which needs Blaze).
+3. **Payroll** calculates gross-to-net and posts balanced entries. Tax filing and paying the government
+   go through a payroll provider.
+4. **Semi-lightweight.** Preact instead of React, Firebase loaded only after sign-in, no extra UI or
+   chart libraries.
 
 ## 6. Milestones
 
 | # | Scope | Status |
 |---|---|---|
-| 1 | Audit, branch, schema, rules, ledger engine, demo seed, app shell, + New, command palette, journal entries, core reports, audit log, closing the books | **Done** |
+| 1 | Audit, branch, schema, rules, ledger engine, demo seed, app shell, + New, command palette, journal entries, core reports, audit log, closing the books | **Done**, live at /books |
 | 2 | Chart of accounts editing/merging, multi-currency, fixed assets & depreciation, bank feeds + rules (CSV/OFX/QFX + the Truist connection), reconciliation | Next |
 | 3 | Sales & A/R: customers/leads, estimates with e-signature, progress invoicing, sales orders, invoices, batch/recurring, payments, undeposited funds, deposits, collections | |
 | 4 | Expenses & A/P: vendors, 1099s, expenses, receipt capture, bills, pay bills, POs with approvals, print checks, batch reclassify | |
