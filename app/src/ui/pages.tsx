@@ -31,14 +31,14 @@ const PIE = ["#1F2937", "#0E7490", "#047857", "#B45309", "#7C3AED", "#94A3B8"];
 
 function Card({ title, right, children, className = "" }: { title: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`bg-white border border-line rounded-xl p-5 ${className}`}>
+    <section className={`bg-white border border-line rounded-xl p-5 min-w-0 ${className}`}>
       <div className="flex items-start justify-between gap-3 mb-4"><h3 className="text-[13px] font-semibold tracking-wide text-ink uppercase">{title}</h3>{right}</div>
       {children}
     </section>
   );
 }
 function RangeSelect({ value, onChange, options }: { value: number; onChange: (v: number) => void; options: [number, string][] }) {
-  return <select aria-label="Period" className="text-[13px] text-ink-2 bg-transparent border-0 focus:ring-0 cursor-pointer pr-6 -mr-1" value={value} onChange={(e) => onChange(Number(e.target.value))}>{options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>;
+  return <select aria-label="Period" className="text-[13px] text-ink-2 bg-transparent border-0 shrink-0 focus:ring-0 cursor-pointer pr-6 -mr-1" value={value} onChange={(e) => onChange(Number(e.target.value))}>{options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>;
 }
 
 export function Dashboard() {
@@ -144,7 +144,7 @@ export function Dashboard() {
       </div>
 
       <h2 className="text-lg font-medium text-ink mb-3">Business at a glance</h2>
-      <div className="grid xl:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-5 mb-5">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-5 mb-5">
         {shown.includes("funnel") && (
           <Card title="Sales & get paid funnel" right={<RangeSelect value={funnelDays} onChange={setFunnelDays} options={[[30, "Last 30 days"], [90, "Last 90 days"], [365, "Last 12 months"]]} />}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -165,7 +165,7 @@ export function Dashboard() {
                     <div className="text-2xl font-semibold text-ink tabular-nums">{amt(value)}</div>
                     <div className="mt-3 flex flex-wrap gap-2 items-center">
                       <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[13px] ${label === "Deposited" ? "bg-[#ECFDF5] text-[#047857]" : "text-ink-2"}`}>{label === "Deposited" && <Icon name="check" className="w-3.5 h-3.5" />}{sub}</span>
-                      {warn && <span className="badge-due">{warn}</span>}
+                      {warn && <span className="badge-due whitespace-nowrap">{warn}</span>}
                     </div>
                   </div>
                 </div>))}
@@ -190,7 +190,7 @@ export function Dashboard() {
           </Card>)}
       </div>
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {shown.includes("pnl") && (
           <Card title="Profit & loss" right={<span className="text-[13px] text-ink-2">This month</span>}>
             <div className="text-[13px] text-ink-2">Net profit for {new Date().toLocaleDateString("en-US", { month: "long" })}</div>

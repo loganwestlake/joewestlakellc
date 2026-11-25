@@ -245,7 +245,7 @@ export function Shell({ children, onSignOut, email }: { children: ReactNode; onS
       <RailButton icon="more" label="More" onClick={() => setFlyout("apps")} />
       <div className="flex-1" />
       <div className="mx-4 mb-1 border-t border-line-strong/70" />
-      <RailButton icon="sliders" label="Customize" onClick={() => setPanel("settings")} />
+      <RailButton icon="settings" label="Settings" onClick={() => setPanel("settings")} />
     </nav>
   );
 
