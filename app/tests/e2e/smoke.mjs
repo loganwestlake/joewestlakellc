@@ -142,11 +142,11 @@ await t("command palette: Ctrl+K finds a check number and an amount", async () =
   await page.waitForSelector("h1 >> text=Chart of accounts");
 });
 await t("closing the books blocks back-dated entries (and logs it)", async () => {
-  await page.click('[aria-label="Settings"]');
+  await page.click('header [aria-label="Settings"]');
   await page.fill("#closing", new Date().toISOString().slice(0, 10));
   await page.click('aside >> text=Save');
   await page.waitForSelector("text=Books closed through");
-  await page.click('[aria-label="Settings"]');
+  await page.click('header [aria-label="Settings"]');
   await goTo(page, "Journal");
   await page.click("text=Journal entry >> nth=0");
   await page.selectOption('[aria-label="Line 1 account"]', { label: "6300 Fuel" });

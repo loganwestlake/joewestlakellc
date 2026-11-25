@@ -26,12 +26,15 @@ export interface Store {
   newId(prefix: string): string;
 }
 
+/** "billPayment" → "Bill payment" */
+export const humanType = (t: string) => t.replace(/([A-Z])/g, " $1").toLowerCase().replace(/^./, (c) => c.toUpperCase());
+
 /** Shared by both stores: turn a document into a validated journal entry (or null for non-posting documents). */
 export function buildEntry(tx: Transaction, entryId: string, org: Organization, accounts: Account[], uid: string): JournalEntry | null {
   const lines = postingFor(tx);
   if (!lines) return null;
   return validateEntry(
-    { id: entryId, date: tx.date, memo: tx.memo || `${tx.type} ${tx.number || ""}`.trim(), sourceType: tx.type, sourceId: tx.id, lines,
+    { id: entryId, date: tx.date, memo: tx.memo || `${humanType(tx.type)}${tx.number ? ` #${tx.number}` : tx.checkNumber ? ` #${tx.checkNumber}` : ""}`, sourceType: tx.type, sourceId: tx.id, lines,
       currency: tx.currency || org.baseCurrency, exchangeRate: tx.exchangeRate || 1, createdBy: uid, createdAt: new Date().toISOString() },
     { accounts: Object.fromEntries(accounts.map((a) => [a.id, a])), closingDate: org.closingDate }
   );
