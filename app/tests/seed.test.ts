@@ -40,3 +40,17 @@ describe("demo company", () => {
     await expect(store.reverseEntry(org.id, entry!.id, "2026-11-04")).rejects.toThrow(/already reversed/);
   });
 });
+
+import { ACTIVITIES, ROLE_PERMISSIONS, areasFor } from "../src/data/permissions";
+describe("permissions", () => {
+  it("115+ distinct activities, every role's permissions are real activities", () => {
+    expect(new Set(ACTIVITIES).size).toBe(ACTIVITIES.length);
+    expect(ACTIVITIES.length).toBeGreaterThanOrEqual(115);
+    for (const perms of Object.values(ROLE_PERMISSIONS)) for (const p of perms) expect(ACTIVITIES).toContain(p);
+  });
+  it("reports-only and time-only roles can't write anywhere the rules guard", () => {
+    expect(areasFor(ROLE_PERMISSIONS.reportsOnly).filter((a) => a !== "reports")).toEqual([]);
+    expect(areasFor(ROLE_PERMISSIONS.timeOnly)).toEqual(["time"]);
+    expect(areasFor(ROLE_PERMISSIONS.admin).sort()).toContain("settings");
+  });
+});

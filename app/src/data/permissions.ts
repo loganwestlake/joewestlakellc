@@ -23,19 +23,19 @@ const ACT = (area: Area, ...acts: string[]) => acts.map((a) => `${area}.${a}`);
 export const ACTIVITIES: string[] = [
   ...ACT("sales", "customers.view", "customers.edit", "customers.delete", "leads.edit", "estimates.view", "estimates.edit", "estimates.convert",
     "salesOrders.view", "salesOrders.edit", "salesOrders.fulfill", "invoices.view", "invoices.edit", "invoices.send", "invoices.void", "invoices.batch",
-    "recurring.edit", "salesReceipts.edit", "creditMemos.edit", "refunds.edit", "payments.receive", "deposits.edit", "statements.send", "collections.view", "priceLevels.edit"),
+    "recurring.edit", "estimates.sign", "paymentLinks.manage", "reminders.edit", "salesReceipts.edit", "creditMemos.edit", "refunds.edit", "payments.receive", "deposits.edit", "statements.send", "collections.view", "priceLevels.edit"),
   ...ACT("purchases", "vendors.view", "vendors.edit", "vendors.delete", "expenses.view", "expenses.edit", "expenses.void", "checks.edit", "checks.print",
-    "bills.view", "bills.edit", "bills.pay", "bills.approve", "vendorCredits.edit", "purchaseOrders.edit", "purchaseOrders.approve", "receipts.upload", "reclassify", "contractors.1099"),
-  ...ACT("banking", "feeds.view", "feeds.categorize", "feeds.exclude", "rules.edit", "connections.manage", "reconcile", "reconcile.undo", "transfers.edit"),
+    "bills.view", "bills.edit", "bills.pay", "bills.approve", "vendorCredits.edit", "purchaseOrders.edit", "purchaseOrders.approve", "receipts.upload", "reclassify", "contractors.1099", "w9.manage"),
+  ...ACT("banking", "feeds.view", "feeds.categorize", "feeds.split", "feeds.exclude", "rules.edit", "connections.manage", "reconcile", "reconcile.undo", "transfers.edit"),
   ...ACT("ledger", "accounts.view", "accounts.edit", "accounts.merge", "journal.view", "journal.edit", "journal.reverse", "classes.edit", "locations.edit",
-    "currencies.edit", "fixedAssets.edit", "depreciation.run", "revenueRecognition.edit", "budgets.edit", "import", "export"),
+    "currencies.edit", "fixedAssets.edit", "depreciation.run", "revenueRecognition.edit", "budgets.edit", "anomalies.review", "import", "export"),
   ...ACT("inventory", "items.view", "items.edit", "items.delete", "adjust", "assemblies.build", "transfers.edit", "landedCost.edit", "priceRules.edit"),
   ...ACT("projects", "view", "edit", "changeOrders.edit", "budgets.edit"),
-  ...ACT("time", "own.edit", "all.view", "all.edit", "approve", "billable.invoice"),
-  ...ACT("payroll", "employees.view", "employees.edit", "run", "approve", "taxes.file", "stubs.view.own", "stubs.view.all"),
-  ...ACT("taxes", "rates.edit", "returns.file", "mileage.edit", "estimates.view"),
-  ...ACT("reports", "view.all", "view.financial", "view.sales", "view.payroll", "customize", "schedule", "export", "auditLog.view"),
-  ...ACT("settings", "company.edit", "users.manage", "closeBooks", "closeBooks.override", "edition.switch", "integrations.manage", "backup", "restore", "workflows.edit")
+  ...ACT("time", "own.edit", "timesheets.submit", "all.view", "all.edit", "approve", "billable.invoice"),
+  ...ACT("payroll", "employees.view", "employees.edit", "run", "approve", "taxes.file", "timeOff.edit", "stubs.view.own", "stubs.view.all"),
+  ...ACT("taxes", "agencies.edit", "rates.edit", "returns.file", "mileage.edit", "estimates.view"),
+  ...ACT("reports", "view.all", "view.financial", "view.sales", "view.ar", "view.ap", "view.payroll", "customize", "schedule", "export", "auditLog.view"),
+  ...ACT("settings", "company.edit", "users.manage", "closeBooks", "closeBooks.override", "edition.switch", "integrations.manage", "api.manage", "customFields.edit", "backup", "restore", "workflows.edit")
 ];
 
 const all = (area: Area) => ACTIVITIES.filter((a) => a.startsWith(`${area}.`));
