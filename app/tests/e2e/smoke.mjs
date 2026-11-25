@@ -34,21 +34,43 @@ async function open(opts = {}) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(BASE + "?demo#dashboard");
-  await page.waitForSelector("text=Net income this month", { timeout: 15000 });
+  await page.waitForSelector("text=Business at a glance", { timeout: 15000 });
   return { page, errors, ctx };
 }
 
+// Open a screen from the All apps menu (the rail only has the main ones).
+const goTo = async (p, label) => { await p.click('[aria-label="All apps"]'); await p.click(`[role="dialog"][aria-label="All apps"] >> text=${label}`); };
 const { page, errors } = await open();
 current = page;
-await t("demo company loads with six months of activity", async () => {
-  assert(await page.isVisible("text=Demo Painting Co."), "company name");
-  assert(/Contractor edition/.test(await page.textContent("nav")), "edition badge");
-  const rows = await page.$$eval("table tbody tr", (r) => r.length);
-  assert(rows >= 8, "recent activity rows " + rows);
+await t("home: greeting, shortcuts, create actions, funnel, bank, P&L, expenses, cash flow", async () => {
+  assert(await page.isVisible("header >> text=Demo Painting Co."), "company name");
+  assert(/Good (morning|afternoon|evening)/.test(await page.textContent("h1")), "greeting");
+  for (const x of ["Sales & get paid funnel", "Bank accounts", "Profit & loss", "Expenses", "Cash flow", "Create actions"]) assert(await page.isVisible(`text=${x}`), x);
+  const funnel = await page.textContent('section:has-text("Sales & get paid funnel")');
+  assert(/Deposited\s*\$[\d,]+\.\d\d/.test(funnel) && /\d+ deposited/.test(funnel), "funnel: " + funnel.slice(0, 200));
+  assert(/Business Checking/.test(await page.textContent('section:has-text("Bank accounts")')), "bank card");
+});
+await t("home: privacy blurs amounts, customize hides a card", async () => {
+  await page.click("text=Privacy >> nth=0");
+  assert(await page.$eval('section:has-text("Bank accounts") .blur-\\[6px\\]', () => true).catch(() => false), "not blurred");
+  await page.click("text=Privacy >> nth=0");
+  await page.click("text=Customize >> nth=0");
+  await page.uncheck('[aria-label="Choose what\'s on your home page"] >> text=Cash flow');
+  assert(!(await page.isVisible('h3:text-is("Cash flow")')), "cash flow still shown");
+  await page.check('[aria-label="Choose what\'s on your home page"] >> text=Cash flow');
+  await page.click("text=Customize >> nth=0");
+});
+await t("home: shortcut pill opens its screen; Show all opens the create menu", async () => {
+  await page.click('button:has-text("Accounting")');
+  await page.waitForSelector("h1 >> text=Chart of accounts");
+  await page.click('[aria-label="Home"]');
+  await page.click("text=Show all");
+  assert(await page.isVisible('[aria-label="Create new"] >> text=Vendors'), "create menu");
+  await page.keyboard.press("Escape");
 });
 if (shots) await page.screenshot({ path: `${shots}/dashboard.png` });
 await t("+ New opens the four-column create menu", async () => {
-  await page.click("nav >> text=New");
+  await page.click('[aria-label="Create"]');
   for (const h of ["Customers", "Vendors", "Employees", "Other"]) assert(await page.isVisible(`[aria-label="Create new"] >> text=${h}`), h);
   if (shots) await page.screenshot({ path: `${shots}/new.png` });
   await page.click('[aria-label="Create new"] >> text=Journal entry');
@@ -67,7 +89,7 @@ await t("journal entry: refuses unbalanced, posts balanced, shows in the journal
   if (shots) await page.screenshot({ path: `${shots}/journal-entry.png` });
   await page.click("text=Save and close");
   await page.waitForSelector("#je-title", { state: "detached" });
-  await page.click("nav >> text=Journal");
+  await goTo(page, "Journal");
   assert(await page.isVisible("text=Smoke test fuel"), "entry not in journal");
 });
 await t("date shortcuts: T, +, −", async () => {
@@ -91,14 +113,14 @@ await t("reverse an entry: balances return, can't reverse twice", async () => {
   assert(await page.isVisible("details >> nth=0 >> text=Reversal"), "no reversal row");
 });
 await t("chart of accounts with balances, and an account register", async () => {
-  await page.click("nav >> text=Chart of accounts");
+  await goTo(page, "Chart of accounts");
   await page.waitForSelector("text=Business Checking");
   await page.click("td >> text=Business Checking");
   assert(await page.isVisible("text=1000 Business Checking"), "register header");
   assert((await page.$$("table tbody tr")).length > 20, "register rows");
 });
 await t("reports tie out: trial balance and balance sheet balanced", async () => {
-  await page.click("nav >> text=Reports");
+  await page.click('[aria-label="Reports"]');
   assert(await page.isVisible("text=Net income"), "pnl");
   await page.click("text=Balance sheet");
   assert(await page.isVisible("text=✓ Balanced"), "balance sheet not balanced");
@@ -125,7 +147,7 @@ await t("closing the books blocks back-dated entries (and logs it)", async () =>
   await page.click('aside >> text=Save');
   await page.waitForSelector("text=Books closed through");
   await page.click('[aria-label="Settings"]');
-  await page.click("nav >> text=Journal");
+  await goTo(page, "Journal");
   await page.click("text=Journal entry >> nth=0");
   await page.selectOption('[aria-label="Line 1 account"]', { label: "6300 Fuel" });
   await page.fill('[aria-label="Line 1 debit"]', "10");
@@ -134,14 +156,14 @@ await t("closing the books blocks back-dated entries (and logs it)", async () =>
   await page.click("text=Save and close");
   assert(/closed through/.test(await page.textContent('[role="alert"]')), "posted into a closed period");
   await page.click('[aria-label="Close"]');
-  await page.click("nav >> text=Audit log");
+  await goTo(page, "Audit log");
   assert(await page.isVisible("text=closingDate"), "closing not in audit log");
 });
 await t("shortcut Ctrl+Alt+I and planned screens say when they arrive", async () => {
   await page.keyboard.press("Control+Alt+i");
   assert(await page.isVisible("text=This form arrives in Milestone 3"), "no planned message");
   await page.getByRole("button", { name: "OK", exact: true }).click();
-  await page.click("nav >> text=Banking");
+  await goTo(page, "Banking");
   assert(await page.isVisible("text=Arrives in Milestone 2"), "planned page");
 });
 await t("stopwatch, notifications, assistant panel", async () => {
@@ -162,7 +184,7 @@ await t("phone: menu opens, no sideways scroll", async () => {
   const w = await phone.page.evaluate(() => document.documentElement.scrollWidth);
   assert(w <= 390, "scroll width " + w);
   await phone.page.click('[aria-label="Open menu"]');
-  assert(await phone.page.locator('[aria-label="Main"] >> text=Chart of accounts').last().isVisible(), "menu");
+  assert(await phone.page.isVisible('[role="dialog"][aria-label="All apps"] >> text=Chart of accounts'), "menu");
 });
 if (shots) await phone.page.screenshot({ path: `${shots}/phone.png` });
 

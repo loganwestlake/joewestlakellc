@@ -30,7 +30,15 @@ const P: Record<string, string> = {
   undo: "M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3",
   lock: "M6 11h12v10H6zM8 11V7a4 4 0 118 0v4",
   logout: "M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3",
-  menu: "M4 6h16M4 12h16M4 18h16"
+  menu: "M4 6h16M4 12h16M4 18h16",
+  grid: "M5 5h.01M12 5h.01M19 5h.01M5 12h.01M12 12h.01M19 12h.01M5 19h.01M12 19h.01M19 19h.01",
+  more: "M5 12h.01M12 12h.01M19 12h.01",
+  sliders: "M4 7h10M18 7h2M4 17h4M12 17h8M14 4v6M8 14v6",
+  clipboard: "M9 4h6v3H9zM8 5H6a1 1 0 00-1 1v14a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1h-2M9 14l2 2 4-4",
+  eyeOff: "M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.1A10 10 0 0112 5c5 0 9 4.5 10 7-0.4 1-1.2 2.3-2.4 3.5M6.1 6.1C4.1 7.4 2.7 9.4 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.6-1.2",
+  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z",
+  arrowRight: "M5 12h14M13 6l6 6-6 6",
+  info: "M12 8h.01M11 12h1v4h1M12 21a9 9 0 100-18 9 9 0 000 18z"
 };
 
 export function Icon({ name, className = "w-4 h-4", strokeWidth = 1.75 }: { name: keyof typeof P | string; className?: string; strokeWidth?: number }) {

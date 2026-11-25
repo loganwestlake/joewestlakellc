@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { accountRegister, ACCOUNT_TYPE_LABEL, balanceSheet, docTotal, profitAndLoss, SYSTEM, trialBalance, type Account, type AccountType } from "../ledger";
 import { Icon } from "./icons";
 import { fmtDate, money, todayISO, useBooks, type Page } from "./books";
@@ -9,79 +9,222 @@ const PageHead = ({ title, sub, actions }: { title: string; sub?: string; action
     {actions && <div className="flex gap-2">{actions}</div>}
   </div>
 );
-const Stat = ({ label, value, sub, onClick }: { label: string; value: string; sub?: string; onClick?: () => void }) => (
-  <button type="button" onClick={onClick} disabled={!onClick} className="card p-4 text-left disabled:cursor-default hover:enabled:border-line-strong">
-    <div className="text-xs font-medium text-ink-2">{label}</div>
-    <div className="text-2xl font-semibold text-ink mt-1 tabular-nums">{value}</div>
-    {sub && <div className="text-xs text-ink-3 mt-0.5">{sub}</div>}
-  </button>
-);
 
 // ── Home ──
+const fmtShort = (cents: number) => Math.abs(cents) >= 100000 ? `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}` : money(cents);
+const SHORTCUTS: { label: string; page: Page; icon: string; color: string }[] = [
+  { label: "Accounting", page: "accounts", icon: "accounting", color: "#1F2937" },
+  { label: "Expenses & bills", page: "expenses", icon: "expenses", color: "#0E7490" },
+  { label: "Sales & get paid", page: "sales", icon: "sales", color: "#047857" },
+  { label: "Customers", page: "customers", icon: "people", color: "#4338CA" },
+  { label: "Reports", page: "reports", icon: "reports", color: "#B45309" },
+  { label: "Projects", page: "projects", icon: "projects", color: "#7C3AED" },
+  { label: "Payroll", page: "payroll", icon: "payroll", color: "#BE123C" },
+  { label: "Taxes", page: "taxes", icon: "taxes", color: "#475569" },
+  { label: "Banking", page: "banking", icon: "bank", color: "#0369A1" }
+];
+const WIDGETS = { funnel: "Sales & get paid funnel", bank: "Bank accounts", pnl: "Profit & loss", expenses: "Expenses", cashflow: "Cash flow" } as const;
+type WidgetKey = keyof typeof WIDGETS;
+const loadPref = <T,>(k: string, d: T): T => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const savePref = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } };
+const PIE = ["#1F2937", "#0E7490", "#047857", "#B45309", "#7C3AED", "#94A3B8"];
+
+function Card({ title, right, children, className = "" }: { title: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <section className={`bg-white border border-line rounded-xl p-5 ${className}`}>
+      <div className="flex items-start justify-between gap-3 mb-4"><h3 className="text-[13px] font-semibold tracking-wide text-ink uppercase">{title}</h3>{right}</div>
+      {children}
+    </section>
+  );
+}
+function RangeSelect({ value, onChange, options }: { value: number; onChange: (v: number) => void; options: [number, string][] }) {
+  return <select aria-label="Period" className="text-[13px] text-ink-2 bg-transparent border-0 focus:ring-0 cursor-pointer pr-6 -mr-1" value={value} onChange={(e) => onChange(Number(e.target.value))}>{options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>;
+}
+
 export function Dashboard() {
-  const { snap, balances, go } = useBooks();
-  const today = todayISO(), y = today.slice(0, 4), m = today.slice(0, 7);
-  const ytd = useMemo(() => profitAndLoss(snap.journalEntries, snap.accounts, `${y}-01-01`, today), [snap, y, today]);
-  const month = useMemo(() => profitAndLoss(snap.journalEntries, snap.accounts, `${m}-01`, today), [snap, m, today]);
+  const { snap, balances, go, openDrawer, store } = useBooks();
+  const today = todayISO();
+  const [privacy, setPrivacy] = useState(() => loadPref("books.privacy", false));
+  const [shown, setShown] = useState<WidgetKey[]>(() => loadPref("books.widgets", Object.keys(WIDGETS) as WidgetKey[]));
+  const [customize, setCustomize] = useState(false);
+  const [funnelDays, setFunnelDays] = useState(30), [expDays, setExpDays] = useState(30);
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => savePref("books.privacy", privacy), [privacy]);
+  useEffect(() => savePref("books.widgets", shown), [shown]);
+  const amt = (c: number, short = false) => <span className={privacy ? "blur-[6px] select-none" : ""}>{short ? fmtShort(c) : money(c)}</span>;
+  const since = (days: number) => { const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString().slice(0, 10); };
+  const name = (store.email.match(/^[a-z]+/i)?.[0] || "").replace(/^./, (c) => c.toUpperCase());
+  const hour = new Date().getHours();
+
+  // Funnel: what's billed and not paid, paid but not in the bank yet, and deposited.
+  const funnel = useMemo(() => {
+    const from = since(funnelDays);
+    const applied = new Map<string, number>();
+    snap.transactions.filter((t) => t.type === "payment").forEach((p) => (p.applied || []).forEach((a) => applied.set(a.txId, (applied.get(a.txId) || 0) + a.amount)));
+    const invoices = snap.transactions.filter((t) => t.type === "invoice" && t.date >= from);
+    const open = invoices.map((i) => docTotal(i) - (applied.get(i.id) || 0)).filter((x) => x > 0);
+    const overdue = snap.transactions.filter((t) => t.type === "invoice" && t.dueDate && t.dueDate < today && docTotal(t) - (applied.get(t.id) || 0) > 0);
+    const payments = snap.transactions.filter((t) => t.type === "payment" && t.date >= from);
+    const deposits = snap.transactions.filter((t) => t.type === "deposit" && t.date >= from);
+    return { notPaid: open.reduce((a, b) => a + b, 0), notPaidCount: open.length, overdueCount: overdue.length, paid: payments.reduce((a, t) => a + (t.amount || 0), 0), paidCount: payments.length, undeposited: balances.get(SYSTEM.undeposited) || 0, deposited: deposits.reduce((a, t) => a + docTotal(t), 0), depositedCount: deposits.length };
+  }, [snap.transactions, funnelDays, balances, today]);
+
   const banks = snap.accounts.filter((a) => a.type === "Bank" || a.type === "CreditCard");
-  const months = useMemo(() => {
-    const out: { label: string; income: number; expense: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(Number(y), Number(today.slice(5, 7)) - 1 - i, 1);
-      const from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`, to = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-31`;
-      const p = profitAndLoss(snap.journalEntries, snap.accounts, from, to);
-      out.push({ label: d.toLocaleDateString("en-US", { month: "short" }), income: p.totalIncome, expense: p.totalCogs + p.totalExpenses });
+  const bankTotal = snap.accounts.filter((a) => a.type === "Bank").reduce((s, a) => s + (balances.get(a.id) || 0), 0);
+  const month = useMemo(() => profitAndLoss(snap.journalEntries, snap.accounts, `${today.slice(0, 7)}-01`, today), [snap, today]);
+  const exp = useMemo(() => {
+    const p = profitAndLoss(snap.journalEntries, snap.accounts, since(expDays), today);
+    const rows = [...p.cogs, ...p.expenses].sort((a, b) => b.amount - a.amount);
+    const top = rows.slice(0, 5), rest = rows.slice(5).reduce((s, r) => s + r.amount, 0);
+    const items = top.map((r) => ({ label: r.account.name, amount: r.amount }));
+    if (rest > 0) items.push({ label: "Everything else", amount: rest });
+    return { items, total: rows.reduce((s, r) => s + r.amount, 0) };
+  }, [snap, expDays, today]);
+  const cash = useMemo(() => {
+    const bankIds = new Set(snap.accounts.filter((a) => a.type === "Bank").map((a) => a.id));
+    const out: { label: string; bal: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i + 1); d.setDate(0);
+      const end = d.toISOString().slice(0, 10) > today ? today : d.toISOString().slice(0, 10);
+      let bal = 0;
+      for (const e of snap.journalEntries) if (e.date <= end) for (const l of e.lines) if (bankIds.has(l.accountId)) bal += l.debit - l.credit;
+      out.push({ label: d.toLocaleDateString("en-US", { month: "short" }), bal });
     }
     return out;
-  }, [snap, y, today]);
-  const max = Math.max(1, ...months.flatMap((x) => [x.income, x.expense]));
-  const recent = [...snap.transactions].sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)).slice(0, 8);
+  }, [snap, today]);
+
+  const toggle = (k: WidgetKey) => setShown((w) => (w.includes(k) ? w.filter((x) => x !== k) : [...w, k]));
+  const create = (label: string, milestone?: number) => (milestone ? openDrawer({ kind: "planned", title: label, milestone }) : openDrawer({ kind: "journal" }));
+  const donut = (() => {
+    let acc = 0; const C = 2 * Math.PI * 42;
+    return exp.items.map((it, i) => { const frac = exp.total ? it.amount / exp.total : 0; const seg = <circle key={i} cx="60" cy="60" r="42" fill="none" stroke={PIE[i % PIE.length]} strokeWidth="18" strokeDasharray={`${frac * C} ${C}`} strokeDashoffset={-acc * C} transform="rotate(-90 60 60)" />; acc += frac; return seg; });
+  })();
+  const maxBal = Math.max(1, ...cash.map((c) => Math.abs(c.bal))), minBal = Math.min(0, ...cash.map((c) => c.bal));
+  const y = (v: number) => 110 - ((v - minBal) / (maxBal - minBal || 1)) * 100;
+  const path = cash.map((c, i) => `${i ? "L" : "M"}${10 + i * (380 / 11)},${y(c.bal)}`).join(" ");
+  const maxPnl = Math.max(1, month.totalIncome, month.totalCogs + month.totalExpenses);
+
   return (
-    <>
-      <PageHead title={`Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}`} sub={new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <Stat label="Net income this month" value={money(month.netIncome)} sub={`Income ${money(month.totalIncome)}`} onClick={() => go("reports")} />
-        <Stat label="Net income year to date" value={money(ytd.netIncome)} sub={`Gross profit ${money(ytd.grossProfit)}`} onClick={() => go("reports")} />
-        <Stat label="Owed to you (A/R)" value={money(balances.get(SYSTEM.ar) || 0)} sub="Open invoices" />
-        <Stat label="You owe (A/P)" value={money(balances.get(SYSTEM.ap) || 0)} sub="Unpaid bills" />
+    <div className="max-w-[1480px] mx-auto">
+      <div className="relative flex items-center justify-center mb-6 min-h-[56px]">
+        <h1 className="text-3xl sm:text-[40px] font-normal text-ink tracking-tight text-center">Good {hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}{name ? `, ${name}` : ""}!</h1>
+        <div className="hidden xl:flex absolute right-0 top-1/2 -translate-y-1/2 items-center gap-5 text-ink-2">
+          <button type="button" className="flex items-center gap-1.5 text-[15px] hover:text-ink" onClick={() => setCustomize((c) => !c)} aria-expanded={customize}><Icon name="sliders" className="w-5 h-5" />Customize</button>
+          <button type="button" className="flex items-center gap-1.5 text-[15px] hover:text-ink" onClick={() => setPrivacy((p) => !p)} aria-pressed={privacy}><Icon name={privacy ? "eye" : "eyeOff"} className="w-5 h-5" />Privacy</button>
+        </div>
       </div>
-      <div className="grid lg:grid-cols-3 gap-3">
-        <div className="card p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4"><div className="text-sm font-semibold">Income vs. spending, last 6 months</div>
-            <div className="flex gap-3 text-[11px] text-ink-2"><span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slatebtn" />Income</span><span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-gray-300" />Spending</span></div></div>
-          <div className="flex items-end gap-3 h-44" role="img" aria-label="Income and spending by month">
-            {months.map((x) => (
-              <div key={x.label} className="flex-1 flex flex-col items-center gap-1.5">
-                <div className="w-full flex items-end gap-1 h-36">
-                  <div className="flex-1 bg-slatebtn rounded-t" style={{ height: `${(x.income / max) * 100}%` }} title={`Income ${money(x.income)}`} />
-                  <div className="flex-1 bg-gray-300 rounded-t" style={{ height: `${(x.expense / max) * 100}%` }} title={`Spending ${money(x.expense)}`} />
-                </div>
-                <div className="text-[11px] text-ink-3">{x.label}</div>
+      <div className="xl:hidden flex justify-end gap-4 text-sm text-ink-2 -mt-3 mb-4">
+        <button type="button" className="flex items-center gap-1" onClick={() => setCustomize((c) => !c)}><Icon name="sliders" />Customize</button>
+        <button type="button" className="flex items-center gap-1" onClick={() => setPrivacy((p) => !p)} aria-pressed={privacy}><Icon name={privacy ? "eye" : "eyeOff"} />Privacy</button>
+      </div>
+      {customize && (
+        <div className="bg-white border border-line rounded-xl p-4 mb-6 flex flex-wrap gap-x-6 gap-y-2" role="group" aria-label="Choose what's on your home page">
+          <span className="text-sm font-medium mr-2">Show on home:</span>
+          {(Object.keys(WIDGETS) as WidgetKey[]).map((k) => <label key={k} className="flex items-center gap-2 text-sm text-ink-2"><input type="checkbox" checked={shown.includes(k)} onChange={() => toggle(k)} className="accent-slate-800" />{WIDGETS[k]}</label>)}
+        </div>)}
+
+      {/* App shortcuts */}
+      <div className="relative mb-6">
+        <div ref={strip} className="flex gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] justify-start 2xl:justify-center">
+          {SHORTCUTS.map((sc) => (
+            <button key={sc.label} type="button" onClick={() => go(sc.page)} className="shrink-0 flex items-center gap-3 pl-2 pr-5 h-14 rounded-full border border-line bg-white hover:border-line-strong hover:shadow-card">
+              <span className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ background: sc.color }}><Icon name={sc.icon} className="w-5 h-5" strokeWidth={2} /></span>
+              <span className="text-[15px] font-medium text-ink whitespace-nowrap">{sc.label}</span>
+            </button>))}
+        </div>
+        <button type="button" aria-label="More shortcuts" onClick={() => strip.current?.scrollBy({ left: 320 })} className="hidden md:flex 2xl:hidden absolute right-0 top-0 h-14 w-12 items-center justify-end bg-gradient-to-l from-white via-white to-transparent"><Icon name="chevron" className="w-5 h-5" /></button>
+      </div>
+
+      {/* Create actions */}
+      <div className="flex flex-wrap items-center gap-3 mb-8">
+        <h2 className="text-lg font-medium text-ink mr-2">Create actions</h2>
+        {([["Create invoice", 3], ["Record expense", 4], ["Add bank deposit", 3], ["Create check", 4], ["Journal entry", 0]] as const).map(([l, m]) => (
+          <button key={l} type="button" onClick={() => create(l, m || undefined)} className="h-10 px-4 rounded-full border border-line-strong bg-white text-[15px] font-medium text-ink hover:bg-gray-50">{l}</button>))}
+        <button type="button" onClick={() => window.dispatchEvent(new Event("books:new"))} className="text-[15px] font-medium text-ink underline-offset-4 hover:underline px-1">Show all</button>
+      </div>
+
+      <h2 className="text-lg font-medium text-ink mb-3">Business at a glance</h2>
+      <div className="grid xl:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-5 mb-5">
+        {shown.includes("funnel") && (
+          <Card title="Sales & get paid funnel" right={<RangeSelect value={funnelDays} onChange={setFunnelDays} options={[[30, "Last 30 days"], [90, "Last 90 days"], [365, "Last 12 months"]]} />}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="border border-line rounded-lg p-5 flex flex-col">
+                <div className="text-[15px] font-semibold text-ink mb-5">Create a new invoice</div>
+                <div className="text-sm text-ink-2 flex-1">Bill a customer, then follow it here until it's in the bank.</div>
+                <button type="button" onClick={() => create("Invoice", 3)} className="btn-secondary mt-4 self-start">New invoice</button>
+              </div>
+              {([
+                ["Not paid", funnel.notPaid, `${funnel.notPaidCount} open invoice${funnel.notPaidCount === 1 ? "" : "s"}`, funnel.overdueCount ? `${funnel.overdueCount} overdue` : "", "#A7F3D0"],
+                ["Paid", funnel.paid, `${funnel.paidCount} payment${funnel.paidCount === 1 ? "" : "s"}`, funnel.undeposited ? `${fmtShort(funnel.undeposited)} not deposited yet` : "", "#34D399"],
+                ["Deposited", funnel.deposited, `${funnel.depositedCount} deposited`, "", "#059669"]
+              ] as const).map(([label, value, sub, warn, bar]) => (
+                <div key={label} className="border border-line rounded-lg overflow-hidden flex flex-col">
+                  <div className="h-2" style={{ background: bar }} />
+                  <div className="p-5 flex-1">
+                    <div className="text-[15px] text-ink-2 mb-6">{label}</div>
+                    <div className="text-2xl font-semibold text-ink tabular-nums">{amt(value)}</div>
+                    <div className="mt-3 flex flex-wrap gap-2 items-center">
+                      <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[13px] ${label === "Deposited" ? "bg-[#ECFDF5] text-[#047857]" : "text-ink-2"}`}>{label === "Deposited" && <Icon name="check" className="w-3.5 h-3.5" />}{sub}</span>
+                      {warn && <span className="badge-due">{warn}</span>}
+                    </div>
+                  </div>
+                </div>))}
+            </div>
+          </Card>)}
+        {shown.includes("bank") && (
+          <Card title="Bank accounts" right={<span className="text-[13px] text-ink-2">As of today</span>}>
+            <div className="text-[15px] text-ink-2">Total in the bank</div>
+            <div className="text-3xl font-normal text-ink tabular-nums mb-4">{amt(bankTotal, true)}</div>
+            <div className="divide-y divide-line">
+              {banks.map((a) => (
+                <div key={a.id} className="py-3 flex items-start gap-3">
+                  <span className="w-9 h-9 rounded-full bg-gray-100 text-ink-2 flex items-center justify-center shrink-0"><Icon name={a.type === "CreditCard" ? "payroll" : "bank"} className="w-[18px] h-[18px]" /></span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-semibold text-ink truncate">{a.name}</div>
+                    <div className="flex justify-between text-sm text-ink-2"><span>{a.type === "CreditCard" ? "Balance owed" : "In the books"}</span><span className="tabular-nums text-ink">{amt(balances.get(a.id) || 0)}</span></div>
+                    <div className="text-[12px] text-ink-3">Bank-side balance arrives with bank feeds</div>
+                  </div>
+                </div>))}
+            </div>
+            <button type="button" onClick={() => go("accounts")} className="text-[15px] font-medium text-ink hover:underline underline-offset-4 mt-2 inline-flex items-center gap-1">Go to registers<Icon name="arrowRight" className="w-4 h-4" /></button>
+          </Card>)}
+      </div>
+
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+        {shown.includes("pnl") && (
+          <Card title="Profit & loss" right={<span className="text-[13px] text-ink-2">This month</span>}>
+            <div className="text-[13px] text-ink-2">Net profit for {new Date().toLocaleDateString("en-US", { month: "long" })}</div>
+            <div className="text-3xl text-ink tabular-nums mb-5">{amt(month.netIncome)}</div>
+            {([["Income", month.totalIncome, "#059669"], ["Expenses", month.totalCogs + month.totalExpenses, "#94A3B8"]] as const).map(([l, v, c]) => (
+              <div key={l} className="mb-4">
+                <div className="flex justify-between text-sm mb-1.5"><span className="text-ink-2">{l}</span><span className="tabular-nums font-medium">{amt(v)}</span></div>
+                <div className="h-3 rounded bg-gray-100 overflow-hidden"><div className="h-full rounded" style={{ width: `${(v / maxPnl) * 100}%`, background: c }} /></div>
               </div>))}
-          </div>
-        </div>
-        <div className="card">
-          <div className="px-5 py-3.5 border-b border-line text-sm font-semibold">Bank & credit card accounts</div>
-          {banks.map((a) => (
-            <div key={a.id} className="px-5 py-3 border-b border-line last:border-0 flex justify-between text-sm">
-              <span>{a.name}<span className="block text-[11px] text-ink-3">{a.type === "CreditCard" ? "Balance owed" : "In the books"}</span></span>
-              <span className="tabular-nums font-medium">{money(balances.get(a.id) || 0)}</span>
-            </div>))}
-          <div className="px-5 py-3 text-[11px] text-ink-3">Bank-side balances and feeds arrive in Milestone 2.</div>
-        </div>
+            <button type="button" onClick={() => go("reports")} className="text-sm font-medium text-ink hover:underline underline-offset-4">See profit and loss report</button>
+          </Card>)}
+        {shown.includes("expenses") && (
+          <Card title="Expenses" right={<RangeSelect value={expDays} onChange={setExpDays} options={[[30, "Last 30 days"], [90, "Last 90 days"], [365, "Last 12 months"]]} />}>
+            <div className="text-[13px] text-ink-2">Spending</div>
+            <div className="text-3xl text-ink tabular-nums mb-3">{amt(exp.total)}</div>
+            <div className="flex items-center gap-4">
+              <svg viewBox="0 0 120 120" className="w-32 h-32 shrink-0" role="img" aria-label="Spending by category">{exp.total ? donut : <circle cx="60" cy="60" r="42" fill="none" stroke="#E5E7EB" strokeWidth="18" />}</svg>
+              <ul className="space-y-1.5 min-w-0 flex-1">{exp.items.map((it, i) => (
+                <li key={it.label} className="flex items-center gap-2 text-[13px]"><span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: PIE[i % PIE.length] }} /><span className="truncate flex-1 text-ink-2">{it.label}</span><span className="tabular-nums">{amt(it.amount, true)}</span></li>))}</ul>
+            </div>
+          </Card>)}
+        {shown.includes("cashflow") && (
+          <Card title="Cash flow" right={<span className="text-[13px] text-ink-2">Last 12 months</span>}>
+            <div className="text-[13px] text-ink-2">Cash in the bank today</div>
+            <div className="text-3xl text-ink tabular-nums mb-3">{amt(bankTotal)}</div>
+            <svg viewBox="0 0 400 130" className="w-full h-32" role="img" aria-label="Bank balance at the end of each month">
+              <line x1="10" x2="390" y1={y(0)} y2={y(0)} stroke="#E5E7EB" />
+              <path d={path} fill="none" stroke="#1F2937" strokeWidth="2.5" strokeLinejoin="round" />
+              {cash.map((c, i) => <circle key={i} cx={10 + i * (380 / 11)} cy={y(c.bal)} r="3" fill="#1F2937"><title>{`${c.label}: ${money(c.bal)}`}</title></circle>)}
+            </svg>
+            <div className="flex justify-between text-[11px] text-ink-3 px-1">{cash.filter((_, i) => i % 2 === 1).map((c) => <span key={c.label}>{c.label}</span>)}</div>
+          </Card>)}
       </div>
-      <div className="card mt-3">
-        <div className="px-5 py-3.5 border-b border-line text-sm font-semibold">Recent activity</div>
-        <table className="w-full"><tbody>
-          {recent.map((t) => (
-            <tr key={t.id}><td className="td text-ink-2 whitespace-nowrap">{fmtDate(t.date)}</td>
-              <td className="td capitalize">{t.type.replace(/([A-Z])/g, " $1")}{t.number ? ` #${t.number}` : t.checkNumber ? ` #${t.checkNumber}` : ""}</td>
-              <td className="td text-ink-2 hidden sm:table-cell">{snap.contacts.find((c) => c.id === t.contactId)?.displayName || t.memo || ""}</td>
-              <td className="td text-right tabular-nums">{money(t.amount ?? docTotal(t))}</td></tr>))}
-          {!recent.length && <tr><td className="td text-ink-3">Nothing yet. Use + New to record something.</td></tr>}
-        </tbody></table>
-      </div>
-    </>
+    </div>
   );
 }
 
