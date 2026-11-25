@@ -52,6 +52,96 @@ service cloud.firestore {
         && request.resource.data.data is string;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // Books (new app): everything lives under organizations/{orgId}.
+    // Access comes from organizations/{orgId}/members/{uid}: { role, areas: [...] }.
+    // "areas" are the parts of the books a person may change (sales, purchases,
+    // banking, ledger, inventory, projects, time, payroll, taxes, settings).
+    // ═══════════════════════════════════════════════════════════════════════
+    match /organizations/{orgId} {
+      function orgPath() { return /databases/$(database)/documents/organizations/$(orgId); }
+      function memberPath() { return /databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid); }
+      function isOrgMember() { return signedIn() && exists(memberPath()); }
+      function me() { return get(memberPath()).data; }
+      function isAdmin() { return isOrgMember() && me().role == "admin"; }
+      function canWrite(area) { return isOrgMember() && (me().role == "admin" || area in me().areas); }
+      function closingDate() { return get(orgPath()).data.get("closingDate", ""); }
+      // A date is open when there's no closing date or it's after the closing date (YYYY-MM-DD compares as text).
+      function isOpen(d) { return d is string && d.size() == 10 && (closingDate() == "" || closingDate() == null || d > closingDate()); }
+
+      allow read: if isOrgMember() || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      // Approved people from the current dashboard can start a company; they become its owner.
+      allow create: if isMember() && request.resource.data.ownerUid == request.auth.uid;
+      // Only admins change company settings (including the closing date). Ownership can't be handed off from the app.
+      allow update: if isAdmin() && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isOrgMember();
+        // The owner adds themselves as the first admin; after that, admins manage people.
+        allow create: if (signedIn() && uid == request.auth.uid && get(orgPath()).data.ownerUid == request.auth.uid && request.resource.data.role == "admin")
+                      || isAdmin();
+        allow update, delete: if isAdmin() && uid != request.auth.uid;
+      }
+
+      // The ledger. Entries must balance, can't be dated in a closed period, and can never be edited or deleted.
+      // Corrections are new reversing entries.
+      match /journalEntries/{entryId} {
+        allow read: if isOrgMember();
+        allow create: if canWrite("ledger") || canWrite("sales") || canWrite("purchases") || canWrite("banking") || canWrite("payroll") || canWrite("inventory")
+          ? (request.resource.data.totalDebit is int
+             && request.resource.data.totalDebit > 0
+             && request.resource.data.totalDebit == request.resource.data.totalCredit
+             && request.resource.data.lines is list
+             && request.resource.data.lines.size() >= 2
+             && request.resource.data.lines.size() <= 500
+             && request.resource.data.createdBy == request.auth.uid
+             && isOpen(request.resource.data.date))
+          : false;
+        allow update, delete: if false;
+      }
+
+      // Business documents (invoices, bills, checks…). Nothing in a closed period can be created or changed, and
+      // nothing is ever deleted: documents are voided instead.
+      match /transactions/{txId} {
+        allow read: if isOrgMember();
+        allow create: if (canWrite("sales") || canWrite("purchases") || canWrite("banking") || canWrite("ledger") || canWrite("payroll"))
+          && isOpen(request.resource.data.date);
+        allow update: if (canWrite("sales") || canWrite("purchases") || canWrite("banking") || canWrite("ledger") || canWrite("payroll"))
+          && isOpen(resource.data.date) && isOpen(request.resource.data.date);
+        allow delete: if false;
+      }
+
+      // Audit trail: anyone in the company adds their own lines; nobody edits or deletes them.
+      match /auditLogs/{logId} {
+        allow read: if isAdmin() || (isOrgMember() && me().role == "accountant");
+        allow create: if isOrgMember() && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      // Everything else in the company: read by members, changed by people with access to that part of the books.
+      match /{col}/{docId} {
+        function areaFor(c) {
+          return {
+            "accounts": "ledger", "classes": "ledger", "locations": "ledger", "fixedAssets": "ledger", "budgets": "ledger", "revenueSchedules": "ledger",
+            "contacts": "sales", "priceLevels": "sales", "recurringTemplates": "sales",
+            "vendorsMeta": "purchases",
+            "bankFeeds": "banking", "bankRules": "banking", "reconciliations": "banking",
+            "items": "inventory", "inventoryLots": "inventory",
+            "projects": "projects", "timeActivities": "time",
+            "employees": "payroll", "payRuns": "payroll",
+            "taxRates": "taxes", "mileage": "taxes",
+            "workflows": "settings"
+          }.get(c, "none");
+        }
+        allow read: if isOrgMember() && areaFor(col) != "none";
+        allow create, update: if areaFor(col) != "none" && canWrite(areaFor(col));
+        // Time-only users can log their own time.
+        allow create, update: if col == "timeActivities" && isOrgMember() && request.resource.data.uid == request.auth.uid;
+        allow delete: if areaFor(col) != "none" && col != "accounts" && canWrite(areaFor(col));
+      }
+    }
+
     // Everything else is closed.
     match /{document=**} {
       allow read, write: if false;

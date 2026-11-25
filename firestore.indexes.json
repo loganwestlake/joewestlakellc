@@ -1,0 +1,7 @@
+{
+  "indexes": [
+    { "collectionGroup": "transactions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "type", "order": "ASCENDING" }, { "fieldPath": "date", "order": "DESCENDING" }] },
+    { "collectionGroup": "journalEntries", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "sourceId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" }] }
+  ],
+  "fieldOverrides": []
+}
