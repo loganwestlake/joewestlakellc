@@ -484,6 +484,11 @@
       </div>
     </div>
 
+    <div class="px-3 pt-2 shrink-0">
+      <button type="button" data-action="gsearch" title="Search everything (Ctrl+K)" class="sb-quick w-full flex items-center gap-2.5 px-3 h-9 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-white text-[13px]">
+        <span data-icon="search" data-sw="2"></span><span class="nav-label">Search</span><span class="nav-label kbd ml-auto">Ctrl K</span>
+      </button>
+    </div>
     <nav id="side-nav" class="flex-1 min-h-0 px-3 py-3 overflow-y-auto scrollbar-none"></nav>
     <div id="side-nav-footer" class="px-3 py-2 border-t border-white/[0.06] space-y-0.5 shrink-0"></div>
     <div class="px-3 py-3 border-t border-white/[0.06] shrink-0"><div id="auth-area-desktop"></div></div>
@@ -502,7 +507,10 @@
           <div class="text-[9px] text-slate-500 tracking-wide font-mono leading-none mt-0.5" data-version></div>
         </div>
       </div>
-      <div id="auth-area-mobile" class="shrink-0"></div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button type="button" data-action="gsearch" class="p-2 rounded-lg text-slate-400 hover:text-white" aria-label="Search everything"><span data-icon="search" data-cls="w-5 h-5" data-sw="2"></span></button>
+        <div id="auth-area-mobile" class="shrink-0"></div>
+      </div>
     </div>
   </div>
 
@@ -611,6 +619,8 @@
           </div>
         </div>
 
+        <div id="quick-actions" class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6"></div>
+        <div id="ytd-strip" class="glass rounded-2xl p-4 sm:p-5 mb-6"></div>
         <div id="today-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -627,6 +637,22 @@
               <span class="text-[11px] text-slate-500">Next 14 days</span>
             </div>
             <div id="upcoming-list" class="space-y-1.5"></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <div class="glass rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold text-white">Recent activity</h2>
+              <button type="button" data-action="goto" data-tab="money" class="text-[11px] text-slate-400 hover:text-white">See all</button>
+            </div>
+            <div id="recent-list" class="space-y-0.5"></div>
+          </div>
+          <div class="glass rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold text-white">Where this month's money went</h2>
+              <button type="button" data-action="goto-money-month" class="text-[11px] text-slate-400 hover:text-white">Details</button>
+            </div>
+            <div id="month-cats" class="space-y-2.5"></div>
           </div>
         </div>
       </section>
@@ -1004,6 +1030,19 @@
 
 <button type="button" id="mobile-fab" class="fab" data-action="fab" aria-label="Quick add"><span data-icon="plus" data-cls="w-6 h-6" data-sw="2.5"></span></button>
 
+<!-- SEARCH EVERYTHING -->
+<div id="search-modal" class="modal-root fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="Search everything">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close></div>
+  <div class="relative mx-auto mt-[6vh] w-[min(640px,calc(100%-24px))] rounded-2xl bg-[#0d0d10] border border-white/[0.08] shadow-2xl shadow-black/70 overflow-hidden">
+    <div class="flex items-center gap-3 px-4 border-b border-white/[0.06]">
+      <span class="text-slate-500" data-icon="search" data-cls="w-5 h-5" data-sw="2"></span>
+      <input id="gsearch-input" type="search" autocomplete="off" autofocus class="flex-1 min-w-0 bg-transparent py-4 text-white text-[15px] outline-none placeholder-slate-600" placeholder="Search charges, checks, invoices, jobs, files… or an amount" aria-label="Search everything" />
+      <button type="button" data-close class="text-[11px] text-slate-500 border border-white/[0.1] rounded px-1.5 py-0.5">Esc</button>
+    </div>
+    <div id="gsearch-results" class="max-h-[65vh] overflow-y-auto p-2"></div>
+  </div>
+</div>
+
 <!-- W-9 FILLER -->
 <div id="w9-modal" class="modal-root fixed inset-0 z-50 hidden modal-shell" role="dialog" aria-modal="true" aria-labelledby="w9-title">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in" data-close></div>
@@ -1146,11 +1185,15 @@
 
         <div id="bank-step-upload">
           <label class="import-drop" for="bank-file" id="bank-drop">
-            <input id="bank-file" type="file" accept="application/pdf,image/*" multiple class="hidden" />
+            <input id="bank-file" type="file" accept="application/pdf,image/*,.csv,.qfx,.ofx,.qbo" multiple class="hidden" />
             <span class="text-slate-500 inline-block mb-3" data-icon="cloud" data-cls="w-10 h-10" data-sw="1.5"></span>
             <div class="text-sm text-white font-medium mb-1">Click to choose statements, or drop them here</div>
-            <div class="text-xs text-slate-500">Pick several months at once · PDF, PNG, or JPG · up to 12 files, 10MB each</div>
+            <div class="text-xs text-slate-500">Pick several months at once · PDF statements, photos, or a CSV / Quicken (QFX) download from Truist · up to 12 files</div>
           </label>
+          <details class="mt-4 text-xs text-slate-400"><summary class="cursor-pointer hover:text-white">Fastest: download transactions from Truist</summary>
+            <ol class="list-decimal pl-5 mt-2 space-y-1"><li>Sign in at truist.com (or the Truist app on a computer) and open the business checking account.</li>
+              <li>Find <b>Download</b> or <b>Export transactions</b>, pick the dates, and choose <b>CSV</b> or <b>Quicken (QFX)</b>.</li>
+              <li>Drop the file here. It's read directly with no AI, so there's no daily limit.</li></ol></details>
           <div id="bank-error" role="alert" class="whitespace-pre-line text-red-400 text-[12px] hidden bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mt-4"></div>
         </div>
 
@@ -2352,7 +2395,9 @@ function saveRecord(e) {
   if (schema.docId) persist(setDoc(doc(db, col, schema.docId), { ...data, updatedAt: serverTimestamp() }, { merge: true }), `Couldn't save ${schema.label.toLowerCase()}`);
   else if (existing) persist(updateDoc(doc(db, col, id), { ...data, ...(col === "files" ? { updatedAt: serverTimestamp() } : {}) }), `Couldn't update ${schema.label.toLowerCase()}`);
   else persist(addDoc(collection(db, col), { ...data, createdAt: serverTimestamp(), ...(col === "files" ? { by: auth.currentUser?.email || "" } : {}) }), `Couldn't add ${schema.label.toLowerCase()}`);
-  toast(existing ? `${schema.label} updated` : `${schema.label} added`);
+  const similar = key === "expenses" && existing ? similarToChange(existing, data) : { list: [] };
+  if (similar.list.length) toast(`Updated. ${plural(similar.list.length, "other charge")} from ${similar.name} ${similar.list.length === 1 ? "is" : "are"} still set differently.`, { duration: 12000, action: { label: "Change them too", run: () => applyToSimilar(similar) } });
+  else toast(existing ? `${schema.label} updated` : `${schema.label} added`);
   closeModal("record-modal");
 }
 
@@ -2425,6 +2470,54 @@ function applyRecurring(list) {
 // ═════════════════════════════════════════════════════════════
 const setText = (sel, v) => { const el = $(sel); if (el) el.textContent = v; };
 
+const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
+// ── Today: quick actions, year so far, recent activity, where the money went ──
+const QUICK_ACTIONS = [
+  { label: "Add expense", icon: "minus", attrs: 'data-action="new" data-col="expenses"', tone: "text-amber-400" },
+  { label: "Record pay", icon: "users", attrs: 'data-action="new" data-col="payroll"', tone: "text-teal-300" },
+  { label: "Write check", icon: "edit", attrs: 'data-action="new" data-col="checks"', tone: "text-blue-300" },
+  { label: "Import bank", icon: "upload", attrs: 'data-action="import-bank"', tone: "text-violet-300" },
+  { label: "Add file", icon: "folder", attrs: 'data-action="goto" data-tab="files"', tone: "text-amber-300" },
+  { label: "Explain month", icon: "sparkle", attrs: 'data-action="explain-this-month"', tone: "text-violet-300" }
+];
+function renderDashboardExtras() {
+  $("#quick-actions").innerHTML = html`${QUICK_ACTIONS.map((q) => html`<button type="button" ${raw(q.attrs)} class="glass glass-hover rounded-xl px-2 py-3 flex flex-col items-center gap-1.5 text-center">
+    ${icon(q.icon, `w-5 h-5 ${q.tone}`, 2)}<span class="text-[11px] sm:text-xs text-slate-200 font-medium leading-tight">${q.label}</span></button>`)}`;
+
+  const ready = auth.currentUser && loaded.has("expenses") && loaded.has("income") && loaded.has("invoices");
+  const y = new Date().getFullYear(), ytd = periodTotals(periodRange("this-year"));
+  const pay = store.expenses.filter((e) => isLabor(e) && yearOf(e) === y);
+  const cell = (label, value, tone, sub = "") => html`<div><div class="stat-label mb-1">${label}</div><div class="font-serif text-xl sm:text-2xl ${tone}">${ready ? value : "—"}</div>${sub ? html`<div class="text-[11px] text-slate-500">${sub}</div>` : ""}</div>`;
+  $("#ytd-strip").innerHTML = html`<div class="flex items-center justify-between mb-3"><div class="text-[11px] font-medium text-slate-400 tracking-[0.2em] uppercase">${y} so far</div>
+      <button type="button" data-action="goto-money-year" class="text-[11px] text-slate-400 hover:text-white">Month by month</button></div>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+      ${cell("Made", money(ytd.made), "text-emerald-400")}
+      ${cell("Spent", money(ytd.spent), "text-amber-400")}
+      ${cell("Net", signedMoney(ytd.net), ytd.net >= 0 ? "text-emerald-300" : "text-red-400")}
+      ${cell("Paid to workers", money(sum(pay)), "text-teal-300", plural(pay.length, "payment"))}
+      ${cell("Tax-deductible", money(ytd.deductible), "text-white", "of what you spent")}
+    </div>`;
+
+  // Recent: the latest money in and out, newest first.
+  const recent = [
+    ...store.expenses.map((e) => ({ date: e.date, name: isCheck(e) && !payeeOf(e) ? `Check #${checkNumberOf(e)}` : (isCheck(e) ? payeeOf(e) : e.vendor), cat: e.category, amount: -num(e.amount), attrs: `data-action="edit" data-col="expenses" data-id="${escapeHtml(e.id)}"`, sub: categoryLabel(e.category) })),
+    ...store.income.map((r) => ({ date: r.date, name: r.source, cat: "other", amount: num(r.amount), attrs: `data-action="edit" data-col="income" data-id="${escapeHtml(r.id)}"`, sub: "Deposit" })),
+    ...store.invoices.filter(isPaid).map((i) => ({ date: paidDateOf(i), name: i.customer, cat: "other", amount: num(i.amount), attrs: `data-action="edit" data-col="invoices" data-id="${escapeHtml(i.id)}"`, sub: "Invoice paid" }))
+  ].filter((r) => validISO(r.date) && r.date <= todayISO()).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  $("#recent-list").innerHTML = !ready ? skeleton(3) : recent.length ? html`${recent.map((r) => html`<button type="button" ${raw(r.attrs)} class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.03] text-left">
+      ${merchantLogo(r.name, r.cat)}<span class="min-w-0 flex-1"><span class="block text-sm text-white truncate">${r.name || "—"}</span><span class="block text-[11px] text-slate-500">${fmtDate(r.date)} · ${r.sub}</span></span>
+      <span class="text-sm tabular-nums shrink-0 ${r.amount >= 0 ? "text-emerald-400" : "text-slate-200"}">${r.amount >= 0 ? "+" : "−"}${money(Math.abs(r.amount))}</span></button>`)}`
+    : html`<div class="text-sm text-slate-500 py-2">Nothing recorded yet.</div>`;
+
+  // This month by category, biggest first.
+  const exps = store.expenses.filter((e) => inRange(e.date, thisMonth()));
+  const cats = topN(tally(exps, (e) => normCategory(e.category)), 6), top = cats[0]?.total || 1;
+  $("#month-cats").innerHTML = !ready ? skeleton(3) : cats.length ? html`${cats.map((c) => html`<button type="button" data-action="goto-money-month" class="w-full text-left group">
+      <div class="flex items-center justify-between text-sm mb-1"><span class="text-slate-200 group-hover:text-white">${categoryLabel(c.name)}</span><span class="text-slate-300 tabular-nums">${money(c.total)}</span></div>
+      <div class="h-1.5 rounded-full bg-white/[0.05] overflow-hidden"><div class="h-full rounded-full" style="width:${((c.total / top) * 100).toFixed(1)}%;background:${CATEGORIES[c.name]?.color || "#64748b"}"></div></div></button>`)}`
+    : html`<div class="text-sm text-slate-500 py-2">No spending recorded this month yet.</div>`;
+}
+
 function renderToday() {
   const range = thisMonth();
   const paid = store.invoices.filter((i) => isPaid(i) && inRange(paidDateOf(i), range));
@@ -2435,6 +2528,7 @@ function renderToday() {
   const moneyIn = sum(paid) + sum(other), moneyOut = sum(exps), net = moneyIn - moneyOut;
   const deductible = sum(exps, deductibleAmount);
 
+  renderDashboardExtras();
   setText("#pnl-month", monthLabel());
   setText("#pnl-in", money(moneyIn));
   setText("#pnl-in-sub", plural(paid.length, "payment") + (other.length ? ` · ${plural(other.length, "deposit")}` : ""));
@@ -3639,6 +3733,94 @@ function initFiles() {
 }
 
 // ═════════════════════════════════════════════════════════════
+// SEARCH EVERYTHING (Ctrl/Cmd + K)
+// ═════════════════════════════════════════════════════════════
+function searchEverything(raw) {
+  const term = String(raw || "").trim().toLowerCase();
+  if (term.length < 2) return [];
+  const amt = Number(term.replace(/[$,\s]/g, ""));
+  const isAmt = /^\$?[\d,]+(\.\d{1,2})?$/.test(term.trim()) && Number.isFinite(amt);
+  const hit = (amount, ...texts) => (isAmt && Math.abs(num(amount) - amt) < 0.005) || texts.some((t) => String(t ?? "").toLowerCase().includes(term));
+  const groups = [];
+  const add = (label, rows) => { if (rows.length) groups.push({ label, rows: rows.slice(0, 8), more: Math.max(0, rows.length - 8) }); };
+  const byDateDesc = (a, b) => String(b.date || "").localeCompare(String(a.date || ""));
+  add("Charges & checks", store.expenses.filter((e) => hit(e.amount, e.vendor, payeeOf(e), e.note, categoryLabel(e.category), checkNumberOf(e) && `check ${checkNumberOf(e)}`, checkNumberOf(e))).sort(byDateDesc)
+    .map((e) => ({ logo: merchantLogo(isCheck(e) ? payeeOf(e) : e.vendor, e.category), title: isCheck(e) ? `Check #${checkNumberOf(e)}${payeeOf(e) ? ` · ${payeeOf(e)}` : ""}` : e.vendor, sub: `${fmtDate(e.date)} · ${money(e.amount)} · ${categoryLabel(e.category)}`, attrs: `data-action="edit" data-col="expenses" data-id="${escapeHtml(e.id)}"` })));
+  add("Money in", store.income.filter((r) => hit(r.amount, r.source, r.note)).sort(byDateDesc)
+    .map((r) => ({ logo: merchantLogo(r.source, "other"), title: r.source, sub: `${fmtDate(r.date)} · +${money(r.amount)}`, attrs: `data-action="edit" data-col="income" data-id="${escapeHtml(r.id)}"` })));
+  add("Invoices", store.invoices.filter((i) => hit(i.amount, i.customer, i.notes)).sort(byDateDesc)
+    .map((i) => ({ logo: html`<span class="mlogo" style="--c:#10b981">${icon("invoice", "w-3.5 h-3.5", 2)}</span>`, title: i.customer, sub: `${fmtDate(i.date)} · ${money(i.amount)} · ${INVOICE_STATUSES[invoiceStatus(i)]?.label || ""}`, attrs: `data-action="edit" data-col="invoices" data-id="${escapeHtml(i.id)}"` })));
+  add("Jobs", store.jobs.filter((j) => hit(j.amount, j.customer, j.address, j.notes)).sort(byDateDesc)
+    .map((j) => ({ logo: html`<span class="mlogo" style="--c:#3b82f6">${icon("jobs", "w-3.5 h-3.5", 2)}</span>`, title: j.customer, sub: `${fmtDate(j.date)}${j.address ? ` · ${j.address}` : ""}`, attrs: `data-action="view-job" data-id="${escapeHtml(j.id)}"` })));
+  add("Files & notes", liveFiles().filter((f) => hit(null, f.name, f.note, f.text))
+    .map((f) => ({ logo: html`<span class="mlogo" style="--c:#f59e0b">${icon(fileIcon(f), "w-3.5 h-3.5", 2)}</span>`, title: f.name, sub: `${FILE_FOLDERS[f.folder] || "Other"}${f.kind === "note" ? " · Note" : ` · ${fmtSize(f.size)}`}`, attrs: `data-action="${f.kind === "note" ? "note-view" : "file-open"}" data-id="${escapeHtml(f.id)}"` })));
+  add("Recurring bills", store.recurring.filter((r) => hit(r.amount, r.name, r.vendor))
+    .map((r) => ({ logo: merchantLogo(r.vendor || r.name, r.category), title: r.name, sub: `${money(r.amount)} a month · day ${r.dayOfMonth || 1}`, attrs: `data-action="edit" data-col="recurring" data-id="${escapeHtml(r.id)}"` })));
+  add("People", store.team.filter((t) => hit(null, t.name, t.role, t.email, t.phone))
+    .map((t) => ({ logo: html`<span class="mlogo" style="--c:#14b8a6">${(t.name || "?")[0]}</span>`, title: t.name, sub: [WORKER_KINDS[t.kind]?.split(" (")[0], t.role].filter(Boolean).join(" · "), attrs: `data-action="edit" data-col="team" data-id="${escapeHtml(t.id)}"` })));
+  return groups;
+}
+let gsearchSel = 0;
+function renderSearchResults() {
+  const box = $("#gsearch-results"), term = $("#gsearch-input").value;
+  const groups = searchEverything(term);
+  gsearchSel = 0;
+  if (term.trim().length < 2) { box.innerHTML = html`<div class="px-3 py-6 text-sm text-slate-500 text-center">Type a name, store, check number, memo or amount, like <span class="text-slate-300">Sherwin</span>, <span class="text-slate-300">2179</span> or <span class="text-slate-300">$50.47</span>.</div>`; return; }
+  if (!groups.length) { box.innerHTML = html`<div class="px-3 py-6 text-sm text-slate-500 text-center">Nothing matches “${term}”.</div>`; return; }
+  let n = 0;
+  box.innerHTML = html`${groups.map((g) => html`<div class="px-2 pt-2 pb-1 text-[10px] font-semibold text-slate-500 tracking-[0.15em] uppercase">${g.label}${g.more ? ` · ${g.more} more` : ""}</div>
+    ${g.rows.map((r) => html`<button type="button" ${raw(r.attrs)} data-gs="${n++}" class="gs-item w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left hover:bg-white/[0.05]">${r.logo}
+      <span class="min-w-0 flex-1"><span class="block text-sm text-white truncate">${r.title || "—"}</span><span class="block text-[11px] text-slate-500 truncate">${r.sub}</span></span></button>`)}`)}`;
+  highlightSearch();
+}
+function highlightSearch() { $$("#gsearch-results .gs-item").forEach((b, i) => b.classList.toggle("bg-white/[0.06]", i === gsearchSel)); $(`#gsearch-results [data-gs="${gsearchSel}"]`)?.scrollIntoView({ block: "nearest" }); }
+function openSearch() {
+  openModal("search-modal");
+  const inp = $("#gsearch-input");
+  inp.value = "";
+  renderSearchResults();
+  setTimeout(() => inp.focus(), 30);
+}
+function initSearch() {
+  const inp = $("#gsearch-input");
+  let t;
+  inp.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderSearchResults, 80); });
+  inp.addEventListener("keydown", (e) => {
+    const items = $$("#gsearch-results .gs-item");
+    if (e.key === "ArrowDown") { e.preventDefault(); gsearchSel = Math.min(items.length - 1, gsearchSel + 1); highlightSearch(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); gsearchSel = Math.max(0, gsearchSel - 1); highlightSearch(); }
+    else if (e.key === "Enter") { e.preventDefault(); items[gsearchSel]?.click(); }
+  });
+  // Close the search first, then let the normal click handling open what was picked.
+  $("#gsearch-results").addEventListener("click", (e) => { if (e.target.closest(".gs-item")) closeModal("search-modal"); });
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); isOpen("search-modal") ? closeModal("search-modal") : openSearch(); }
+  });
+}
+
+// ── "Change the others too": after re-categorizing a charge, offer the same change for that store's other charges ──
+const merchantKey = (name) => String(name || "").toUpperCase().replace(/#\s*\d+/g, " ").replace(/\d+/g, " ").replace(/[^A-Z&' ]/g, " ").replace(/\s+/g, " ").trim();
+const GENERIC_BANK_RE = /ATM|PAYMENT|\bFEE\b|WITHDRAWAL|TRANSFER|DEPOSIT|CHARGE|CHECK/i;
+function sameMerchant(a, b) {
+  if (!a || !b) return false;
+  if (merchantKey(a) && merchantKey(a) === merchantKey(b)) return true;
+  const da = merchantDomain(a);
+  return !!da && da === merchantDomain(b) && !GENERIC_BANK_RE.test(a) && !GENERIC_BANK_RE.test(b);
+}
+function similarToChange(existing, data) {
+  const cat = normCategory(data.category ?? existing.category), ded = Number(data.deductible ?? getDeductible(existing));
+  if (normCategory(existing.category) === cat && getDeductible(existing) === ded) return { list: [] };
+  const name = data.vendor || existing.vendor;
+  const list = store.expenses.filter((e) => e.id !== existing.id && !isLabor(e) && !isCheck(e) && sameMerchant(e.vendor, name) && (normCategory(e.category) !== cat || getDeductible(e) !== ded));
+  return { list, cat, ded, name };
+}
+function applyToSimilar({ list, cat, ded, name }) {
+  const undo = list.map((e) => ({ id: e.id, category: e.category ?? deleteField(), deductible: e.deductible ?? deleteField() }));
+  persist(runBatched(list.map((e) => (b) => b.update(doc(db, "expenses", e.id), { category: cat, deductible: ded }))), "Couldn't update");
+  toast(`Changed ${plural(list.length, "more charge")} from ${name}`, { action: { label: "Undo", run: () => persist(runBatched(undo.map((u) => (b) => b.update(doc(db, "expenses", u.id), { category: u.category, deductible: u.deductible }))), "Couldn't undo") } });
+}
+
+// ═════════════════════════════════════════════════════════════
 // W-9 — fills in the official IRS form (the blank one you download from irs.gov, kept in Files)
 // ═════════════════════════════════════════════════════════════
 const PDFLIB_URL = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
@@ -4449,6 +4631,95 @@ function parseTruistStatement(lines) {
   };
 }
 
+// ── Bank downloads (CSV spreadsheet, or Quicken QFX/OFX/QBO) — read directly, no AI ──
+const BANK_DOWNLOAD_RE = /\.(csv|qfx|ofx|qbo)$/i;
+function parseCSVRows(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.map((r) => r.map((c) => c.trim())).filter((r) => r.some(Boolean));
+}
+// "08/03/2026", "8/3/26", "2026-08-03", "20260803…" → ISO
+function bankDate(v) {
+  const s = String(v || "").trim();
+  let m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = s.match(/^(\d{4})(\d{2})(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/))) { const y = m[3].length === 2 ? `20${m[3]}` : m[3]; return `${y}-${pad2(m[1])}-${pad2(m[2])}`; }
+  return "";
+}
+const moneyCell = (v) => { const s = String(v || "").replace(/[$,\s]/g, ""); if (!s) return null; const neg = /^\(.*\)$/.test(s) || s.startsWith("-"); const n = Number(s.replace(/[()\-+]/g, "")); return Number.isFinite(n) ? (neg ? -n : n) : null; };
+
+function bankTxnsToStatement(txns) {
+  const debits = [], deposits = [];
+  for (const t of txns) {
+    if (!t.date || !t.amount) continue;
+    if (t.amount < 0 || t.kind === "debit") {
+      const amount = Math.abs(t.amount);
+      if (t.check) { debits.push({ date: t.date, vendor: `Check #${t.check}`, amount, category: "other", deductible: 50, note: "Check: add who it was paid to", check: t.check, raw: t.desc }); continue; }
+      const info = describeStatementLine(t.desc, "debit");
+      debits.push({ date: t.date, vendor: info.name, amount, category: info.category, deductible: info.deductible, note: info.note || "", raw: t.desc });
+    } else {
+      deposits.push({ date: t.date, memo: describeStatementLine(t.desc, "deposit").name, amount: Math.abs(t.amount), note: "", raw: t.desc });
+    }
+  }
+  const dates = [...debits, ...deposits].map((t) => t.date).sort();
+  return { bank: "Bank download", periodStart: dates[0] || null, periodEnd: dates[dates.length - 1] || null, debits, deposits, check: null };
+}
+
+function parseBankCSV(text) {
+  const rows = parseCSVRows(text);
+  const hi = rows.findIndex((r) => r.some((c) => /date/i.test(c)) && r.some((c) => /amount|debit|credit|withdraw|deposit/i.test(c)));
+  if (hi < 0) return null;
+  const head = rows[hi].map((c) => c.toLowerCase());
+  const col = (re, not) => head.findIndex((h) => re.test(h) && !(not && not.test(h)));
+  const iDate = col(/post/) >= 0 && /date/.test(head[col(/post/)]) ? col(/post/) : col(/date/);
+  const iDesc = col(/desc|memo|payee|name|detail/, /date/);
+  const iAmt = col(/^amount$|amount \(|^amt/);
+  const iDebit = col(/debit|withdraw/), iCredit = col(/credit|deposit/);
+  const iType = col(/type/), iCheck = col(/check|serial/);
+  const txns = [];
+  for (const r of rows.slice(hi + 1)) {
+    const date = bankDate(r[iDate]);
+    if (!date) continue;
+    let amount = iAmt >= 0 ? moneyCell(r[iAmt]) : null, kind = null;
+    if (amount === null && (iDebit >= 0 || iCredit >= 0)) {
+      const d = iDebit >= 0 ? moneyCell(r[iDebit]) : null, c = iCredit >= 0 ? moneyCell(r[iCredit]) : null;
+      if (d) amount = -Math.abs(d); else if (c) amount = Math.abs(c);
+    }
+    if (amount === null) continue;
+    const type = iType >= 0 ? String(r[iType]).toLowerCase() : "";
+    if (amount > 0 && /debit|withdraw|check|purchase|fee|payment/.test(type) && !/credit|deposit/.test(type)) kind = "debit";
+    const check = iCheck >= 0 ? String(r[iCheck] || "").replace(/\D/g, "") : "";
+    txns.push({ date, amount, kind, check: check && check !== "0" ? check : "", desc: (iDesc >= 0 ? r[iDesc] : r.filter((c, i) => i !== iDate).join(" ")) || "" });
+  }
+  return txns.length ? bankTxnsToStatement(txns) : null;
+}
+
+function parseOFX(text) {
+  const tag = (block, t) => (block.match(new RegExp(`<${t}>([^<\\r\\n]*)`, "i")) || [])[1]?.trim() || "";
+  const txns = [...text.matchAll(/<STMTTRN>([\s\S]*?)(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>)/gi)].map(([, b]) => ({
+    date: bankDate(tag(b, "DTPOSTED")),
+    amount: moneyCell(tag(b, "TRNAMT")) || 0,
+    check: tag(b, "CHECKNUM").replace(/\D/g, ""),
+    desc: [tag(b, "NAME"), tag(b, "MEMO")].filter(Boolean).join(" ")
+  }));
+  return txns.length ? bankTxnsToStatement(txns) : null;
+}
+async function readBankDownload(file) {
+  const text = await file.text();
+  const parsed = /\.csv$/i.test(file.name) ? parseBankCSV(text) : parseOFX(text);
+  if (!parsed || (!parsed.debits.length && !parsed.deposits.length)) throw new Error("couldn't find any transactions in this file");
+  return parsed;
+}
+
 // pdf.js is only downloaded the first time someone imports a PDF.
 const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
 const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
@@ -4551,6 +4822,7 @@ const BANK_CONCURRENCY = 2; // two statements with the AI at a time: faster, but
 
 // Reads one statement with the AI and returns its raw debits/deposits.
 async function readStatement(file) {
+  if (BANK_DOWNLOAD_RE.test(file.name)) return { ...(await readBankDownload(file)), via: "direct" };
   const direct = await readStatementDirect(file);
   if (direct) return { ...direct, via: "direct" };
   const base64 = await fileToBase64(file);
@@ -4585,7 +4857,7 @@ async function processBankFiles(fileList) {
   }
   files = files.filter((f) => {
     if (f.size > MAX_UPLOAD_BYTES) { skipped.push(`${f.name} (larger than 10MB)`); return false; }
-    if (!/^(application\/pdf|image\/)/.test(f.type || "application/pdf")) { skipped.push(`${f.name} (not a PDF or image)`); return false; }
+    if (!BANK_DOWNLOAD_RE.test(f.name) && !/^(application\/pdf|image\/)/.test(f.type || "application/pdf")) { skipped.push(`${f.name} (not a PDF, photo, or bank download)`); return false; }
     return true;
   });
   // The same statement downloaded twice ("May.pdf" and "May (1).pdf") would cost a second AI request for nothing.
@@ -4679,7 +4951,7 @@ async function processBankFiles(fileList) {
     }
     const mine = [...debits, ...deposits].filter((x) => x.file === r.file.name);
     const already = mine.filter((x) => x.dup).length;
-    const period = r.periodEnd ? `${monthKeyLong(r.periodEnd.slice(0, 7))} statement` : "";
+    const period = r.bank === "Bank download" && r.periodStart ? `transactions ${fmtDate(r.periodStart)} – ${fmtDate(r.periodEnd)}` : r.periodEnd ? `${monthKeyLong(r.periodEnd.slice(0, 7))} statement` : "";
     let line = `${r.file.name}${period ? ` → ${period}` : ""}: ${plural(mine.length, "transaction")}`;
     if (r.check) line += r.check.ok ? " ✓ matches the statement's totals" : ` ⚠ doesn't match the statement's totals`;
     if (r.via === "direct") line += " · read directly, no AI";
@@ -5261,6 +5533,7 @@ const ACTIONS = {
   edit: requireAuth((d) => { const r = byId(d.col, d.id); if (r) openRecordForm(d.col === "expenses" ? expenseFormFor(r) : d.col === "files" ? (r.kind === "note" ? "notes" : "fileInfo") : d.col, r); }),
   "edit-business": requireAuth(() => openRecordForm("business", byId("settings", "business") || null)),
   "w9": requireAuth((d) => openW9(d.who || "business")),
+  gsearch: () => openSearch(),
   "files-folder": (d) => { filesState.folder = d.folder || "all"; renderFiles(); },
   "files-upload": requireAuth(() => $("#files-input").click()),
   "file-open": requireAuth((d) => openStoredFile(d.id, false)),
@@ -5304,6 +5577,8 @@ const ACTIONS = {
   "cleanup-all": (d) => { cleanup.dups.forEach((x) => (x.include = d.on === "1")); renderCleanup(); },
   "cleanup-confirm": (d) => { cleanup.mode = d.mode; cleanup.step = "confirm"; renderCleanup(); $("#cleanup-modal .modal-panel").scrollTop = 0; },
   "cleanup-go": requireAuth(() => runCleanup()),
+  "goto-money-year": () => { switchTab("money"); if (!["income", "expenses"].includes(moneyState.sub)) setMoneySub("expenses"); setMoneyPeriod("this-year"); },
+  "explain-this-month": requireAuth(() => { switchTab("money"); if (!["income", "expenses"].includes(moneyState.sub)) setMoneySub("expenses"); setMoneyPeriod("this-month"); runMoneyReview(false); }),
   "goto-money-month": () => { switchTab("money"); if (moneyState.sub === "recurring") setMoneySub("expenses"); setMoneyPeriod("this-month"); },
   "export-csv": exportCSV,
   backup: requireAuth(downloadBackup),
@@ -5336,7 +5611,7 @@ document.addEventListener("click", (e) => {
   fn(el.dataset, el, e);
 });
 
-// Keyboard shortcuts (ignored while typing): N quick add · [ collapse sidebar · / search this page
+// Keyboard shortcuts (ignored while typing): N quick add · [ collapse sidebar · / search this page · Ctrl/Cmd+K search everything
 document.addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing || modalStack.length) return;
   if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
@@ -5361,8 +5636,9 @@ function init() {
   initSend();
   initCleanup();
   initFiles();
+  initSearch();
 
-  $("#today-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  $("#today-date").textContent = `${greeting()} · ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`;
   $("#record-form").addEventListener("submit", saveRecord);
   $("#record-delete").onclick = () => { if (recordCtx?.id) { const { col, id } = recordCtx; closeModal("record-modal"); col === "files" ? trashFile(id) : removeRecord(col, id); } };
 
