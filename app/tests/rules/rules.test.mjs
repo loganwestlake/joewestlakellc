@@ -50,6 +50,14 @@ await t("fractional totals are refused", () => assertFails(setDoc(doc(as("owner"
 await t("one-line entry is refused", () => assertFails(setDoc(doc(as("owner"), "organizations/org1/journalEntries/je5"), je({ lines: [{ accountId: "a", debit: 500, credit: 0 }] }))));
 await t("entry in a closed period is refused", () => assertFails(setDoc(doc(as("owner"), "organizations/org1/journalEntries/je6"), je({ date: "2026-06-30" }))));
 await t("entry posted under someone else's name is refused", () => assertFails(setDoc(doc(as("owner"), "organizations/org1/journalEntries/je7"), je({ createdBy: "sales" }))));
+// Line-by-line checks: the totals have to come from the lines themselves.
+await t("lines that don't balance are refused even when the stated totals do", () => assertFails(setDoc(doc(as("owner"), "organizations/org1/journalEntries/jx0"),
+  je({ lines: [{ accountId: "acct_1000", debit: 500, credit: 0 }, { accountId: "acct_6300", debit: 100, credit: 0 }, { accountId: "acct_3000", debit: 0, credit: 500 }] }))));
+await t("lines that don't add up to the stated totals are refused", () => assertFails(setDoc(doc(as("owner"), "organizations/org1/journalEntries/jx1"),
+  je({ lines: [{ accountId: "acct_1000", debit: 400, credit: 0 }, { accountId: "acct_3000", debit: 0, credit: 500 }] }))));
+const many = (n) => { const lines = Array.from({ length: n - 1 }, (_, i) => ({ accountId: "acct_6300", debit: 10, credit: 0 })); lines.push({ accountId: "acct_1000", debit: 0, credit: 10 * (n - 1) }); return je({ lines, totalDebit: 10 * (n - 1), totalCredit: 10 * (n - 1) }); };
+await t("a 30-line entry that adds up posts", () => assertSucceeds(setDoc(doc(as("owner"), "organizations/org1/journalEntries/jx5"), many(30))));
+await t("31 lines is over the limit", () => assertFails(setDoc(doc(as("owner"), "organizations/org1/journalEntries/jx6"), many(31))));
 await t("posted entries can't be edited", () => assertFails(updateDoc(doc(as("owner"), "organizations/org1/journalEntries/je0"), { totalDebit: 1, totalCredit: 1 })));
 await t("posted entries can't be deleted", () => assertFails(deleteDoc(doc(as("owner"), "organizations/org1/journalEntries/je0"))));
 await t("sales user can post (sales area)", () => assertSucceeds(setDoc(doc(as("sales"), "organizations/org1/journalEntries/je8"), je({ createdBy: "sales" }))));

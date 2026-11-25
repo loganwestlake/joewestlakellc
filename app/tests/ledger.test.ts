@@ -76,6 +76,12 @@ describe("posting rules", () => {
     ];
     for (const d of docs) expect(() => post(d), d.type).not.toThrow();
   });
+  it("a 60-item invoice still posts within the 30-line limit", () => {
+    const big: Transaction = { id: "big", type: "invoice", date: "2026-10-01", contactId: "c1", lines: Array.from({ length: 60 }, (_, i) => ({ amount: 1000 + i, description: `Room ${i + 1}`, accountId: i % 2 ? SYSTEM.serviceIncome : "acct_4100" })) };
+    const e = post(big);
+    expect(e.lines.length).toBeLessThanOrEqual(30);
+    expect(e.totalDebit).toBe(docTotal(big));
+  });
   it("estimates, sales orders and POs don't post", () => {
     for (const type of ["estimate", "salesOrder", "purchaseOrder"] as const) expect(postingFor({ id: type, type, date: "2026-10-01", lines: [{ amount: 100 }] })).toBeNull();
   });

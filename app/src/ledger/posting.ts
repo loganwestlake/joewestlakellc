@@ -1,7 +1,7 @@
 // Posting rules: how each business document turns into balanced debits and credits.
 // Documents that don't move money yet (estimates, sales orders, purchase orders) don't post.
 import { SYSTEM } from "./accounts";
-import { compactLines, JournalLine } from "./journal";
+import { compactLines, MAX_LINES, type JournalLine } from "./journal";
 import { Cents, sumCents } from "./money";
 
 export type TxType =
@@ -114,5 +114,8 @@ export function postingFor(t: Transaction): JournalLine[] | null {
     case "journal": lines = (t.journalLines || []).map((l) => ({ ...l })); break;
     default: throw new Error(`No posting rule for ${t.type}`);
   }
-  return t.type === "journal" ? lines : compactLines(lines);
+  if (t.type === "journal") return lines;
+  const compact = compactLines(lines);
+  // Over the 30-line limit (e.g. a long invoice)? Merge lines on the same account; the details stay on the document.
+  return compact.length > MAX_LINES ? compactLines(compact.map(({ memo: _memo, ...l }) => l)) : compact;
 }

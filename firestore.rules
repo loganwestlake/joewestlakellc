@@ -65,8 +65,24 @@ service cloud.firestore {
       function me() { return get(memberPath()).data; }
       function isAdmin() { return isOrgMember() && me().role == "admin"; }
       function canWrite(area) { return isOrgMember() && (me().role == "admin" || area in me().areas); }
+      // Areas that post to the ledger. One lookup of who you are, then one list check.
+      function canPost() { return isOrgMember() && (me().role == "admin" || me().areas.hasAny(["ledger", "sales", "purchases", "banking", "payroll", "inventory"])); }
       function closingDate() { return get(orgPath()).data.get("closingDate", ""); }
       // A date is open when there's no closing date or it's after the closing date (YYYY-MM-DD compares as text).
+      // The rules language has no loops, so the lines are added up one by one in groups of 8, stopping at the last line.
+      // This proves every entry's lines really balance and match its stated totals. Entries are capped at 30 lines to
+      // stay inside Firestore's 1,000-expression limit. (Per-line tidiness — whole cents, one side per line — is checked
+      // by the app's ledger engine; adding those checks here would cut the limit to about 9 lines.)
+      function sd0(l, n) { return (n <= 0 ? 0 : (l[0].debit + (n <= 1 ? 0 : (l[1].debit + (n <= 2 ? 0 : (l[2].debit + (n <= 3 ? 0 : (l[3].debit + (n <= 4 ? 0 : (l[4].debit + (n <= 5 ? 0 : (l[5].debit + (n <= 6 ? 0 : (l[6].debit + (n <= 7 ? 0 : (l[7].debit + 0)))))))))))))))); }
+      function sc0(l, n) { return (n <= 0 ? 0 : (l[0].credit + (n <= 1 ? 0 : (l[1].credit + (n <= 2 ? 0 : (l[2].credit + (n <= 3 ? 0 : (l[3].credit + (n <= 4 ? 0 : (l[4].credit + (n <= 5 ? 0 : (l[5].credit + (n <= 6 ? 0 : (l[6].credit + (n <= 7 ? 0 : (l[7].credit + 0)))))))))))))))); }
+      function sd1(l, n) { return (n <= 8 ? 0 : (l[8].debit + (n <= 9 ? 0 : (l[9].debit + (n <= 10 ? 0 : (l[10].debit + (n <= 11 ? 0 : (l[11].debit + (n <= 12 ? 0 : (l[12].debit + (n <= 13 ? 0 : (l[13].debit + (n <= 14 ? 0 : (l[14].debit + (n <= 15 ? 0 : (l[15].debit + 0)))))))))))))))); }
+      function sc1(l, n) { return (n <= 8 ? 0 : (l[8].credit + (n <= 9 ? 0 : (l[9].credit + (n <= 10 ? 0 : (l[10].credit + (n <= 11 ? 0 : (l[11].credit + (n <= 12 ? 0 : (l[12].credit + (n <= 13 ? 0 : (l[13].credit + (n <= 14 ? 0 : (l[14].credit + (n <= 15 ? 0 : (l[15].credit + 0)))))))))))))))); }
+      function sd2(l, n) { return (n <= 16 ? 0 : (l[16].debit + (n <= 17 ? 0 : (l[17].debit + (n <= 18 ? 0 : (l[18].debit + (n <= 19 ? 0 : (l[19].debit + (n <= 20 ? 0 : (l[20].debit + (n <= 21 ? 0 : (l[21].debit + (n <= 22 ? 0 : (l[22].debit + (n <= 23 ? 0 : (l[23].debit + 0)))))))))))))))); }
+      function sc2(l, n) { return (n <= 16 ? 0 : (l[16].credit + (n <= 17 ? 0 : (l[17].credit + (n <= 18 ? 0 : (l[18].credit + (n <= 19 ? 0 : (l[19].credit + (n <= 20 ? 0 : (l[20].credit + (n <= 21 ? 0 : (l[21].credit + (n <= 22 ? 0 : (l[22].credit + (n <= 23 ? 0 : (l[23].credit + 0)))))))))))))))); }
+      function sd3(l, n) { return (n <= 24 ? 0 : (l[24].debit + (n <= 25 ? 0 : (l[25].debit + (n <= 26 ? 0 : (l[26].debit + (n <= 27 ? 0 : (l[27].debit + (n <= 28 ? 0 : (l[28].debit + (n <= 29 ? 0 : (l[29].debit + (n <= 30 ? 0 : (l[30].debit + (n <= 31 ? 0 : (l[31].debit + 0)))))))))))))))); }
+      function sc3(l, n) { return (n <= 24 ? 0 : (l[24].credit + (n <= 25 ? 0 : (l[25].credit + (n <= 26 ? 0 : (l[26].credit + (n <= 27 ? 0 : (l[27].credit + (n <= 28 ? 0 : (l[28].credit + (n <= 29 ? 0 : (l[29].credit + (n <= 30 ? 0 : (l[30].credit + (n <= 31 ? 0 : (l[31].credit + 0)))))))))))))))); }
+      function sumDebits(l, n) { return sd0(l, n) + sd1(l, n) + sd2(l, n) + sd3(l, n); }
+      function sumCredits(l, n) { return sc0(l, n) + sc1(l, n) + sc2(l, n) + sc3(l, n); }
       function isOpen(d) { return d is string && d.size() == 10 && (closingDate() == "" || closingDate() == null || d > closingDate()); }
 
       allow read: if isOrgMember() || (signedIn() && resource.data.ownerUid == request.auth.uid);
@@ -84,17 +100,19 @@ service cloud.firestore {
         allow update, delete: if isAdmin() && uid != request.auth.uid;
       }
 
-      // The ledger. Entries must balance, can't be dated in a closed period, and can never be edited or deleted.
+      // The ledger. Entries' lines must add up and balance, can't be dated in a closed period, and can never be edited or deleted.
       // Corrections are new reversing entries.
       match /journalEntries/{entryId} {
         allow read: if isOrgMember();
-        allow create: if canWrite("ledger") || canWrite("sales") || canWrite("purchases") || canWrite("banking") || canWrite("payroll") || canWrite("inventory")
+        allow create: if canPost()
           ? (request.resource.data.totalDebit is int
              && request.resource.data.totalDebit > 0
              && request.resource.data.totalDebit == request.resource.data.totalCredit
              && request.resource.data.lines is list
              && request.resource.data.lines.size() >= 2
-             && request.resource.data.lines.size() <= 500
+             && request.resource.data.lines.size() <= 30
+             && sumDebits(request.resource.data.lines, request.resource.data.lines.size()) == request.resource.data.totalDebit
+             && sumCredits(request.resource.data.lines, request.resource.data.lines.size()) == request.resource.data.totalCredit
              && request.resource.data.createdBy == request.auth.uid
              && isOpen(request.resource.data.date))
           : false;

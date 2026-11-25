@@ -38,6 +38,8 @@ export class LedgerError extends Error {
 }
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
+/** Matches the database rules, which check every line one by one (they can't loop). */
+export const MAX_LINES = 30;
 
 /** True when `date` is on or before the closing date: the books for that period are locked. */
 export const isLocked = (date: string, closingDate?: string | null) => !!closingDate && date <= closingDate;
@@ -50,6 +52,7 @@ export function validateEntry(
   if (!ISO.test(e.date)) throw new LedgerError(`Date must be YYYY-MM-DD (got "${e.date}")`, "BAD_DATE");
   if (isLocked(e.date, opts.closingDate)) throw new LedgerError(`The books are closed through ${opts.closingDate}. Post this in an open period.`, "PERIOD_LOCKED");
   if (!Array.isArray(e.lines) || e.lines.length < 2) throw new LedgerError("A journal entry needs at least two lines.", "TOO_FEW_LINES");
+  if (e.lines.length > MAX_LINES) throw new LedgerError(`A journal entry can have at most ${MAX_LINES} lines. Split it into two entries.`, "TOO_MANY_LINES");
   const lookup = opts.accounts instanceof Map ? (id: string) => (opts.accounts as Map<string, Account>).get(id) : (id: string) => (opts.accounts as Record<string, Account> | undefined)?.[id];
   e.lines.forEach((l, i) => {
     const n = i + 1;
