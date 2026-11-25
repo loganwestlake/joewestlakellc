@@ -330,7 +330,7 @@ function SidePanel({ kind, onClose }: { kind: "assistant" | "settings"; onClose:
   const { snap, store, orgId, toast, go } = useBooks();
   const [closing, setClosing] = useState(snap.org?.closingDate || "");
   return (
-    <aside className="fixed right-0 top-0 bottom-0 w-full sm:w-[380px] bg-white border-l border-line shadow-pop z-30 flex flex-col" aria-label={kind === "assistant" ? "Assistant" : "Settings"}>
+    <aside className="fixed right-0 top-16 md:top-[72px] bottom-0 w-full sm:w-[380px] bg-white border-l border-line shadow-pop z-30 flex flex-col" aria-label={kind === "assistant" ? "Assistant" : "Settings"}>
       <div className="h-12 px-4 border-b border-line flex items-center justify-between">
         <div className="text-sm font-semibold">{kind === "assistant" ? "Assistant" : "Company settings"}</div>
         <button type="button" className="btn-ghost h-8 px-2" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
