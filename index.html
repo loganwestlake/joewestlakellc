@@ -995,6 +995,13 @@
           <div id="team-list" class="mobile-cards"></div>
         </div>
         <div class="mb-10">
+          <div class="mb-4">
+            <h2 class="text-lg font-semibold text-white tracking-tight">Bank connection</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Pull new transactions straight from the business bank account (through Plaid)</p>
+          </div>
+          <div id="bank-connection" class="glass rounded-2xl p-5 text-sm"></div>
+        </div>
+        <div class="mb-10">
           <div class="flex items-center justify-between mb-4 gap-3">
             <div>
               <h2 class="text-lg font-semibold text-white tracking-tight">Business info</h2>
@@ -1184,6 +1191,7 @@
         </div>
 
         <div id="bank-step-upload">
+          <div id="bank-live" class="hidden mb-4"></div>
           <label class="import-drop" for="bank-file" id="bank-drop">
             <input id="bank-file" type="file" accept="application/pdf,image/*,.csv,.qfx,.ofx,.qbo" multiple class="hidden" />
             <span class="text-slate-500 inline-block mb-3" data-icon="cloud" data-cls="w-10 h-10" data-sw="1.5"></span>
@@ -1212,6 +1220,7 @@
               <button type="button" id="bank-select-none" class="text-xs text-slate-400 hover:text-white">Select none</button>
             </div>
           </div>
+          <div id="bank-sandbox-note" class="hidden mb-3 rounded-lg border border-violet-500/30 bg-violet-500/[0.08] px-3 py-2 text-xs text-violet-200">Test mode: these are Plaid's made-up test transactions, so importing is turned off. Switch the proxy to production to use the real account.</div>
           <div id="bank-files-note" class="hidden whitespace-pre-line text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-3"></div>
           <div id="bank-dup-note" class="hidden text-xs text-slate-400 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 mb-4"></div>
           <div id="bank-recurring-wrap" class="mb-5 hidden">
@@ -1279,7 +1288,7 @@ import {
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const APP_VERSION = "v2.9";
+const APP_VERSION = "v3.0";
 const WORKER_URL = "https://gemini-proxy.loganwestlake3.workers.dev";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -1632,6 +1641,7 @@ function renderAll() {
   renderTeam();
   renderFiles();
   renderBusinessInfo();
+  renderBankConnection();
   refreshCalendar();
   updateSendButton();
   renderNavBadges();
@@ -2476,7 +2486,7 @@ const QUICK_ACTIONS = [
   { label: "Add expense", icon: "minus", attrs: 'data-action="new" data-col="expenses"', tone: "text-amber-400" },
   { label: "Record pay", icon: "users", attrs: 'data-action="new" data-col="payroll"', tone: "text-teal-300" },
   { label: "Write check", icon: "edit", attrs: 'data-action="new" data-col="checks"', tone: "text-blue-300" },
-  { label: "Import bank", icon: "upload", attrs: 'data-action="import-bank"', tone: "text-violet-300" },
+  { label: "Bank", icon: "upload", attrs: 'data-action="import-bank"', tone: "text-violet-300" },
   { label: "Add file", icon: "folder", attrs: 'data-action="goto" data-tab="files"', tone: "text-amber-300" },
   { label: "Explain month", icon: "sparkle", attrs: 'data-action="explain-this-month"', tone: "text-violet-300" }
 ];
@@ -2581,6 +2591,10 @@ function renderAttention(today, overdue) {
     sub: i.dueDate ? `Due ${fmtDate(i.dueDate)} · ${plural(Math.max(0, daysBetween(i.dueDate, today)), "day")} late` : "Marked overdue",
     attrs: `data-action="edit" data-col="invoices" data-id="${escapeHtml(i.id)}"`
   }));
+  const pi = plaidInfo();
+  if (pi?.connectedAt && pi.env !== "sandbox" && (!pi.lastSync || Date.now() - new Date(pi.lastSync) > 7 * 86400000)) items.push({
+    tone: "violet", title: `Get new transactions from ${pi.institution}`, sub: pi.lastSync ? `Last checked ${fmtDate(pi.lastSync.slice(0, 10))}` : "Not checked yet", attrs: `data-action="bank-sync"`
+  });
   const unapplied = unappliedRecurring();
   if (unapplied.length) items.push({
     tone: "amber", title: `${plural(unapplied.length, "recurring bill")} not logged for ${monthKeyLabel(monthKey())}`,
@@ -4457,8 +4471,8 @@ function showBankStep(step) {
   ["upload", "loading", "review"].forEach((s) => $(`#bank-step-${s}`).classList.toggle("hidden", s !== step));
 }
 function showBankError(msg) { const el = $("#bank-error"); el.textContent = msg || ""; el.classList.toggle("hidden", !msg); }
-function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.recurring = []; bank.files = []; bank.summary = null; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
-function openBankModal() { resetBank(); openModal("bank-modal", { focus: false }); }
+function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.recurring = []; bank.files = []; bank.summary = null; bank.cursor = null; bank.plaidChanges = null; bank.sandbox = false; $("#bank-sandbox-note")?.classList.add("hidden"); if ($("#bank-live")) $("#bank-live").innerHTML = ""; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
+function openBankModal() { resetBank(); renderBankConnection(); openModal("bank-modal", { focus: false }); }
 modalCloseHooks["bank-modal"] = resetBank;
 
 const tokens = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 2);
@@ -4629,6 +4643,210 @@ function parseTruistStatement(lines) {
     debits, deposits,
     check: { ok: got.debits === want.debits && got.deposits === want.deposits, got, want }
   };
+}
+
+// ═════════════════════════════════════════════════════════════
+// LIVE BANK CONNECTION (Plaid, through the proxy — the bank's key never reaches the browser)
+// ═════════════════════════════════════════════════════════════
+const PLAID_LINK_URL = "https://cdn.plaid.com/link/v2/stable/link-initialize.js";
+const plaidInfo = () => byId("settings", "plaid");
+const bankConnected = () => !!plaidInfo()?.connectedAt;
+const bankName = () => plaidInfo()?.institution || "your bank";
+let plaidLinkPromise = null;
+function loadPlaidLink() {
+  if (window.Plaid) return Promise.resolve(window.Plaid);
+  plaidLinkPromise ||= new Promise((resolve, reject) => {
+    const sc = document.createElement("script");
+    sc.src = PLAID_LINK_URL;
+    sc.onload = () => (window.Plaid ? resolve(window.Plaid) : reject(new Error("Plaid didn't load")));
+    sc.onerror = () => { plaidLinkPromise = null; reject(new Error("Couldn't load the bank sign-in. Check your connection.")); };
+    document.head.appendChild(sc);
+  });
+  return plaidLinkPromise;
+}
+async function bankApi(path, body = {}) {
+  const token = await auth.currentUser?.getIdToken().catch(() => null);
+  if (!token) throw new Error("Sign in first.");
+  let res;
+  try { res = await fetch(WORKER_URL + path, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }); }
+  catch { throw new Error("Couldn't reach the proxy. If you haven't updated it with the latest code yet, see PLAID-SETUP.md."); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) throw Object.assign(new Error(data.error?.message || (res.status === 404 ? "The proxy doesn't have the bank connection yet. Paste the latest proxy code into Cloudflare (see PLAID-SETUP.md)." : `Proxy error (HTTP ${res.status})`)), { code: data.error?.code, status: res.status });
+  return data;
+}
+const savePlaidInfo = (data) => setDoc(doc(db, "settings", "plaid"), data, { merge: true });
+
+// Opens the bank's sign-in (Plaid Link). "update" fixes an existing connection when the bank asks to sign in again.
+async function connectBank(mode = "new") {
+  if (!auth.currentUser) { openModal("signin-modal"); return; }
+  try {
+    setBankBusy(true);
+    const [{ link_token }, Plaid] = await Promise.all([bankApi("/plaid/link-token", { mode }), loadPlaidLink()]);
+    // Banks that sign you in on their own website send you back here; remember where we were.
+    try { sessionStorage.setItem("jw_plaid_link", JSON.stringify({ token: link_token, mode })); } catch {}
+    openPlaidLink(Plaid, link_token, mode);
+  } catch (err) {
+    toast(err.message, "error");
+  } finally {
+    setBankBusy(false);
+  }
+}
+function openPlaidLink(Plaid, token, mode, receivedRedirectUri) {
+  const handler = Plaid.create({
+    token,
+    ...(receivedRedirectUri ? { receivedRedirectUri } : {}),
+    onSuccess: async (publicToken, metadata) => {
+      try { sessionStorage.removeItem("jw_plaid_link"); } catch {}
+      try {
+        if (mode === "update") { toast(`${bankName()} reconnected`); }
+        else {
+          const r = await bankApi("/plaid/exchange", { public_token: publicToken, institution: metadata?.institution, accounts: metadata?.accounts });
+          await savePlaidInfo({ institution: r.institution, accounts: r.accounts, env: r.env, connectedAt: r.connectedAt, cursor: "", lastSync: "", by: auth.currentUser?.email || "" });
+          toast(`Connected to ${r.institution}. Getting your transactions…`);
+        }
+        setTimeout(() => syncBank(), 300);
+      } catch (err) { toast(err.message, "error"); }
+    },
+    onExit: (err) => { try { sessionStorage.removeItem("jw_plaid_link"); } catch {} if (err) toast(err.display_message || err.error_message || "The bank sign-in was closed.", "error"); }
+  });
+  handler.open();
+}
+// Coming back from a bank's own sign-in page (OAuth): pick up where Plaid left off.
+async function resumePlaidOAuth() {
+  if (!/[?&]oauth_state_id=/.test(location.search)) return;
+  let saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem("jw_plaid_link") || "null"); } catch {}
+  const received = location.href;
+  history.replaceState(null, "", location.pathname + (location.hash || "#settings"));
+  if (!saved?.token) return;
+  try { openPlaidLink(await loadPlaidLink(), saved.token, saved.mode, received); } catch (err) { toast(err.message, "error"); }
+}
+
+// Plaid's spending categories, used when our own store list doesn't know the merchant.
+const PFC_RULES = [
+  [/GAS/, "gas", 75], [/^FOOD_AND_DRINK/, "other", 25, "Restaurant, mostly personal"], [/^HOME_IMPROVEMENT/, "supplies", 100],
+  [/^GENERAL_MERCHANDISE/, "supplies", 50, "General store, could be personal"], [/^LOAN_PAYMENTS/, "credit_card", 100], [/^BANK_FEES/, "other", 100],
+  [/^RENT_AND_UTILITIES/, "utilities", 100], [/INSURANCE/, "insurance", 100], [/^TRANSPORTATION/, "vehicle", 75],
+  [/^ENTERTAINMENT/, "other", 0, "Entertainment, personal"], [/^PERSONAL_CARE/, "other", 0, "Personal"], [/^MEDICAL/, "other", 25, "Medical, mostly personal"],
+  [/^GOVERNMENT_AND_NON_PROFIT/, "other", 100, "Taxes or government fees"]
+];
+function plaidToStatement(txns) {
+  const debits = [], deposits = [];
+  for (const t of txns) {
+    if (t.pending || !validISO(t.date) || !num(t.amount)) continue; // only posted transactions; pending ones come back once they post
+    const desc = t.description || t.name || t.merchant || "";
+    if (t.amount > 0) {
+      if (t.check) { debits.push({ date: t.date, vendor: `Check #${t.check}`, amount: t.amount, category: "other", deductible: 50, note: "Check: add who it was paid to", check: String(t.check), raw: desc, plaidId: t.id }); continue; }
+      const info = describeStatementLine(desc, "debit");
+      const known = info.note !== "Not sure what this is";
+      const rule = known ? null : PFC_RULES.find(([re]) => re.test(t.category || ""));
+      debits.push({ date: t.date, vendor: known ? info.name : (t.merchant || info.name), amount: t.amount, category: rule ? rule[1] : info.category, deductible: rule ? rule[2] : info.deductible, note: rule ? rule[3] || "" : info.note || "", raw: desc, plaidId: t.id });
+    } else {
+      const name = describeStatementLine(desc, "deposit").name;
+      deposits.push({ date: t.date, memo: /^(Deposit|.{0,3})$/.test(name) && t.merchant ? t.merchant : name, amount: Math.abs(t.amount), note: "", raw: desc, plaidId: t.id });
+    }
+  }
+  const dates = [...debits, ...deposits].map((x) => x.date).sort();
+  return { debits, deposits, periodStart: dates[0] || null, periodEnd: dates[dates.length - 1] || null };
+}
+
+async function syncBank() {
+  if (!auth.currentUser) { openModal("signin-modal"); return; }
+  if (!bankConnected()) { switchTab("settings"); toast("Connect the bank first", "info"); return; }
+  if (!isOpen("bank-modal")) openBankModal();
+  const req = ++bank.req;
+  showBankError("");
+  showBankStep("loading");
+  setText("#bank-loading-title", `Getting new transactions from ${bankName()}…`);
+  setText("#bank-loading-sub", "Usually a few seconds");
+  try {
+    const info = plaidInfo();
+    const r = await bankApi("/plaid/sync", { cursor: info.cursor || "" });
+    if (req !== bank.req) return;
+    const st = plaidToStatement(r.added);
+    const changes = { removed: r.removed || [], modified: (r.modified || []).filter((t) => !t.pending) };
+    const fresh = [...st.debits, ...st.deposits].filter((t) => !store.expenses.some((e) => e.plaidId === t.plaidId) && !store.income.some((x) => x.plaidId === t.plaidId));
+    const firstTime = !info.cursor;
+    if (!fresh.length) {
+      // Nothing to review. On the very first sync, the bank may still be sending history: don't move past it yet.
+      if (firstTime && !r.added.length && r.status !== "HISTORICAL_UPDATE_COMPLETE") {
+        showBankStep("upload");
+        showBankError(`${bankName()} is still sending your history (the first time can take a few minutes). Try "Get new transactions" again shortly.`);
+        return;
+      }
+      if (r.env !== "sandbox") { applyBankChanges(changes); await savePlaidInfo({ cursor: r.next_cursor, lastSync: new Date().toISOString() }); }
+      showBankStep("upload");
+      toast(`You're up to date with ${bankName()}`);
+      closeModal("bank-modal");
+      return;
+    }
+    buildBankReview([{ file: { name: `${r.institution || bankName()} connection`, size: 0 }, via: "plaid", bank: "Bank download", ...st }], { cursor: r.next_cursor });
+    bank.plaidChanges = changes;
+    bank.sandbox = r.env === "sandbox";
+    $("#bank-sandbox-note").classList.toggle("hidden", !bank.sandbox);
+    updateBankImportButton();
+  } catch (err) {
+    if (req !== bank.req) return;
+    showBankStep("upload");
+    showBankError(err.message);
+    if (err.code === "ITEM_LOGIN_REQUIRED") $("#bank-live").innerHTML = String(html`<button type="button" data-action="bank-reconnect" class="btn-primary w-full btn-touch">${icon("refresh", "w-4 h-4", 2)}Reconnect ${bankName()}</button>`);
+  }
+}
+// The bank sometimes corrects or cancels transactions after the fact. Keep what was imported in step.
+function applyBankChanges({ removed = [], modified = [] } = {}) {
+  const ops = [];
+  for (const id of removed) {
+    store.expenses.filter((e) => e.plaidId === id).forEach((e) => ops.push((b) => b.delete(doc(db, "expenses", e.id))));
+    store.income.filter((x) => x.plaidId === id).forEach((x) => ops.push((b) => b.delete(doc(db, "income", x.id))));
+  }
+  for (const t of modified) {
+    store.expenses.filter((e) => e.plaidId === t.id).forEach((e) => ops.push((b) => b.update(doc(db, "expenses", e.id), { amount: round2(Math.abs(t.amount)), date: t.date })));
+    store.income.filter((x) => x.plaidId === t.id).forEach((x) => ops.push((b) => b.update(doc(db, "income", x.id), { amount: round2(Math.abs(t.amount)), date: t.date })));
+  }
+  if (ops.length) persist(runBatched(ops), "Couldn't apply the bank's corrections");
+  return ops.length;
+}
+async function disconnectBank() {
+  if (!confirm(`Disconnect ${bankName()}? Transactions already imported stay. You can connect again any time.`)) return;
+  try {
+    setBankBusy(true);
+    await bankApi("/plaid/disconnect");
+    await deleteDoc(doc(db, "settings", "plaid"));
+    toast("Bank disconnected", "info");
+  } catch (err) { toast(err.message, "error"); }
+  finally { setBankBusy(false); }
+}
+let bankBusy = false;
+function setBankBusy(v) { bankBusy = v; renderBankConnection(); }
+function renderBankConnection() {
+  const el = $("#bank-connection"), live = $("#bank-live");
+  if (!el) return;
+  const info = plaidInfo();
+  const lastSync = info?.lastSync ? new Date(info.lastSync) : null;
+  const ago = lastSync ? Math.round((Date.now() - lastSync) / 86400000) : null;
+  const when = !lastSync ? "not yet" : ago === 0 ? "today" : ago === 1 ? "yesterday" : `${ago} days ago`;
+  const accts = (info?.accounts || []).map((a) => `${a.name || "Account"}${a.mask ? ` ••${a.mask}` : ""}`).join(", ");
+  if (rulesNeeded.has("settings")) el.innerHTML = String(RULES_NOTE);
+  else if (!info?.connectedAt) {
+    el.innerHTML = String(html`<div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+      <div class="text-slate-400">Not connected. Once it's set up, new Truist transactions come in with one tap: no statements, no AI. <span class="text-slate-500">Setup steps are in PLAID-SETUP.md.</span></div>
+      <button type="button" data-action="bank-connect" class="btn-primary btn-touch shrink-0" ${bankBusy ? raw("disabled") : ""}>${icon("plus", "w-4 h-4", 2.5)}Connect bank</button></div>`);
+  } else {
+    el.innerHTML = String(html`<div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+      <div class="flex items-center gap-3 min-w-0">${merchantLogo(info.institution, "other")}
+        <div class="min-w-0"><div class="text-white font-medium">${info.institution}${info.env === "sandbox" ? html` <span class="pill bg-violet-500/10 text-violet-300 border-violet-500/20">Test mode</span>` : ""}</div>
+          <div class="text-[12px] text-slate-500 truncate">${accts || "Connected"} · last checked ${when}</div></div></div>
+      <div class="flex flex-wrap gap-2 shrink-0">
+        <button type="button" data-action="bank-sync" class="btn-primary btn-touch" ${bankBusy ? raw("disabled") : ""}>${icon("refresh", "w-4 h-4", 2)}Get new transactions</button>
+        <button type="button" data-action="bank-reconnect" class="btn-ghost btn-touch" ${bankBusy ? raw("disabled") : ""}>Reconnect</button>
+        <button type="button" data-action="bank-disconnect" class="btn-text !px-2" ${bankBusy ? raw("disabled") : ""}>Disconnect</button></div></div>`);
+  }
+  if (live) {
+    live.classList.toggle("hidden", !info?.connectedAt);
+    if (info?.connectedAt && !live.querySelector("[data-action=bank-reconnect]")) live.innerHTML = String(html`<button type="button" data-action="bank-sync" class="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/[0.08] hover:bg-emerald-500/[0.14] px-4 py-3 flex items-center gap-3 text-left">
+      ${merchantLogo(info.institution, "other")}<span class="flex-1 min-w-0"><span class="block text-sm text-white font-medium">Get new transactions from ${info.institution}</span><span class="block text-[11px] text-slate-400">Straight from the bank · last checked ${when}</span></span>${icon("arrowRight", "w-4 h-4", 2)}</button>
+      <div class="text-center text-[11px] text-slate-500 my-3">or upload a statement or download</div>`);
+  }
 }
 
 // ── Bank downloads (CSV spreadsheet, or Quicken QFX/OFX/QBO) — read directly, no AI ──
@@ -5067,10 +5285,11 @@ function updateBankImportButton() {
   const n = bank.debits.filter((t) => t.include).length + bank.deposits.filter((t) => t.include).length;
   const r = bank.recurring.filter((t) => t.include).length;
   setText("#bank-import-label", [n && `Import ${plural(n, "transaction")}`, r && `${n ? "add" : "Add"} ${plural(r, "recurring bill")}`].filter(Boolean).join(" · ") || "Nothing selected");
-  $("#bank-import-btn").disabled = !n && !r;
+  $("#bank-import-btn").disabled = (!n && !r) || !!bank.sandbox;
 }
 
 function importBank() {
+  if (bank.sandbox) { showBankError("Test mode: Plaid's test transactions can't be imported."); return; }
   const debits = bank.debits.filter((t) => t.include && t.vendor && t.amount > 0);
   const deposits = bank.deposits.filter((t) => t.include && t.amount > 0);
   const recurring = bank.recurring.filter((t) => t.include && String(t.name || "").trim() && t.amount > 0);
@@ -5094,7 +5313,7 @@ function importBank() {
   for (const t of debits) {
     const ref = doc(collection(db, "expenses"));
     const linked = t.recurringId || store.recurring.find((r) => sameCompany(r.vendor || r.name, t.vendor) && closeAmount(r.amount, t.amount))?.id;
-    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, ...(linked ? { recurringId: linked } : {}), ...(t.checkNumber ? { checkNumber: String(t.checkNumber), method: "check" } : {}), createdAt: serverTimestamp() }));
+    ops.push((b) => b.set(ref, { vendor: t.vendor, category: t.category, amount: round2(t.amount), date: validISO(t.date) || todayISO(), note: t.note, deductible: t.deductible, ...(linked ? { recurringId: linked } : {}), ...(t.checkNumber ? { checkNumber: String(t.checkNumber), method: "check" } : {}), ...(t.plaidId ? { plaidId: t.plaidId } : {}), createdAt: serverTimestamp() }));
     undo.push((b) => b.delete(ref));
   }
   for (const d of deposits) {
@@ -5108,11 +5327,16 @@ function importBank() {
     } else {
       incomeCount++;
       const ref = doc(collection(db, "income"));
-      ops.push((b) => b.set(ref, { date: validISO(d.date) || todayISO(), source: d.source, amount: round2(d.amount), note: d.note, createdAt: serverTimestamp() }));
+      ops.push((b) => b.set(ref, { date: validISO(d.date) || todayISO(), source: d.source, amount: round2(d.amount), note: d.note, ...(d.plaidId ? { plaidId: d.plaidId } : {}), createdAt: serverTimestamp() }));
       undo.push((b) => b.delete(ref));
     }
   }
   persist(runBatched(ops), "Import failed");
+  // From the live bank connection: apply the bank's corrections and remember how far we've read.
+  if (bank.cursor != null) {
+    applyBankChanges(bank.plaidChanges || {});
+    persist(savePlaidInfo({ cursor: bank.cursor, lastSync: new Date().toISOString() }), "Couldn't save the bank sync position");
+  }
   // Keep the original statements, named by the month they cover; skip ones already saved.
   if ($("#bank-keep-files")?.checked && bank.files?.length && !rulesNeeded.has("files")) {
     const keep = bank.files.filter(({ file }) => !store.files.some((f) => f.size === file.size && f.folder === "statements" && !f.trashedAt))
@@ -5540,6 +5764,10 @@ const ACTIONS = {
   "edit-business": requireAuth(() => openRecordForm("business", byId("settings", "business") || null)),
   "w9": requireAuth((d) => openW9(d.who || "business")),
   gsearch: () => openSearch(),
+  "bank-connect": requireAuth(() => connectBank("new")),
+  "bank-reconnect": requireAuth(() => { closeModal("bank-modal"); connectBank("update"); }),
+  "bank-sync": requireAuth(() => syncBank()),
+  "bank-disconnect": requireAuth(() => disconnectBank()),
   "files-folder": (d) => { filesState.folder = d.folder || "all"; renderFiles(); },
   "files-upload": requireAuth(() => $("#files-input").click()),
   "file-open": requireAuth((d) => openStoredFile(d.id, false)),
@@ -5643,6 +5871,7 @@ function init() {
   initCleanup();
   initFiles();
   initSearch();
+  resumePlaidOAuth();
 
   $("#today-date").textContent = `${greeting()} · ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`;
   $("#record-form").addEventListener("submit", saveRecord);
