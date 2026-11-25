@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-canvas text-ink font-sans antialiased; font-feature-settings: "tnum" 1, "cv11" 1; }
+  :focus-visible { outline: 2px solid #1F2937; outline-offset: 2px; }
+}
+
+@layer components {
+  .card { @apply bg-white border border-line rounded-lg shadow-card; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 h-9 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-slatebtn text-white hover:bg-slatebtn-hover; }
+  .btn-secondary { @apply btn bg-white text-ink border border-line-strong hover:bg-gray-50; }
+  .btn-ghost { @apply btn text-ink-2 hover:bg-gray-100 hover:text-ink; }
+  .input { @apply w-full h-9 rounded-md border border-line-strong bg-white px-3 text-sm text-ink placeholder:text-ink-3 focus:border-slatebtn focus:ring-1 focus:ring-slatebtn outline-none; }
+  .label { @apply block text-xs font-medium text-ink-2 mb-1; }
+  .th { @apply text-left text-[11px] font-semibold uppercase tracking-wide text-ink-2 px-4 py-2.5 border-b border-line bg-gray-50; }
+  .td { @apply px-4 py-2.5 border-b border-line text-sm; }
+  .badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium; }
+  .badge-paid { @apply badge bg-[#ECFDF5] text-[#059669]; }
+  .badge-due { @apply badge bg-[#FFFBEB] text-[#D97706]; }
+  .badge-void { @apply badge bg-[#FEF2F2] text-[#DC2626]; }
+  .badge-neutral { @apply badge bg-gray-100 text-ink-2; }
+  .kbd { @apply inline-flex items-center rounded border border-line bg-gray-50 px-1.5 text-[10px] font-medium text-ink-3; }
+}

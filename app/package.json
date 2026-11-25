@@ -8,7 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "preview": "vite preview",
-    "test:rules": "cd .. && npx -y firebase-tools@13.29.1 emulators:exec --only firestore --project demo-jw-rules 'node app/tests/rules/rules.test.mjs'"
+    "test:rules": "cd .. && npx -y firebase-tools@13.29.1 emulators:exec --only firestore --project demo-jw-rules 'node app/tests/rules/rules.test.mjs'",
+    "test:e2e": "node tests/e2e/smoke.mjs",
+    "check": "tsc --noEmit && vitest run && vite build && node tests/e2e/smoke.mjs"
   },
   "dependencies": {
     "firebase": "^10.12.0",

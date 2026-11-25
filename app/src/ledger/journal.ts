@@ -1,6 +1,6 @@
 // Journal entries: the double-entry ledger. Every entry's debits equal its credits, entries are never edited
 // after posting (corrections are new reversing entries), and nothing posts into a closed period.
-import { Cents, isCents, sumCents } from "./money";
+import { Cents, formatMoney, isCents, sumCents } from "./money";
 import type { Account } from "./accounts";
 
 export type EntityType = "customer" | "vendor" | "employee" | "contractor" | "donor";
@@ -61,7 +61,7 @@ export function validateEntry(
   });
   const totalDebit = sumCents(e.lines.map((l) => l.debit));
   const totalCredit = sumCents(e.lines.map((l) => l.credit));
-  if (totalDebit !== totalCredit) throw new LedgerError(`Debits (${totalDebit / 100}) and credits (${totalCredit / 100}) don't match.`, "UNBALANCED");
+  if (totalDebit !== totalCredit) throw new LedgerError(`Debits (${formatMoney(totalDebit)}) and credits (${formatMoney(totalCredit)}) don't match. They're off by ${formatMoney(Math.abs(totalDebit - totalCredit))}.`, "UNBALANCED");
   if (totalDebit === 0) throw new LedgerError("A journal entry can't be for $0.", "ZERO");
   if (e.totalDebit !== undefined && e.totalDebit !== totalDebit) throw new LedgerError("Stated debit total doesn't match the lines.", "TOTAL_MISMATCH");
   if (e.totalCredit !== undefined && e.totalCredit !== totalCredit) throw new LedgerError("Stated credit total doesn't match the lines.", "TOTAL_MISMATCH");
