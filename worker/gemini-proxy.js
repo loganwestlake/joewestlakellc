@@ -14,6 +14,13 @@
 //   ALLOWED_ORIGINS  comma-separated, e.g. "https://loganwestlake.github.io"
 //   GEMINI_MODEL     optional, defaults to DEFAULT_MODEL below
 //   GEMINI_FALLBACK_MODEL optional backup model for when the main one is overloaded
+//
+// Bank connection (Plaid), all optional until you set it up — see PLAID-SETUP.md:
+//   PLAID_CLIENT_ID     from the Plaid dashboard
+//   PLAID_SECRET        secret, the Sandbox or Production secret matching PLAID_ENV
+//   PLAID_ENV           "sandbox" (fake test bank) or "production" (real accounts)
+//   PLAID_REDIRECT_URI  the dashboard's address, also listed in Plaid's Allowed redirect URIs
+//   PLAID_KV            a Workers KV namespace binding; the bank's access token lives here, never in the browser
 
 const PROJECT_ID = "joe-westlake-llc";
 const DEFAULT_MODEL = "gemini-3.8-flash";
@@ -45,17 +52,19 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: originOk ? 204 : 403, headers: cors });
     if (!originOk) return reply(403, "Origin not allowed.");
     if (request.method !== "POST") return reply(405, "Method not allowed.");
-    if (!env.GEMINI_API_KEY) return reply(500, "Proxy is missing its API key.");
+    const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
+    const isPlaid = path.startsWith("/plaid/");
+    if (!isPlaid && !env.GEMINI_API_KEY) return reply(500, "Proxy is missing its API key.");
 
     // 1. Who is calling?
     const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-    if (!token) return reply(401, "Sign in to use the AI.");
+    if (!token) return reply(401, isPlaid ? "Sign in first." : "Sign in to use the AI.");
     let uid;
     try { uid = await verifyFirebaseToken(token); }
     catch { return reply(401, "Your sign-in has expired. Sign in again."); }
 
     // 2. Are they approved?
-    if (!(await isMember(uid, token))) return reply(403, "This account isn't approved to use the AI.");
+    if (!(await isMember(uid, token))) return reply(403, isPlaid ? "This account isn't approved." : "This account isn't approved to use the AI.");
 
     // 3. Rate limit.
     const now = Date.now();
@@ -63,6 +72,8 @@ export default {
     if (hits.length >= RATE_LIMIT.max) return reply(429, "Too many AI requests. Wait a minute and try again.");
     hits.push(now);
     rateBuckets.set(uid, hits);
+
+    if (isPlaid) return handlePlaid(path, request, env, { uid, reply, cors });
 
     // 4. Validate and forward only what Gemini needs.
     const declared = Number(request.headers.get("Content-Length") || 0);
@@ -95,6 +106,116 @@ export default {
     return new Response(text, { status, headers: { ...cors, "Content-Type": "application/json" } });
   }
 };
+
+// ── Bank connection through Plaid ──
+// The access token Plaid gives for the bank is kept in Workers KV and only ever used here.
+// The app gets the transactions and harmless details (bank name, last 4 digits), never the token.
+const PLAID_HOSTS = { sandbox: "https://sandbox.plaid.com", production: "https://production.plaid.com" };
+const PLAID_ITEM_KEY = "plaid-item";
+
+class PlaidError extends Error {
+  constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+}
+async function plaidCall(env, endpoint, body) {
+  const base = PLAID_HOSTS[env.PLAID_ENV || "sandbox"];
+  if (!base) throw new PlaidError(500, "CONFIG", "PLAID_ENV must be \"sandbox\" or \"production\".");
+  const res = await fetch(`${base}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ client_id: env.PLAID_CLIENT_ID, secret: env.PLAID_SECRET, ...body })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new PlaidError(res.status, data.error_code || "PLAID_ERROR", data.display_message || data.error_message || `Plaid error (HTTP ${res.status})`);
+  return data;
+}
+const FRIENDLY_PLAID = {
+  ITEM_LOGIN_REQUIRED: "The bank needs you to sign in again. Click Reconnect.",
+  INVALID_CREDENTIALS: "The bank login didn't work. Try again.",
+  INSTITUTION_DOWN: "The bank isn't answering right now. Try again later.",
+  INSTITUTION_NOT_RESPONDING: "The bank isn't answering right now. Try again later.",
+  RATE_LIMIT_EXCEEDED: "Too many requests to the bank. Wait a minute and try again.",
+  INVALID_API_KEYS: "The Plaid keys in the proxy settings aren't right. Check PLAID_CLIENT_ID, PLAID_SECRET and PLAID_ENV.",
+  PRODUCT_NOT_READY: "The bank is still sending your history. Try again in a few minutes."
+};
+
+async function handlePlaid(path, request, env, { uid, reply, cors }) {
+  if (!env.PLAID_CLIENT_ID || !env.PLAID_SECRET) return reply(501, "The bank connection isn't set up yet. Add the Plaid keys to the proxy (see PLAID-SETUP.md).");
+  if (!env.PLAID_KV) return reply(501, "The proxy needs a KV namespace bound as PLAID_KV (see PLAID-SETUP.md).");
+  let body = {};
+  try { body = JSON.parse((await request.text()) || "{}"); } catch { return reply(400, "Invalid JSON."); }
+  const ok = (obj) => json(200, { env: env.PLAID_ENV || "sandbox", ...obj }, cors);
+  const item = await env.PLAID_KV.get(PLAID_ITEM_KEY, "json");
+  try {
+    switch (path) {
+      case "/plaid/link-token": {
+        // "update" re-opens the bank login for the existing connection (when the bank asks to sign in again).
+        const update = body.mode === "update" && item;
+        const data = await plaidCall(env, "/link/token/create", {
+          client_name: "Joe Westlake Painting",
+          user: { client_user_id: uid },
+          country_codes: ["US"],
+          language: "en",
+          ...(update ? { access_token: item.access_token } : { products: ["transactions"], transactions: { days_requested: 730 } }),
+          ...(env.PLAID_REDIRECT_URI ? { redirect_uri: env.PLAID_REDIRECT_URI } : {})
+        });
+        return ok({ link_token: data.link_token });
+      }
+      case "/plaid/exchange": {
+        if (!body.public_token) return reply(400, "Missing public_token.");
+        const data = await plaidCall(env, "/item/public_token/exchange", { public_token: body.public_token });
+        const info = {
+          access_token: data.access_token, item_id: data.item_id,
+          institution: String(body.institution?.name || "Your bank").slice(0, 80),
+          accounts: (Array.isArray(body.accounts) ? body.accounts : []).slice(0, 10).map((a) => ({ name: String(a.name || "").slice(0, 60), mask: String(a.mask || "").slice(0, 4), subtype: String(a.subtype || "").slice(0, 30) })),
+          connectedAt: new Date().toISOString(), by: uid
+        };
+        // Replacing an older connection: remove it at Plaid so it stops being billed.
+        if (item?.access_token && item.item_id !== info.item_id) await plaidCall(env, "/item/remove", { access_token: item.access_token }).catch(() => {});
+        await env.PLAID_KV.put(PLAID_ITEM_KEY, JSON.stringify(info));
+        return ok({ connected: true, institution: info.institution, accounts: info.accounts, connectedAt: info.connectedAt });
+      }
+      case "/plaid/status": {
+        if (!item) return ok({ connected: false });
+        return ok({ connected: true, institution: item.institution, accounts: item.accounts, connectedAt: item.connectedAt });
+      }
+      case "/plaid/sync": {
+        if (!item) return reply(409, "No bank is connected.");
+        const start = typeof body.cursor === "string" ? body.cursor : "";
+        // Page through everything new. If the bank changes data mid-way, Plaid asks us to start over from the same cursor.
+        for (let attempt = 0; attempt < 3; attempt++) {
+          let cursor = start, added = [], modified = [], removed = [], status = "", more = true, pages = 0;
+          try {
+            while (more && pages < 40) {
+              const page = await plaidCall(env, "/transactions/sync", { access_token: item.access_token, cursor: cursor || undefined, count: 500, options: { include_original_description: true } });
+              added = added.concat(page.added || []); modified = modified.concat(page.modified || []); removed = removed.concat(page.removed || []);
+              cursor = page.next_cursor; more = !!page.has_more; status = page.transactions_update_status || status; pages++;
+            }
+          } catch (err) {
+            if (err.code === "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION") continue;
+            throw err;
+          }
+          const slim = (t) => ({
+            id: t.transaction_id, account: t.account_id, amount: t.amount, date: t.date, pending: !!t.pending,
+            name: t.name || "", merchant: t.merchant_name || "", description: t.original_description || "", check: t.check_number || "",
+            category: t.personal_finance_category ? `${t.personal_finance_category.primary || ""}/${t.personal_finance_category.detailed || ""}` : ""
+          });
+          return ok({ added: added.map(slim), modified: modified.map(slim), removed: removed.map((r) => r.transaction_id), next_cursor: cursor, status, institution: item.institution, accounts: item.accounts });
+        }
+        return reply(503, "The bank kept changing while we read it. Try again in a minute.");
+      }
+      case "/plaid/disconnect": {
+        if (item?.access_token) await plaidCall(env, "/item/remove", { access_token: item.access_token }).catch((e) => { if (e.code !== "ITEM_NOT_FOUND") throw e; });
+        await env.PLAID_KV.delete(PLAID_ITEM_KEY);
+        return ok({ connected: false });
+      }
+      default:
+        return reply(404, "Unknown bank request.");
+    }
+  } catch (err) {
+    const status = err.code === "ITEM_LOGIN_REQUIRED" ? 409 : err.status === 400 || err.status === 401 ? 502 : err.status || 502;
+    return json(status, { error: { message: FRIENDLY_PLAID[err.code] || err.message, code: err.code || "ERROR" } }, cors);
+  }
+}
 
 function json(status, obj, headers = {}) {
   return new Response(JSON.stringify(obj), { status, headers: { ...headers, "Content-Type": "application/json" } });

@@ -4919,7 +4919,11 @@ async function processBankFiles(fileList) {
     if (!stale()) $("#bank-file").value = "";
   }
   if (stale()) return;
+  buildBankReview(results, { dupFiles, skipped, dailyLimit });
+}
 
+// Turns what was read (statements, downloads, or the live bank connection) into the review screen, with duplicate checks.
+function buildBankReview(results, { dupFiles = [], skipped = [], dailyLimit = null, cursor = null } = {}) {
   const debits = [], deposits = [], summary = [], warnings = [];
   const problems = { daily: [], slow: [], other: [], skipped: [...dupFiles, ...skipped] };
   const statementsSeen = new Map(); // period end → file name
@@ -4938,14 +4942,14 @@ async function processBankFiles(fileList) {
     }
     const before = debits.length + deposits.length;
     for (const t of r.debits) {
-      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name, raw: str(t.raw), checkNumber: String(t.check || checkNumberOf({ vendor: t.vendor }) || "") };
-      row.dup = !!findDuplicateExpense(row) || debits.some((d) => d.file !== row.file && sameDebit(d, row));
+      const row = { include: true, date: validISO(t.date) || todayISO(), vendor: str(t.vendor, "Unknown"), amount: posAmount(t.amount), category: normCategory(t.category), deductible: normDeductible(t.deductible), note: str(t.note), file: r.file.name, raw: str(t.raw), checkNumber: String(t.check || checkNumberOf({ vendor: t.vendor }) || ""), ...(t.plaidId ? { plaidId: t.plaidId } : {}) };
+      row.dup = (row.plaidId && store.expenses.some((e) => e.plaidId === row.plaidId)) || !!findDuplicateExpense(row) || debits.some((d) => d.file !== row.file && sameDebit(d, row));
       row.include = !row.dup;
       debits.push(row);
     }
     for (const t of r.deposits) {
-      const row = { include: true, date: validISO(t.date) || todayISO(), source: str(t.memo || t.source, "Deposit"), amount: posAmount(t.amount), note: str(t.note), invoiceId: "", file: r.file.name };
-      row.dup = !!findDuplicateDeposit(row) || deposits.some((d) => d.file !== row.file && sameDeposit(d, row));
+      const row = { include: true, date: validISO(t.date) || todayISO(), source: str(t.memo || t.source, "Deposit"), amount: posAmount(t.amount), note: str(t.note), invoiceId: "", file: r.file.name, ...(t.plaidId ? { plaidId: t.plaidId } : {}) };
+      row.dup = (row.plaidId && store.income.some((x) => x.plaidId === row.plaidId)) || !!findDuplicateDeposit(row) || deposits.some((d) => d.file !== row.file && sameDeposit(d, row));
       row.include = !row.dup;
       deposits.push(row);
     }
@@ -4955,6 +4959,7 @@ async function processBankFiles(fileList) {
     let line = `${r.file.name}${period ? ` → ${period}` : ""}: ${plural(mine.length, "transaction")}`;
     if (r.check) line += r.check.ok ? " ✓ matches the statement's totals" : ` ⚠ doesn't match the statement's totals`;
     if (r.via === "direct") line += " · read directly, no AI";
+    if (r.via === "plaid") line = `${r.file.name}: ${plural(mine.length, "new transaction")}${period ? ` (${period.replace(/^transactions /, "")})` : ""}`;
     if (already) line += ` · ${already} already in your books`;
     summary.push(line);
     if (r.check && !r.check.ok) {
@@ -4965,7 +4970,7 @@ async function processBankFiles(fileList) {
   }
   const problemLines = bankProblemLines(problems, dailyLimit);
   if (!debits.length && !deposits.length) {
-    showBankError(problemLines.length ? problemLines.join("\n") : "No transactions found. Try a clearer statement or a different page.");
+    showBankError(problemLines.length ? problemLines.join("\n") : results.some((r) => r.via === "plaid") ? "No new transactions since the last time." : "No transactions found. Try a clearer statement or a different page.");
     showBankStep("upload");
     return;
   }
@@ -4979,7 +4984,8 @@ async function processBankFiles(fileList) {
     if (inv) { row.invoiceId = inv; claimed.add(inv); }
   }
   bank.debits = debits; bank.deposits = deposits;
-  bank.files = results.filter((r) => !r.error && (r.debits?.length || r.deposits?.length)).map((r) => ({ file: r.file, label: r.periodEnd ? monthKey(parseISO(r.periodEnd)) : "" }));
+  bank.cursor = cursor;
+  bank.files = results.filter((r) => !r.error && r.via !== "plaid" && (r.debits?.length || r.deposits?.length)).map((r) => ({ file: r.file, label: r.periodEnd ? monthKey(parseISO(r.periodEnd)) : "" }));
   bank.recurring = findRecurringCandidates(debits);
   bank.summary = { read: summary, problems: [...warnings, ...problemLines] };
   renderBankReview();
