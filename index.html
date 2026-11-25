@@ -296,6 +296,12 @@
   .seg.lg button { padding: 10px 16px; font-size: 14px; }
   .seg button.active { background: rgba(255,255,255,0.08); color: #fff; }
   .subtab-badge.hidden { display: none; }
+  /* Store logo beside a charge: the company's icon on white, or a colored initial when there isn't one. */
+  .mlogo { position: relative; flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; overflow: hidden; display: inline-grid; place-items: center;
+    font-size: 12px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
+  .mlogo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; padding: 4px; }
+  .mlogo.sm { width: 22px; height: 22px; border-radius: 6px; font-size: 10px; }
+  .mlogo.sm img { padding: 3px; }
   .subtab-badge {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9999px;
@@ -918,6 +924,31 @@
         </div>
       </section>
 
+      <!-- FILES -->
+      <section id="tab-files" class="tab-panel hidden fade-in" aria-labelledby="h-files">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow section-eyebrow">Keep it all in one place</div>
+            <h1 id="h-files" class="page-title section-title">Files</h1>
+            <p class="page-sub">Statements, receipts, tax forms, insurance cards and how-to notes, sorted into folders</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button type="button" data-action="new" data-col="notes" class="btn-ghost btn-touch"><span data-icon="note" data-sw="2"></span>New note</button>
+            <button type="button" data-action="files-upload" class="btn-primary btn-touch"><span data-icon="upload" data-sw="2"></span>Upload files</button>
+            <input id="files-input" type="file" multiple class="hidden" />
+          </div>
+        </div>
+        <div id="files-rules" class="hidden mb-5 rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-4 text-sm text-amber-100"></div>
+        <div id="files-folders" class="flex flex-wrap gap-2 mb-4"></div>
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <label class="search-wrap"><span class="search-icon" data-icon="search" data-sw="2"></span>
+            <input type="search" class="field search-field" data-search="files" placeholder="Search files and notes…" aria-label="Search files" /></label>
+          <span class="text-[11px] text-slate-500">Up to 10 MB per file · drag files anywhere on this page</span>
+        </div>
+        <div id="files-progress" class="hidden mb-4 glass rounded-xl px-4 py-3 text-sm text-slate-300"></div>
+        <div id="files-list"></div>
+      </section>
+
       <!-- SETTINGS -->
       <section id="tab-settings" class="tab-panel hidden fade-in" aria-labelledby="h-settings">
         <div class="page-head">
@@ -936,6 +967,17 @@
             <button type="button" data-action="new" data-col="team" class="btn-light hidden sm:inline-flex btn-touch"><span data-icon="plus" data-sw="2.5"></span>Add member</button>
           </div>
           <div id="team-list" class="mobile-cards"></div>
+        </div>
+        <div class="mb-10">
+          <div class="flex items-center justify-between mb-4 gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-white tracking-tight">Business info</h2>
+              <p class="text-sm text-slate-500 mt-0.5">Used to fill in W-9s and other forms</p>
+            </div>
+            <div class="flex gap-2"><button type="button" data-action="w9" data-who="business" class="btn-ghost btn-touch"><span data-icon="invoice" data-sw="2"></span>Our W-9</button>
+            <button type="button" data-action="edit-business" class="btn-ghost btn-touch"><span data-icon="edit" data-sw="2"></span>Edit</button></div>
+          </div>
+          <div id="business-info" class="glass rounded-2xl p-5 text-sm"></div>
         </div>
         <div>
           <h2 class="text-lg font-semibold text-white tracking-tight mb-1">Your data</h2>
@@ -961,6 +1003,35 @@
 </div>
 
 <button type="button" id="mobile-fab" class="fab" data-action="fab" aria-label="Quick add"><span data-icon="plus" data-cls="w-6 h-6" data-sw="2.5"></span></button>
+
+<!-- W-9 FILLER -->
+<div id="w9-modal" class="modal-root fixed inset-0 z-50 hidden modal-shell" role="dialog" aria-modal="true" aria-labelledby="w9-title">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in" data-close></div>
+  <div class="relative modal-inner wide">
+    <div class="modal-panel max-h-[92vh]">
+      <button type="button" class="modal-x" data-close aria-label="Close"><span data-icon="x" data-sw="2"></span></button>
+      <div class="eyebrow">Tax form</div>
+      <h2 id="w9-title" class="font-serif text-3xl text-white tracking-tight mb-1 pr-8">Fill out a W-9</h2>
+      <p id="w9-sub" class="text-sm text-slate-500 mb-5"></p>
+      <div id="w9-body"></div>
+      <input id="w9-blank-input" type="file" accept="application/pdf" class="hidden" />
+    </div>
+  </div>
+</div>
+
+<!-- NOTE VIEWER -->
+<div id="note-modal" class="modal-root fixed inset-0 z-50 hidden modal-shell" role="dialog" aria-modal="true" aria-labelledby="note-title">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-backdrop-in" data-close></div>
+  <div class="relative modal-inner">
+    <div class="modal-panel">
+      <button type="button" class="modal-x" data-close aria-label="Close"><span data-icon="x" data-sw="2"></span></button>
+      <div class="eyebrow">Note</div>
+      <h2 id="note-title" class="font-serif text-2xl text-white tracking-tight mb-4 pr-8">—</h2>
+      <div id="note-body" class="whitespace-pre-wrap text-sm text-slate-200 leading-relaxed glass rounded-xl p-4 max-h-[55vh] overflow-y-auto"></div>
+      <div class="flex gap-2 mt-4"><button type="button" id="note-edit" class="btn-ghost"><span data-icon="edit" data-sw="2"></span>Edit</button><button type="button" id="note-copy" class="btn-ghost"><span data-icon="copy" data-sw="2"></span>Copy</button></div>
+    </div>
+  </div>
+</div>
 
 <!-- CLEAN UP MODAL (remove duplicates / clear a month) -->
 <div id="cleanup-modal" class="modal-root fixed inset-0 z-50 hidden modal-shell" role="dialog" aria-modal="true" aria-labelledby="cleanup-title">
@@ -1113,6 +1184,7 @@
             <div class="text-[11px] font-medium text-emerald-400/80 tracking-[0.2em] uppercase mb-2">Income · <span id="bank-deposit-count">0</span></div>
             <div id="bank-deposit-rows" class="glass rounded-xl max-h-[35vh] overflow-y-auto"></div>
           </div>
+          <label class="flex items-center gap-2 text-xs text-slate-400 mb-3"><input type="checkbox" id="bank-keep-files" checked class="w-4 h-4 accent-amber-500" />Also save the statement file(s) in Files → Bank statements</label>
           <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/[0.06]">
             <button type="button" id="bank-import-btn" class="btn-primary flex-1 btn-touch"><span data-icon="check" data-sw="2.5"></span><span id="bank-import-label">Import selected</span></button>
             <button type="button" id="bank-back-btn" class="btn-text">Choose different files</button>
@@ -1156,7 +1228,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
-  collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
+  collection, doc, addDoc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot,
   serverTimestamp, writeBatch, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
@@ -1271,6 +1343,8 @@ function fileToBase64(file) {
 // ICONS
 // ═════════════════════════════════════════════════════════════
 const ICON_PATHS = {
+  folder: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z",
+  note: "M7 8h10M7 12h10M7 16h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z",
   home: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10",
   calendar: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
   jobs: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
@@ -1438,7 +1512,11 @@ const monthRange = (mk) => periodRange(monthPeriod(mk));
 // ═════════════════════════════════════════════════════════════
 // STORE + REALTIME SYNC
 // ═════════════════════════════════════════════════════════════
-const COLLECTION_NAMES = ["jobs", "expenses", "invoices", "vehicles", "team", "income", "recurring"];
+const COLLECTION_NAMES = ["jobs", "expenses", "invoices", "vehicles", "team", "income", "recurring", "files", "settings"];
+// Newer collections: if the Firestore rules haven't been updated for them yet, those features say so quietly
+// instead of the whole app showing a "no access" error.
+const OPTIONAL_COLLECTIONS = new Set(["files", "settings"]);
+const rulesNeeded = new Set();
 const emptyStore = () => Object.fromEntries(COLLECTION_NAMES.map((k) => [k, []]));
 let store = emptyStore();
 const loaded = new Set();
@@ -1458,6 +1536,7 @@ const jobLabel = (id) => {
 function sortRecords(name, list) {
   const byName = (a, b) => String(a.name || "").localeCompare(String(b.name || ""));
   if (name === "team" || name === "vehicles") return list.sort(byName);
+  if (name === "files") return list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0) || byName(a, b));
   if (name === "recurring") return list.sort((a, b) => num(a.dayOfMonth || 1) - num(b.dayOfMonth || 1) || byName(a, b));
   return list.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 }
@@ -1468,6 +1547,7 @@ function startSync() {
     unsubs.push(onSnapshot(collection(db, name),
       (snap) => {
         store[name] = sortRecords(name, snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        rulesNeeded.delete(name);
         loaded.add(name);
         scheduleRender();
       },
@@ -1475,6 +1555,7 @@ function startSync() {
         console.error(`${name} listener:`, err);
         loaded.add(name);
         scheduleRender();
+        if (OPTIONAL_COLLECTIONS.has(name) && err.code === "permission-denied") { rulesNeeded.add(name); return; }
         if (!syncErrorShown) {
           syncErrorShown = true;
           toast(err.code === "permission-denied"
@@ -1506,6 +1587,8 @@ function renderAll() {
   renderRecurring();
   renderVehicles();
   renderTeam();
+  renderFiles();
+  renderBusinessInfo();
   refreshCalendar();
   updateSendButton();
   renderNavBadges();
@@ -1723,7 +1806,7 @@ const NAV = [
   { section: "Overview", items: [{ tab: "today", label: "Today", icon: "home" }, { tab: "calendar", label: "Calendar", icon: "calendar" }] },
   { section: "Work",     items: [{ tab: "jobs", label: "Jobs", icon: "jobs" }, { tab: "invoices", label: "Invoices", icon: "invoice" }, { tab: "vehicles", label: "Vehicles", icon: "car" }] },
   { section: "Money",    items: [{ tab: "money", label: "Money", icon: "money" }] },
-  { section: "Tools",    items: [{ tab: "ai", label: "Company AI", icon: "sparkle" }] }
+  { section: "Tools",    items: [{ tab: "ai", label: "Company AI", icon: "sparkle" }, { tab: "files", label: "Files", icon: "folder" }] }
 ];
 const SETTINGS_NAV = { tab: "settings", label: "Settings", icon: "gear" };
 const BOTTOM_TABS = [
@@ -1734,9 +1817,10 @@ const MORE_TABS = [
   { tab: "calendar", label: "Calendar", icon: "calendar", color: "text-blue-400" },
   { tab: "invoices", label: "Invoices", icon: "invoice", color: "text-blue-400" },
   { tab: "vehicles", label: "Vehicles", icon: "car", color: "text-violet-400" },
+  { tab: "files", label: "Files", icon: "folder", color: "text-amber-400" },
   { tab: "settings", label: "Settings", icon: "gear", color: "text-slate-400" }
 ];
-const TABS = ["today", "calendar", "jobs", "invoices", "vehicles", "money", "ai", "settings"];
+const TABS = ["today", "calendar", "jobs", "invoices", "vehicles", "money", "ai", "files", "settings"];
 let currentTab = "today";
 
 const sideItemClass = "nav-item w-full flex items-center gap-3 px-3 h-10 rounded-lg text-[13px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.04]";
@@ -1972,6 +2056,41 @@ const optionsOf = (obj, labelKey = "label") => Object.entries(obj).map(([value, 
 const CATEGORY_OPTIONS = optionsOf(CATEGORIES);
 const DEDUCTIBLE_OPTIONS = DEDUCTIBLE_LEVELS.map((v) => ({ value: String(v), label: DEDUCTIBLE_LABELS[v] }));
 
+// ── Store logos ──
+// The company's website icon (served by Google's favicon service; only the store's web address is sent), with a
+// colored initial underneath for anything unknown or if the image can't load.
+const MERCHANT_DOMAINS = [
+  [/SHELL/, "shell.com"], [/7-?ELEVEN|SEVEN ELEVEN/, "7-eleven.com"], [/MARATHON/, "marathonbrand.com"], [/RACETRAC/, "racetrac.com"],
+  [/\bWAWA\b/, "wawa.com"], [/\bBP\b|BP ?#/, "bp.com"], [/CIRCLE K/, "circlek.com"], [/SPEEDWAY/, "speedway.com"], [/\bGULF\b/, "gulfoil.com"],
+  [/LOVE'?S/, "loves.com"], [/SUNOCO/, "sunoco.com"], [/CHEVRON/, "chevron.com"], [/EXXON/, "exxon.com"], [/\bMOBIL\b/, "mobil.com"],
+  [/CITGO/, "citgo.com"], [/MURPHY/, "murphyusa.com"], [/SAM'?S CLUB|SAMS CLUB/, "samsclub.com"], [/WAL-?MART|WALMART|WM SUPERCENTER/, "walmart.com"],
+  [/DOLLAR[- ]GENERAL/, "dollargeneral.com"], [/DOLLAR TREE/, "dollartree.com"], [/FAMILY DOLLAR/, "familydollar.com"], [/HOME DEPOT/, "homedepot.com"],
+  [/LOWE'?S/, "lowes.com"], [/SHERWIN/, "sherwin-williams.com"], [/BENJAMIN MOORE/, "benjaminmoore.com"], [/\bBEHR\b/, "behr.com"],
+  [/\bPPG\b/, "ppgpaints.com"], [/ACE HARDWARE/, "acehardware.com"], [/MENARDS/, "menards.com"], [/TRACTOR[- ]SUPPLY/, "tractorsupply.com"],
+  [/RURAL KING/, "ruralking.com"], [/HARBOR FREIGHT/, "harborfreight.com"], [/EBAY/, "ebay.com"], [/ALIEXPRESS/, "aliexpress.com"],
+  [/AMAZON|AMZN/, "amazon.com"], [/AUTOZONE/, "autozone.com"], [/ADVANCE AUTO/, "advanceautoparts.com"], [/O'?REILLY/, "oreillyauto.com"],
+  [/\bNAPA\b/, "napaonline.com"], [/SUNPASS/, "sunpass.com"], [/SPOTHERO/, "spothero.com"], [/FLORIDA ?BLUE|FLBLUE/, "floridablue.com"],
+  [/STATE FARM/, "statefarm.com"], [/GEICO/, "geico.com"], [/PROGRESSIVE/, "progressive.com"], [/ALLSTATE/, "allstate.com"],
+  [/PAYCHEX/, "paychex.com"], [/PEACOCK/, "peacocktv.com"], [/NETFLIX/, "netflix.com"], [/\bHULU\b/, "hulu.com"], [/SPOTIFY/, "spotify.com"],
+  [/DISNEY/, "disneyplus.com"], [/ADOBE/, "adobe.com"], [/MICROSOFT|MSFT/, "microsoft.com"], [/QUICKBOOKS|INTUIT/, "intuit.com"],
+  [/VERIZON/, "verizon.com"], [/AT&T|\bATT\b/, "att.com"], [/T-?MOBILE/, "t-mobile.com"], [/SPECTRUM/, "spectrum.com"],
+  [/XFINITY|COMCAST/, "xfinity.com"], [/DUKE ENERGY/, "duke-energy.com"], [/WENDY/, "wendys.com"], [/MCDONALD/, "mcdonalds.com"],
+  [/CHILI'?S/, "chilis.com"], [/BOB EVANS/, "bobevans.com"], [/TACO BELL/, "tacobell.com"], [/LITTLE CAESAR/, "littlecaesars.com"],
+  [/HARDEE/, "hardees.com"], [/BURGER KING/, "bk.com"], [/SUBWAY/, "subway.com"], [/STARBUCKS/, "starbucks.com"], [/DUNKIN/, "dunkindonuts.com"],
+  [/CHICK-FIL/, "chick-fil-a.com"], [/POPEYE/, "popeyes.com"], [/DOMINO/, "dominos.com"], [/PIZZA HUT/, "pizzahut.com"], [/HOOTERS/, "hooters.com"],
+  [/WALGREENS/, "walgreens.com"], [/\bCVS\b/, "cvs.com"], [/PUBLIX/, "publix.com"], [/WINN[- ]?DIXIE/, "winndixie.com"], [/\bALDI\b/, "aldi.us"],
+  [/TARGET/, "target.com"], [/COSTCO/, "costco.com"], [/TRUIST/, "truist.com"], [/ZELLE/, "zellepay.com"], [/CASH ?APP/, "cash.app"],
+  [/VENMO/, "venmo.com"], [/PAYPAL/, "paypal.com"], [/SQUARE ?\*|SQ ?\*/, "squareup.com"], [/\bUSPS\b/, "usps.com"], [/\bUPS\b/, "ups.com"],
+  [/FEDEX/, "fedex.com"], [/APPLE\.COM|ITUNES/, "apple.com"], [/GOOGLE/, "google.com"], [/GODADDY/, "godaddy.com"], [/CANVA/, "canva.com"]
+];
+const merchantDomain = (name) => { const up = String(name || "").toUpperCase(); return MERCHANT_DOMAINS.find(([re]) => re.test(up))?.[1] || null; };
+function merchantLogo(name, category, size = "") {
+  const color = CATEGORIES[normCategory(category)]?.color || "#64748b";
+  const initial = (String(name || "?").replace(/[^A-Za-z0-9]/g, "")[0] || "?").toUpperCase();
+  const domain = merchantDomain(name);
+  return html`<span class="mlogo ${size}" style="--c:${color}" aria-hidden="true">${initial}${domain ? raw(`<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`) : ""}</span>`;
+}
+
 // ── Payments to people + checks ──
 const PAY_METHODS = { check: "Check", cash: "Cash", zelle: "Zelle", cashapp: "Cash App", venmo: "Venmo", ach: "Bank transfer", card: "Card", other: "Other" };
 const PAY_METHOD_OPTIONS = optionsOf(PAY_METHODS);
@@ -2085,6 +2204,33 @@ const SCHEMAS = {
     { name: "jobId", label: "Job (optional)", type: "job" }
   ]}
 };
+const FILE_FOLDERS = {
+  statements: "Bank statements", receipts: "Receipts", tax: "Tax forms & W-9s", insurance: "Insurance",
+  contracts: "Contracts & estimates", howto: "How-to & logins", vehicles: "Vehicles", other: "Other"
+};
+Object.assign(SCHEMAS, {
+  fileInfo: { label: "File", collection: "files", fields: [
+    { name: "name", label: "Name", type: "text", required: true, full: true },
+    { name: "folder", label: "Folder", type: "select", options: optionsOf(FILE_FOLDERS), default: "other" },
+    { name: "note", label: "Note", type: "text", placeholder: "Optional, e.g. which account" }
+  ]},
+  notes: { label: "Note", collection: "files", fixed: { kind: "note" }, fields: [
+    { name: "name", label: "Title", type: "text", required: true, full: true, placeholder: "e.g. How to log in to Florida Blue" },
+    { name: "folder", label: "Folder", type: "select", options: optionsOf(FILE_FOLDERS), default: "howto" },
+    { name: "text", label: "Steps / details", type: "textarea", rows: 10, full: true, placeholder: "1. Go to floridablue.com\n2. Click Log in…",
+      hint: "Everyone with access to this dashboard can read notes. Don't type passwords here: keep them in a password manager (like Bitwarden or 1Password) and share them from there." }
+  ]},
+  business: { label: "Business info", collection: "settings", docId: "business", fields: [
+    { name: "ownerName", label: "Owner's name", type: "text", placeholder: "e.g. Joseph Westlake", hint: "W-9 line 1: the owner's name for a one-owner LLC" },
+    { name: "businessName", label: "Business name", type: "text", placeholder: "e.g. Joe Westlake Painting LLC", hint: "W-9 line 2" },
+    { name: "taxClass", label: "How the LLC is taxed", type: "select", options: optionsOf({ single: "One-owner LLC (taxed as sole proprietor)", s: "LLC taxed as an S corporation", c: "LLC taxed as a C corporation", partnership: "LLC with partners (partnership)" }), default: "single" },
+    { name: "address", label: "Street address", type: "text", full: true },
+    { name: "cityStateZip", label: "City, state, ZIP", type: "text", full: true },
+    { name: "phone", label: "Business phone", type: "tel" },
+    { name: "email", label: "Business email", type: "email" }
+  ]}
+});
+
 // Which form an existing expense opens in.
 const expenseFormFor = (r) => (isLabor(r) ? "payroll" : isCheck(r) ? "checks" : "expenses");
 
@@ -2118,7 +2264,7 @@ function fieldHTML(f, value) {
     if (value !== "" && !opts.some((o) => String(o.value) === String(value))) opts = [{ value, label: f.type === "job" ? "(deleted job)" : f.type === "worker" ? "(removed person)" : String(value) }, ...opts];
     control = html`<select id="${id}" name="${f.name}" class="field">${opts.map((o) => html`<option value="${o.value}" ${String(o.value) === String(value) ? "selected" : ""}>${o.label}</option>`)}</select>`;
   } else if (f.type === "textarea") {
-    control = html`<textarea id="${id}" name="${f.name}" rows="2" class="field resize-y" placeholder="${f.placeholder || ""}" ${req}>${value}</textarea>`;
+    control = html`<textarea id="${id}" name="${f.name}" rows="${f.rows || 2}" class="field resize-y" placeholder="${f.placeholder || ""}" ${req}>${value}</textarea>`;
   } else {
     const type = f.type === "money" || f.type === "int" ? "number" : f.type;
     const extra = f.type === "money" ? raw(`step="0.01" min="0" inputmode="decimal" placeholder="0.00"`)
@@ -2203,8 +2349,9 @@ function saveRecord(e) {
   if (col === "recurring" && existing && !isRecurringActive(existing) && data.active && !isAppliedFor(existing, addMonthsKey(monthKey(), -1))) {
     data.lastAppliedMonth = addMonthsKey(monthKey(), -1);
   }
-  if (existing) persist(updateDoc(doc(db, col, id), data), `Couldn't update ${schema.label.toLowerCase()}`);
-  else persist(addDoc(collection(db, col), { ...data, createdAt: serverTimestamp() }), `Couldn't add ${schema.label.toLowerCase()}`);
+  if (schema.docId) persist(setDoc(doc(db, col, schema.docId), { ...data, updatedAt: serverTimestamp() }, { merge: true }), `Couldn't save ${schema.label.toLowerCase()}`);
+  else if (existing) persist(updateDoc(doc(db, col, id), { ...data, ...(col === "files" ? { updatedAt: serverTimestamp() } : {}) }), `Couldn't update ${schema.label.toLowerCase()}`);
+  else persist(addDoc(collection(db, col), { ...data, createdAt: serverTimestamp(), ...(col === "files" ? { by: auth.currentUser?.email || "" } : {}) }), `Couldn't add ${schema.label.toLowerCase()}`);
   toast(existing ? `${schema.label} updated` : `${schema.label} added`);
   closeModal("record-modal");
 }
@@ -2380,7 +2527,7 @@ function renderUpcoming(today) {
 // ═════════════════════════════════════════════════════════════
 // VIEW — JOBS
 // ═════════════════════════════════════════════════════════════
-const ui = { search: { jobs: "", invoices: "", money: "", checks: "" }, jobStatus: "all", invoiceStatus: "all" };
+const ui = { search: { jobs: "", invoices: "", money: "", checks: "", files: "" }, jobStatus: "all", invoiceStatus: "all" };
 
 function renderJobs() {
   const el = $("#jobs-list");
@@ -2521,7 +2668,7 @@ function renderMoney() {
       rows,
       columns: [
         { label: "Date", render: (e) => fmtDate(e.date), cls: "whitespace-nowrap" },
-        { label: "Vendor", render: (e) => html`<span class="text-white">${e.vendor || "—"}</span>${e.note ? html`<span class="block text-[11px] text-slate-500 truncate max-w-[16rem]">${e.note}</span>` : ""}` },
+        { label: "Vendor", render: (e) => html`<span class="flex items-center gap-2.5 min-w-0">${merchantLogo(e.vendor, e.category)}<span class="min-w-0"><span class="text-white">${e.vendor || "—"}</span>${e.note ? html`<span class="block text-[11px] text-slate-500 truncate max-w-[16rem]">${e.note}</span>` : ""}</span></span>` },
         { label: "Category", render: (e) => categoryLabel(e.category) },
         { label: "Amount", render: (e) => money(e.amount), cls: "whitespace-nowrap" },
         { label: "Tax", render: (e) => deductiblePill(getDeductible(e)) },
@@ -2546,7 +2693,7 @@ function renderMoney() {
       rows,
       columns: [
         { label: "Date", render: (r) => fmtDate(r.date), cls: "whitespace-nowrap" },
-        { label: "Source", render: (r) => html`<span class="text-white">${r.source}</span>` },
+        { label: "Source", render: (r) => html`<span class="flex items-center gap-2.5 min-w-0">${merchantLogo(r.source, "other")}<span class="text-white">${r.source}</span></span>` },
         { label: "Type", render: (r) => pill(r.type, r.kind === "invoice" ? INVOICE_STATUSES.paid.pill : "bg-blue-500/10 text-blue-300 border-blue-500/20") },
         { label: "Amount", render: (r) => html`<span class="text-emerald-400">${money(r.amount)}</span>`, cls: "whitespace-nowrap" },
         { label: "Linked to", render: (r) => r.linked, hide: "hidden md:table-cell" }
@@ -3236,6 +3383,7 @@ function renderPayroll() {
       ${p.needW9 ? html`<div class="text-[12px] mt-1 ${p.needs1099 ? "text-amber-300" : "text-slate-400"}">${p.worker ? "No W-9 on file yet. Ask them to fill one out (name, address, SSN)." : "Add them to your team to keep their W-9 and address for the 1099."}</div>` : html`<div class="text-[12px] mt-1 text-emerald-400/90">W-9 on file ✓</div>`}
       <div class="flex flex-wrap gap-2 mt-3">
         <button type="button" data-action="new" data-col="payroll" ${p.worker ? raw(`data-worker="${escapeHtml(p.worker.id)}"`) : ""} class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("plus", "w-3.5 h-3.5", 2.5)}Record payment</button>
+        ${p.worker && p.needW9 && p.kind !== "employee" ? html`<button type="button" data-action="w9" data-who="${p.worker.id}" class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("invoice", "w-3.5 h-3.5", 2)}Fill out W-9</button>` : ""}
         ${p.worker ? html`<button type="button" data-action="edit" data-col="team" data-id="${p.worker.id}" class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("edit", "w-3.5 h-3.5", 2)}${p.needW9 ? "Add W-9 info" : "Edit details"}</button>`
           : html`<button type="button" data-action="new" data-col="team" data-name="${p.name}" data-kind="contractor" class="btn-ghost !py-1.5 !px-3 !text-xs">${icon("plus", "w-3.5 h-3.5", 2.5)}Add to team</button>`}
       </div>
@@ -3325,7 +3473,7 @@ function renderChecks() {
     columns: [
       { label: "Check #", render: (e) => html`<span class="font-mono text-white">${checkNumberOf(e) || "—"}</span>`, cls: "whitespace-nowrap" },
       { label: "Date", render: (e) => fmtDate(e.date), cls: "whitespace-nowrap" },
-      { label: "Pay to the order of", render: (e) => payeeOf(e) ? html`<span class="text-white">${payeeOf(e)}</span>` : html`<span class="text-amber-300">Add who it was to</span>` },
+      { label: "Pay to the order of", render: (e) => payeeOf(e) ? html`<span class="flex items-center gap-2.5 min-w-0">${merchantLogo(payeeOf(e), e.category)}<span class="text-white">${payeeOf(e)}</span></span>` : html`<span class="text-amber-300">Add who it was to</span>` },
       { label: "Memo", render: (e) => e.note && !/^Check: add who/.test(e.note) ? e.note : "—", hide: "hidden md:table-cell" },
       { label: "Amount", render: (e) => money(e.amount), cls: "whitespace-nowrap" },
       { label: "For", render: (e) => isLabor(e) ? html`<span class="text-teal-300">Payroll${workerOf(e) ? ` · ${workerOf(e).name}` : ""}</span>` : categoryLabel(e.category), hide: "hidden sm:table-cell" }
@@ -3341,6 +3489,314 @@ function exportChecksCSV() {
     ...all.map((e) => [checkNumberOf(e), e.date, payeeOf(e), e.note || "", round2(e.amount), categoryLabel(e.category), getDeductible(e), isLabor(e) ? workerOf(e)?.name || "" : "", e.jobId ? jobLabel(e.jobId) : ""])
   ]), "text/csv");
   toast("Check register downloaded");
+}
+
+// ═════════════════════════════════════════════════════════════
+// FILES — stored in Firestore in pieces (no extra storage service to set up)
+// ═════════════════════════════════════════════════════════════
+const FILE_CHUNK = 700000;               // characters of base64 per piece (Firestore documents max out at 1 MB)
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const filesState = { folder: "all", uploading: false };
+const liveFiles = () => store.files.filter((f) => !f.trashedAt);
+const fmtSize = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${Math.round(n / 1024)} KB` : `${n || 0} B`);
+const fileIcon = (f) => f.kind === "note" ? "note" : /pdf/.test(f.type || "") ? "invoice" : /^image\//.test(f.type || "") ? "image" : "copy";
+const RULES_NOTE = html`Files and business info need one more line in your Firestore security rules. In Firebase → <b>Firestore Database → Rules</b>, paste the latest <a class="underline" href="https://github.com/loganwestlake/joewestlakellc/blob/main/firestore.rules" target="_blank" rel="noopener">firestore.rules</a> and click <b>Publish</b>.`;
+
+function renderFiles() {
+  const list = $("#files-list");
+  if (!list) return;
+  const rulesBox = $("#files-rules");
+  rulesBox.classList.toggle("hidden", !rulesNeeded.has("files"));
+  if (rulesNeeded.has("files")) rulesBox.innerHTML = String(RULES_NOTE);
+  const live = liveFiles(), trashed = store.files.filter((f) => f.trashedAt);
+  const count = (k) => live.filter((f) => (f.folder || "other") === k).length;
+  const chip = (key, label, n, on) => html`<button type="button" data-action="files-folder" data-folder="${key}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm border ${on ? "bg-white/[0.08] border-white/[0.15] text-white" : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-white"}">${icon(key === "trash" ? "trash" : "folder", "w-4 h-4", 2)}${label}<span class="text-[11px] text-slate-500">${n}</span></button>`;
+  const f0 = filesState.folder;
+  $("#files-folders").innerHTML = html`${chip("all", "All", live.length, f0 === "all")}${Object.entries(FILE_FOLDERS).map(([k, l]) => chip(k, l, count(k), f0 === k))}${trashed.length ? chip("trash", "Recently deleted", trashed.length, f0 === "trash") : ""}`;
+  if (!auth.currentUser) { list.innerHTML = emptyState("Signed out", "Sign in to see your files."); return; }
+  if (!loaded.has("files")) { list.innerHTML = skeleton(3); return; }
+  const term = ui.search.files;
+  const rows = (f0 === "trash" ? trashed : live.filter((f) => f0 === "all" || (f.folder || "other") === f0))
+    .filter((f) => matches(term, f.name, f.note, f.text, FILE_FOLDERS[f.folder]));
+  if (!rows.length) {
+    list.innerHTML = f0 === "trash" ? emptyState("Nothing deleted", "Deleted files stay here until you remove them for good.")
+      : term ? emptyState("No matches", "Try a different search.")
+      : emptyState(f0 === "all" ? "No files yet" : `Nothing in ${FILE_FOLDERS[f0]} yet`, "Upload PDFs or photos, or write a how-to note. Bank statements you import can be saved here automatically.", { label: "Upload files", attrs: `data-action="files-upload"` });
+    return;
+  }
+  list.innerHTML = html`<div class="glass rounded-2xl divide-y divide-white/[0.05]">${rows.map((f) => html`
+    <div class="flex items-center gap-3 px-4 py-3">
+      <button type="button" data-action="${f.kind === "note" ? "note-view" : "file-open"}" data-id="${f.id}" class="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-amber-400 shrink-0 hover:bg-white/[0.08]" aria-label="Open ${f.name}">${icon(fileIcon(f), "w-5 h-5", 1.8)}</button>
+      <button type="button" data-action="${f.kind === "note" ? "note-view" : "file-open"}" data-id="${f.id}" class="min-w-0 flex-1 text-left">
+        <div class="text-sm text-white truncate">${f.name}</div>
+        <div class="text-[11px] text-slate-500 truncate">${FILE_FOLDERS[f.folder] || "Other"} · ${f.kind === "note" ? "Note" : fmtSize(f.size)}${f.createdAt?.seconds ? ` · ${fmtDate(isoOf(new Date(f.createdAt.seconds * 1000)))}` : ""}${f.note ? ` · ${f.note}` : ""}</div>
+      </button>
+      <div class="flex items-center gap-1 shrink-0">${f.trashedAt
+        ? html`${actionBtn("file-restore", "files", f.id, "refresh", "Restore", "ok")}${actionBtn("file-purge", "files", f.id, "trash", "Delete forever", "danger")}`
+        : html`${f.kind !== "note" ? actionBtn("file-download", "files", f.id, "download", "Download") : ""}${editBtn("files", f.id)}${actionBtn("file-trash", "files", f.id, "trash", "Delete", "danger")}`}</div>
+    </div>`)}</div>`;
+}
+
+async function uploadFiles(fileList, folder = null, { quiet = false } = {}) {
+  if (!auth.currentUser) { openModal("signin-modal"); return []; }
+  if (rulesNeeded.has("files")) { toast("Update your Firestore rules to turn on Files (see the Files page).", "error"); return []; }
+  const files = [...fileList].filter((f) => {
+    if (f.size > MAX_FILE_BYTES) { toast(`${f.name} is over 10 MB`, "error"); return false; }
+    return true;
+  });
+  const prog = $("#files-progress"), saved = [];
+  for (const [n, file] of files.entries()) {
+    prog.classList.remove("hidden");
+    prog.textContent = `Uploading ${file.name} (${n + 1} of ${files.length})…`;
+    const ref = doc(collection(db, "files"));
+    const written = [];
+    try {
+      const b64 = await fileToBase64(file);
+      const pieces = Math.max(1, Math.ceil(b64.length / FILE_CHUNK));
+      for (let i = 0; i < pieces; i++) {
+        const cref = doc(db, "fileChunks", `${ref.id}_${i}`);
+        await setDoc(cref, { fileId: ref.id, i, data: b64.slice(i * FILE_CHUNK, (i + 1) * FILE_CHUNK) });
+        written.push(cref);
+      }
+      const dest = folder || (filesState.folder !== "all" && filesState.folder !== "trash" ? filesState.folder : guessFolder(file.name));
+      await setDoc(ref, { name: file.name, folder: dest, kind: "file", type: file.type || "application/octet-stream", size: file.size, chunks: pieces, by: auth.currentUser?.email || "", createdAt: serverTimestamp() });
+      saved.push({ id: ref.id, name: file.name });
+    } catch (err) {
+      console.error(err);
+      written.forEach((r) => deleteDoc(r).catch(() => {}));
+      toast(`Couldn't upload ${file.name}: ${friendlyError(err)}`, "error");
+    }
+  }
+  prog.classList.add("hidden");
+  if (saved.length && !quiet) toast(`Uploaded ${plural(saved.length, "file")}`);
+  return saved;
+}
+const guessFolder = (name) => /statement|stmt|truist|bank/i.test(name) ? "statements" : /receipt|rcpt/i.test(name) ? "receipts" : /w-?9|1099|tax|irs/i.test(name) ? "tax"
+  : /insur|blue|geico|state ?farm/i.test(name) ? "insurance" : /contract|estimate|bid|proposal/i.test(name) ? "contracts" : "other";
+
+async function readStoredFile(id) {
+  const f = byId("files", id);
+  if (!f) throw new Error("File not found");
+  const parts = [];
+  for (let i = 0; i < (f.chunks || 1); i++) {
+    const snap = await getDoc(doc(db, "fileChunks", `${id}_${i}`));
+    if (!snap.exists()) throw new Error("Part of this file is missing");
+    parts.push(snap.data().data);
+  }
+  const bin = atob(parts.join(""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { file: f, bytes, blob: new Blob([bytes], { type: f.type || "application/octet-stream" }) };
+}
+async function openStoredFile(id, download) {
+  // Open the tab right away (browsers block pop-ups opened after waiting), then point it at the file.
+  const win = download ? null : window.open("", "_blank");
+  if (win) win.document.write("<p style='font:14px system-ui;padding:2rem;color:#555'>Opening…</p>");
+  try {
+    const { file, blob } = await readStoredFile(id);
+    const url = URL.createObjectURL(blob);
+    if (win) win.location.href = url;
+    else { const a = document.createElement("a"); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    win?.close();
+    toast(`Couldn't open it: ${err.message}`, "error");
+  }
+}
+function trashFile(id) {
+  const f = byId("files", id);
+  if (!f) return;
+  persist(updateDoc(doc(db, "files", id), { trashedAt: serverTimestamp() }), "Couldn't delete");
+  toast(`Moved “${f.name}” to Recently deleted`, { type: "info", action: { label: "Undo", run: () => persist(updateDoc(doc(db, "files", id), { trashedAt: deleteField() }), "Couldn't undo") } });
+}
+function purgeFile(id) {
+  const f = byId("files", id);
+  if (!f) return;
+  if (!confirm(`Delete “${f.name}” for good? This can't be undone.`)) return;
+  const ops = [(b) => b.delete(doc(db, "files", id))];
+  for (let i = 0; i < (f.chunks || 0); i++) ops.push((b) => b.delete(doc(db, "fileChunks", `${id}_${i}`)));
+  persist(runBatched(ops), "Couldn't delete");
+  toast("Deleted for good", "info");
+}
+function openNote(id) {
+  const n = byId("files", id);
+  if (!n) return;
+  $("#note-title").textContent = n.name;
+  $("#note-body").textContent = n.text || "";
+  $("#note-edit").dataset.id = id;
+  openModal("note-modal", { focus: false });
+}
+function initFiles() {
+  $("#files-input").onchange = (e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; };
+  const panel = $("#tab-files");
+  ["dragenter", "dragover"].forEach((ev) => panel.addEventListener(ev, (e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); panel.classList.add("ring-2", "ring-amber-500/40"); } }));
+  ["dragleave", "drop"].forEach((ev) => panel.addEventListener(ev, (e) => { e.preventDefault(); panel.classList.remove("ring-2", "ring-amber-500/40"); }));
+  panel.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) uploadFiles(e.dataTransfer.files); });
+  $("#note-edit").onclick = () => { const r = byId("files", $("#note-edit").dataset.id); closeModal("note-modal"); if (r) openRecordForm("notes", r); };
+  $("#w9-blank-input").onchange = (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) saveBlankW9(f); };
+  $("#w9-modal").addEventListener("input", (e) => { if (e.target.dataset.w9 === "tin") { w9.data.tin = e.target.value; const s = $("#w9-save"); if (s && e.target.value.trim()) s.checked = false; } });
+  $("#note-copy").onclick = async () => { const r = byId("files", $("#note-edit").dataset.id); if (r && await copyText(r.text || "")) toast("Copied"); };
+}
+
+// ═════════════════════════════════════════════════════════════
+// W-9 — fills in the official IRS form (the blank one you download from irs.gov, kept in Files)
+// ═════════════════════════════════════════════════════════════
+const PDFLIB_URL = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
+let pdfLibPromise = null;
+function loadPdfLib() {
+  if (window.PDFLib) return Promise.resolve(window.PDFLib);
+  pdfLibPromise ||= new Promise((resolve, reject) => {
+    const sc = document.createElement("script");
+    sc.src = PDFLIB_URL;
+    sc.onload = () => (window.PDFLib ? resolve(window.PDFLib) : reject(new Error("pdf-lib didn't load")));
+    sc.onerror = () => { pdfLibPromise = null; reject(new Error("Couldn't load the PDF tool. Check your connection.")); };
+    document.head.appendChild(sc);
+  });
+  return pdfLibPromise;
+}
+// Field names in the fillable W-9 from irs.gov (Rev. March 2024). Matched by their ending, and checked before filling.
+const W9_FIELDS = { name: "f1_01[0]", business: "f1_02[0]", llcLetter: "f1_03[0]", address: "f1_07[0]", city: "f1_08[0]", requester: "f1_09[0]",
+  ssn1: "f1_11[0]", ssn2: "f1_12[0]", ssn3: "f1_13[0]", ein1: "f1_14[0]", ein2: "f1_15[0]" };
+const W9_BOXES = { individual: 0, c: 1, s: 2, partnership: 3, trust: 4, llc: 5, other: 6 };
+const W9_CLASS = { individual: "Individual / sole proprietor (or one-owner LLC)", llc_s: "LLC taxed as an S corporation", llc_c: "LLC taxed as a C corporation", llc_p: "LLC with partners (partnership)" };
+const blankW9 = () => store.files.find((f) => f.blankW9 && !f.trashedAt);
+const w9 = { who: null, data: {} };
+
+function findField(form, suffix) { return form.getFields().find((f) => f.getName().endsWith(suffix)) || null; }
+function w9FormLooksRight(form) {
+  return ["name", "business", "address", "city"].every((k) => findField(form, W9_FIELDS[k])) && findField(form, `c1_1[${W9_BOXES.individual}]`);
+}
+
+function openW9(who) {
+  if (!auth.currentUser) { openModal("signin-modal"); return; }
+  w9.who = who;
+  const b = byId("settings", "business") || {};
+  const bizLine = [b.businessName || "Joe Westlake Painting LLC", b.address, b.cityStateZip].filter(Boolean).join(", ");
+  if (who === "business") {
+    const cls = { single: "individual", s: "llc_s", c: "llc_c", partnership: "llc_p" }[b.taxClass || "single"];
+    w9.data = { name: b.ownerName || "", business: b.businessName || "", cls, address: b.address || "", city: b.cityStateZip || "", requester: "", tinType: "ein", tin: "" };
+    setText("#w9-title", "Our W-9");
+    setText("#w9-sub", "The W-9 you give a customer or general contractor who asks for one. It comes from Settings → Business info.");
+  } else {
+    const t = byId("team", who) || {};
+    const addr = String(t.address || "").split(/\n/);
+    w9.data = { name: t.name || "", business: "", cls: "individual", address: addr[0] || "", city: addr.slice(1).join(", "), requester: bizLine, tinType: "ssn", tin: "" };
+    setText("#w9-title", `W-9 for ${t.name || "worker"}`);
+    setText("#w9-sub", "Filled in from their team details, for them to check, add their SSN and sign. Keep the signed copy for their 1099.");
+  }
+  renderW9();
+  openModal("w9-modal", { focus: false });
+}
+
+function renderW9() {
+  const body = $("#w9-body");
+  if (rulesNeeded.has("files")) { body.innerHTML = String(RULES_NOTE); return; }
+  if (!blankW9()) {
+    body.innerHTML = html`<div class="space-y-4 text-sm text-slate-300">
+      <p>First, the app needs the official blank W-9 once. It keeps it in Files → Tax forms for next time.</p>
+      <ol class="list-decimal pl-5 space-y-2">
+        <li>Download it from the IRS: <a href="https://www.irs.gov/pub/irs-pdf/fw9.pdf" target="_blank" rel="noopener" class="text-amber-300 underline">irs.gov/pub/irs-pdf/fw9.pdf</a></li>
+        <li>Come back here and choose the file you downloaded.</li>
+      </ol>
+      <button type="button" id="w9-pick" class="btn-primary btn-touch">${icon("upload", "w-4 h-4", 2)}Choose the blank W-9</button>
+      <div id="w9-error" class="hidden text-red-300"></div>
+    </div>`;
+    $("#w9-pick").onclick = () => $("#w9-blank-input").click();
+    return;
+  }
+  const d = w9.data;
+  const input = (k, label, ph = "", full = false) => html`<div class="${full ? "md:col-span-2" : ""}"><label class="field-label" for="w9-${k}">${label}</label><input id="w9-${k}" data-w9="${k}" class="field" value="${d[k] || ""}" placeholder="${ph}" /></div>`;
+  body.innerHTML = html`<div class="grid md:grid-cols-2 gap-4">
+      ${input("name", "1. Name (as on their tax return)", "", true)}
+      ${input("business", "2. Business name, if different", "", true)}
+      <div class="md:col-span-2"><label class="field-label" for="w9-cls">3a. Tax classification</label>
+        <select id="w9-cls" data-w9="cls" class="field">${Object.entries(W9_CLASS).map(([v, l]) => html`<option value="${v}" ${d.cls === v ? "selected" : ""}>${l}</option>`)}</select></div>
+      ${input("address", "5. Address", "Street")}
+      ${input("city", "6. City, state, ZIP")}
+      ${input("requester", "Requester's name and address (optional)", w9.who === "business" ? "The customer asking for it" : "", true)}
+      <div><label class="field-label" for="w9-tinType">Part I. Taxpayer ID</label>
+        <select id="w9-tinType" data-w9="tinType" class="field"><option value="ssn" ${d.tinType === "ssn" ? "selected" : ""}>Social Security number</option><option value="ein" ${d.tinType === "ein" ? "selected" : ""}>Employer ID number (EIN)</option></select></div>
+      <div><label class="field-label" for="w9-tin">Number (optional)</label><input id="w9-tin" data-w9="tin" class="field" inputmode="numeric" autocomplete="off" placeholder="Leave blank to write it by hand" value="${d.tin || ""}" />
+        <div class="field-hint">Only used to fill the PDF. It's never saved in the app.</div></div>
+    </div>
+    <div class="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-[12px] text-slate-400">The person still signs and dates it by hand (Part II). Check every line on the PDF before they sign. ${w9.who !== "business" ? "If they're a contractor, they usually leave the exemption boxes (line 4) empty." : ""}</div>
+    <label class="flex items-center gap-2 text-xs text-slate-400 mt-3"><input type="checkbox" id="w9-save" class="w-4 h-4 accent-amber-500" ${d.tin ? "" : "checked"} />Save a copy in Files → Tax forms${d.tin ? " (it will include the full number)" : ""}</label>
+    <div id="w9-error" class="hidden text-red-300 text-sm mt-3"></div>
+    <div class="flex flex-col sm:flex-row gap-3 pt-4 mt-4 border-t border-white/[0.06]">
+      <button type="button" id="w9-make" class="btn-primary flex-1 btn-touch">${icon("invoice", "w-4 h-4", 2)}Create the filled W-9</button>
+      <button type="button" data-close class="btn-text">Cancel</button>
+    </div>`;
+  $("#w9-make").onclick = makeW9;
+}
+const w9Error = (msg) => { const e = $("#w9-error"); if (e) { e.textContent = msg; e.classList.toggle("hidden", !msg); } };
+
+async function saveBlankW9(file) {
+  w9Error("");
+  try {
+    const { PDFDocument } = await loadPdfLib();
+    const pdf = await PDFDocument.load(new Uint8Array(await file.arrayBuffer()));
+    if (!w9FormLooksRight(pdf.getForm())) throw new Error("That doesn't look like the fillable W-9 from irs.gov. Download it from the link above and try again.");
+    const [saved] = await uploadFiles([new File([file], "W-9 blank (IRS).pdf", { type: "application/pdf" })], "tax", { quiet: true });
+    if (!saved) throw new Error("Couldn't save it in Files.");
+    await updateDoc(doc(db, "files", saved.id), { blankW9: true, note: "Blank form from irs.gov" });
+    toast("Blank W-9 saved in Files → Tax forms");
+    setTimeout(renderW9, 50);
+  } catch (err) {
+    console.error(err);
+    w9Error(err.message);
+  }
+}
+
+async function makeW9() {
+  $$("[data-w9]").forEach((el) => (w9.data[el.dataset.w9] = el.value.trim()));
+  const d = w9.data, btn = $("#w9-make");
+  if (!d.name) return w9Error("Line 1 (name) is required.");
+  const digits = d.tin.replace(/\D/g, "");
+  if (digits && digits.length !== 9) return w9Error("A Social Security number or EIN has 9 digits.");
+  w9Error("");
+  btn.disabled = true;
+  try {
+    const { PDFDocument } = await loadPdfLib();
+    const { bytes } = await readStoredFile(blankW9().id);
+    const pdf = await PDFDocument.load(bytes);
+    const form = pdf.getForm();
+    if (!w9FormLooksRight(form)) throw new Error("The saved blank W-9 isn't the expected IRS form. Delete it from Files and choose a fresh one.");
+    const set = (k, v) => { const f = findField(form, W9_FIELDS[k]); if (f && v) f.setText(v); };
+    set("name", d.name); set("business", d.business); set("address", d.address); set("city", d.city); set("requester", d.requester);
+    const box = (i) => findField(form, `c1_1[${i}]`)?.check();
+    if (d.cls === "individual") box(W9_BOXES.individual);
+    else { box(W9_BOXES.llc); set("llcLetter", { llc_s: "S", llc_c: "C", llc_p: "P" }[d.cls]); }
+    if (digits) {
+      if (d.tinType === "ssn") { set("ssn1", digits.slice(0, 3)); set("ssn2", digits.slice(3, 5)); set("ssn3", digits.slice(5)); }
+      else { set("ein1", digits.slice(0, 2)); set("ein2", digits.slice(2)); }
+    }
+    const out = await pdf.save();
+    const name = `W-9 ${d.business || d.name} ${todayISO()}.pdf`;
+    const file = new File([out], name, { type: "application/pdf" });
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    if ($("#w9-save")?.checked) uploadFiles([file], "tax", { quiet: true }).then((s) => s.length && toast("Copy saved in Files → Tax forms"));
+    toast("W-9 created. Check it, then print and sign");
+    closeModal("w9-modal");
+  } catch (err) {
+    console.error(err);
+    w9Error(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderBusinessInfo() {
+  const el = $("#business-info");
+  if (!el) return;
+  if (rulesNeeded.has("settings")) { el.innerHTML = String(RULES_NOTE); return; }
+  const b = byId("settings", "business");
+  if (!b) { el.innerHTML = html`<span class="text-slate-400">Not filled in yet. Add the owner's name, business name and address once, and W-9s fill themselves in.</span>`; return; }
+  el.innerHTML = html`<div class="grid sm:grid-cols-2 gap-3">
+    <div><div class="stat-label mb-1">Business</div><div class="text-white">${b.businessName || "—"}</div><div class="text-slate-400">${b.ownerName || ""}</div></div>
+    <div><div class="stat-label mb-1">Address</div><div class="text-white">${b.address || "—"}</div><div class="text-slate-400">${b.cityStateZip || ""}</div></div>
+  </div>`;
 }
 
 // ═════════════════════════════════════════════════════════════
@@ -3372,7 +3828,7 @@ function renderRecurring() {
   el.innerHTML = dataTable({
     rows: store.recurring,
     columns: [
-      { label: "Name", render: (r) => html`<span class="text-white">${r.name || "—"}</span>` },
+      { label: "Name", render: (r) => html`<span class="flex items-center gap-2.5 min-w-0">${merchantLogo(r.vendor || r.name, r.category)}<span class="text-white">${r.name || "—"}</span></span>` },
       { label: "Category", render: (r) => categoryLabel(r.category) },
       { label: "Amount", render: (r) => money(r.amount), cls: "whitespace-nowrap" },
       { label: "Next", render: (r) => fmtDate(recurringDateFor(r, now.getFullYear(), now.getMonth() + (isAppliedFor(r, mk) ? 1 : 0))).replace(/, \d{4}$/, ""), cls: "whitespace-nowrap" },
@@ -3426,7 +3882,7 @@ function renderTeam() {
       { label: "Role", render: (t) => t.role || "—" },
       { label: "Type", render: (t) => (WORKER_KINDS[t.kind] || "—").split(" (")[0] + (t.kind === "contractor" ? (t.w9 === true || t.w9 === "true" ? " · W-9 ✓" : " · no W-9") : ""), hide: "hidden md:table-cell" }
     ],
-    actions: (t) => html`${editBtn("team", t.id)}${deleteBtn("team", t.id)}`
+    actions: (t) => html`${t.kind === "contractor" ? html`<button type="button" data-action="w9" data-who="${t.id}" class="icon-btn" title="Fill out their W-9" aria-label="Fill out ${t.name}'s W-9">${icon("invoice")}</button>` : ""}${editBtn("team", t.id)}${deleteBtn("team", t.id)}`
   });
 }
 
@@ -3819,7 +4275,7 @@ function showBankStep(step) {
   ["upload", "loading", "review"].forEach((s) => $(`#bank-step-${s}`).classList.toggle("hidden", s !== step));
 }
 function showBankError(msg) { const el = $("#bank-error"); el.textContent = msg || ""; el.classList.toggle("hidden", !msg); }
-function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.recurring = []; bank.summary = null; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
+function resetBank() { bank.req++; bank.debits = []; bank.deposits = []; bank.recurring = []; bank.files = []; bank.summary = null; $("#bank-file").value = ""; showBankError(""); showBankStep("upload"); }
 function openBankModal() { resetBank(); openModal("bank-modal", { focus: false }); }
 modalCloseHooks["bank-modal"] = resetBank;
 
@@ -4251,6 +4707,7 @@ async function processBankFiles(fileList) {
     if (inv) { row.invoiceId = inv; claimed.add(inv); }
   }
   bank.debits = debits; bank.deposits = deposits;
+  bank.files = results.filter((r) => !r.error && (r.debits?.length || r.deposits?.length)).map((r) => ({ file: r.file, label: r.periodEnd ? monthKey(parseISO(r.periodEnd)) : "" }));
   bank.recurring = findRecurringCandidates(debits);
   bank.summary = { read: summary, problems: [...warnings, ...problemLines] };
   renderBankReview();
@@ -4300,7 +4757,7 @@ function renderBankReview() {
     <div class="import-row ${t.dup ? "is-dup" : ""}">
       <input type="checkbox" ${t.include ? "checked" : ""} data-list="debits" data-idx="${i}" data-field="include" aria-label="Include ${t.vendor}" />
       <input type="date" value="${t.date}" data-list="debits" data-idx="${i}" data-field="date" aria-label="Date" />
-      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.vendor}" data-list="debits" data-idx="${i}" data-field="vendor" aria-label="Vendor" title="${t.raw ? `${t.raw} · ` : ""}${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
+      <div class="flex items-center gap-2 min-w-0">${merchantLogo(t.vendor, t.category, "sm")}<input type="text" value="${t.vendor}" data-list="debits" data-idx="${i}" data-field="vendor" aria-label="Vendor" title="${t.raw ? `${t.raw} · ` : ""}${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
       <input type="number" step="0.01" min="0" value="${t.amount}" data-list="debits" data-idx="${i}" data-field="amount" aria-label="Amount" />
       <select data-list="debits" data-idx="${i}" data-field="category" aria-label="Category">${CATEGORY_KEYS.map((c) => html`<option value="${c}" ${t.category === c ? "selected" : ""}>${categoryLabel(c)}</option>`)}</select>
       <select data-list="debits" data-idx="${i}" data-field="deductible" title="${t.note}" aria-label="Deductible">${DEDUCTIBLE_LEVELS.map((v) => html`<option value="${v}" ${t.deductible === v ? "selected" : ""}>${deductibleShort(v)}</option>`)}</select>
@@ -4313,7 +4770,7 @@ function renderBankReview() {
     return html`<div class="deposit-row ${t.dup ? "is-dup" : ""}">
       <input type="checkbox" ${t.include ? "checked" : ""} data-list="deposits" data-idx="${i}" data-field="include" aria-label="Include ${t.source}" />
       <input type="date" value="${t.date}" data-list="deposits" data-idx="${i}" data-field="date" aria-label="Date" />
-      <div class="flex items-center gap-2 min-w-0"><input type="text" value="${t.source}" data-list="deposits" data-idx="${i}" data-field="source" aria-label="Source" title="${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
+      <div class="flex items-center gap-2 min-w-0">${merchantLogo(t.source, "other", "sm")}<input type="text" value="${t.source}" data-list="deposits" data-idx="${i}" data-field="source" aria-label="Source" title="${t.file || ""}" />${t.dup ? dupBadge : ""}</div>
       <input type="number" step="0.01" min="0" value="${t.amount}" data-list="deposits" data-idx="${i}" data-field="amount" aria-label="Amount" />
       <div class="flex items-center gap-2 min-w-0">
         <select data-list="deposits" data-idx="${i}" data-field="invoiceId" class="flex-1" aria-label="Match to invoice">
@@ -4378,6 +4835,12 @@ function importBank() {
     }
   }
   persist(runBatched(ops), "Import failed");
+  // Keep the original statements, named by the month they cover; skip ones already saved.
+  if ($("#bank-keep-files")?.checked && bank.files?.length && !rulesNeeded.has("files")) {
+    const keep = bank.files.filter(({ file }) => !store.files.some((f) => f.size === file.size && f.folder === "statements" && !f.trashedAt))
+      .map(({ file, label }) => (label && !file.name.startsWith(label) ? new File([file], `${label} ${file.name}`, { type: file.type }) : file));
+    if (keep.length) uploadFiles(keep, "statements", { quiet: true }).then((s) => s.length && toast(`Saved ${plural(s.length, "statement")} in Files`));
+  }
   const parts = [debits.length && plural(debits.length, "expense"), recurring.length && plural(recurring.length, "recurring bill"), paidCount && `${plural(paidCount, "invoice")} paid`, incomeCount && plural(incomeCount, "income entry", "income entries")].filter(Boolean);
   toast(`Imported ${parts.join(" · ")}`, { action: { label: "Undo", run: () => { persist(runBatched(undo), "Couldn't undo import"); toast("Import undone"); } } });
   closeModal("bank-modal");
@@ -4795,7 +5258,17 @@ const ACTIONS = {
   }),
   "new-money": requireAuth(() => openRecordForm(newForCurrentTab())),
   fab: requireAuth(() => openRecordForm(newForCurrentTab())),
-  edit: requireAuth((d) => { const r = byId(d.col, d.id); if (r) openRecordForm(d.col === "expenses" ? expenseFormFor(r) : d.col, r); }),
+  edit: requireAuth((d) => { const r = byId(d.col, d.id); if (r) openRecordForm(d.col === "expenses" ? expenseFormFor(r) : d.col === "files" ? (r.kind === "note" ? "notes" : "fileInfo") : d.col, r); }),
+  "edit-business": requireAuth(() => openRecordForm("business", byId("settings", "business") || null)),
+  "w9": requireAuth((d) => openW9(d.who || "business")),
+  "files-folder": (d) => { filesState.folder = d.folder || "all"; renderFiles(); },
+  "files-upload": requireAuth(() => $("#files-input").click()),
+  "file-open": requireAuth((d) => openStoredFile(d.id, false)),
+  "file-download": requireAuth((d) => openStoredFile(d.id, true)),
+  "file-trash": requireAuth((d) => trashFile(d.id)),
+  "file-restore": requireAuth((d) => { persist(updateDoc(doc(db, "files", d.id), { trashedAt: deleteField() }), "Couldn't restore"); toast("Restored"); }),
+  "file-purge": requireAuth((d) => purgeFile(d.id)),
+  "note-view": (d) => openNote(d.id),
   "payroll-year": (d) => { payrollYear = Number(d.year) || new Date().getFullYear(); ls.set("jw_payroll_year", String(payrollYear)); renderPayroll(); },
   "count-as-payroll": requireAuth((d) => {
     const e = byId("expenses", d.id), w = byId("team", d.worker);
@@ -4806,7 +5279,7 @@ const ACTIONS = {
   }),
   "export-payroll": () => exportPayrollCSV(),
   "export-checks": () => exportChecksCSV(),
-  delete: requireAuth((d) => removeRecord(d.col, d.id)),
+  delete: requireAuth((d) => (d.col === "files" ? trashFile(d.id) : removeRecord(d.col, d.id))),
   "view-job": (d) => openJobModal(d.id),
   "mark-paid": requireAuth((d) => markPaid(d.id)),
   "apply-recurring": requireAuth((d) => applyRecurring(d.id ? [byId("recurring", d.id)] : store.recurring)),
@@ -4887,10 +5360,11 @@ function init() {
   initChat();
   initSend();
   initCleanup();
+  initFiles();
 
   $("#today-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   $("#record-form").addEventListener("submit", saveRecord);
-  $("#record-delete").onclick = () => { if (recordCtx?.id) { const { col, id } = recordCtx; closeModal("record-modal"); removeRecord(col, id); } };
+  $("#record-delete").onclick = () => { if (recordCtx?.id) { const { col, id } = recordCtx; closeModal("record-modal"); col === "files" ? trashFile(id) : removeRecord(col, id); } };
 
   const period = $("#money-period");
   renderPeriodOptions();
@@ -4901,7 +5375,7 @@ function init() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       ui.search[inp.dataset.search] = inp.value.trim().toLowerCase();
-      ({ jobs: renderJobs, invoices: renderInvoices, money: () => { renderMoney(); renderMoneyChart(); }, checks: renderChecks })[inp.dataset.search]();
+      ({ jobs: renderJobs, invoices: renderInvoices, money: () => { renderMoney(); renderMoneyChart(); }, checks: renderChecks, files: renderFiles })[inp.dataset.search]();
     }, 120);
   }));
   $$("[data-filter]").forEach((sel) => sel.addEventListener("change", () => {

@@ -40,6 +40,17 @@ service cloud.firestore {
     match /recurring/{id} { allow read, write: if isMember(); }
     match /vehicles/{id}  { allow read, write: if isMember(); }
     match /team/{id}      { allow read, write: if isMember(); }
+    match /settings/{id}  { allow read, write: if isMember(); }
+
+    // Files: the list of files/notes, and the pieces each file is stored in.
+    match /files/{id}      { allow read, write: if isMember(); }
+    match /fileChunks/{id} {
+      allow read, delete: if isMember();
+      // Each piece is under 1 MB by Firestore's own limit; just make sure it's shaped right.
+      allow create, update: if isMember()
+        && request.resource.data.keys().hasOnly(["fileId", "i", "data"])
+        && request.resource.data.data is string;
+    }
 
     // Everything else is closed.
     match /{document=**} {
