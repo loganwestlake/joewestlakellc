@@ -125,14 +125,14 @@ export function Dashboard() {
 
       {/* App shortcuts */}
       <div className="relative mb-6">
-        <div ref={strip} className="flex gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] justify-start 2xl:justify-center">
+        <div ref={strip} className="flex gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] justify-start">
           {SHORTCUTS.map((sc) => (
             <button key={sc.label} type="button" onClick={() => go(sc.page)} className="shrink-0 flex items-center gap-3 pl-2 pr-5 h-14 rounded-full border border-line bg-white hover:border-line-strong hover:shadow-card">
               <span className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ background: sc.color }}><Icon name={sc.icon} className="w-5 h-5" strokeWidth={2} /></span>
               <span className="text-[15px] font-medium text-ink whitespace-nowrap">{sc.label}</span>
             </button>))}
         </div>
-        <button type="button" aria-label="More shortcuts" onClick={() => strip.current?.scrollBy({ left: 320 })} className="hidden md:flex 2xl:hidden absolute right-0 top-0 h-14 w-12 items-center justify-end bg-gradient-to-l from-white via-white to-transparent"><Icon name="chevron" className="w-5 h-5" /></button>
+        <button type="button" aria-label="More shortcuts" onClick={() => strip.current?.scrollBy({ left: 320 })} className="hidden md:flex absolute right-0 top-0 h-14 w-12 items-center justify-end bg-gradient-to-l from-white via-white to-transparent"><Icon name="chevron" className="w-5 h-5" /></button>
       </div>
 
       {/* Create actions */}
